@@ -1,15 +1,15 @@
 /**
  * Strict Quality Crypto Futures Scanner
- * Runs on GitHub Actions → sends only Valid (≥75%) & SNIPER (≥82%) to Discord
+ * Data: Bybit Linear (GitHub Actions cannot reach Binance - HTTP 451)
+ * Alerts: Discord via DISCORD_WEBHOOK secret
  */
 
-const API = "https://fapi.binance.com/fapi/v1";
+const BYBIT = "https://api.bybit.com";
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 2.0;
 
-// ---------- Helpers ----------
 const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
@@ -22,25 +22,14 @@ function formatPrice(v) {
 }
 
 async function getJson(url) {
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) throw new Error(`API ${res.status} ${url}`);
   return res.json();
-}
-
-function parseKlines(rows) {
-  return rows.slice(0, -1).map((r) => ({
-    open: +r[1],
-    high: +r[2],
-    low: +r[3],
-    close: +r[4],
-    volume: +r[5],
-  }));
 }
 
 function sma(values, period) {
   return values.map((_, i) => (i + 1 < period ? null : mean(values.slice(i + 1 - period, i + 1))));
 }
-
 function ema(values, period) {
   const out = Array(values.length).fill(null);
   if (values.length < period) return out;
@@ -53,12 +42,10 @@ function ema(values, period) {
   }
   return out;
 }
-
 function stdDev(values) {
   const avg = mean(values);
   return Math.sqrt(mean(values.map((v) => (v - avg) ** 2)));
 }
-
 function bollinger(closes, period = 20, mult = 2) {
   const mid = sma(closes, period);
   const upper = Array(closes.length).fill(null);
@@ -73,7 +60,6 @@ function bollinger(closes, period = 20, mult = 2) {
   }
   return { middle: mid, upper, lower, width };
 }
-
 function rsi(values, period = 14) {
   const out = Array(values.length).fill(null);
   if (values.length <= period) return out;
@@ -93,7 +79,6 @@ function rsi(values, period = 14) {
   }
   return out;
 }
-
 function atr(candles, period = 14) {
   const ranges = candles.map((c, i) => {
     if (!i) return c.high - c.low;
@@ -105,7 +90,6 @@ function atr(candles, period = 14) {
   for (let i = period; i < ranges.length; i++) v = (v * (period - 1) + ranges[i]) / period;
   return v;
 }
-
 function volumeAnalysis(candles) {
   const cur = candles.at(-1);
   const recent = candles.slice(-12);
@@ -117,7 +101,6 @@ function volumeAnalysis(candles) {
   const spike = cur.volume >= base * 1.5 || recentAvg >= base * 1.4;
   return { pressure, spike, side: pressure > 10 ? "BUY" : pressure < -10 ? "SELL" : "BALANCED" };
 }
-
 function detectReversal(candles) {
   const last = candles.at(-1);
   const prev = candles.at(-2);
@@ -137,7 +120,6 @@ function detectReversal(candles) {
   if (uw >= range * 0.6 && last.close <= last.open) return { bias: "bearish", quality: 0.8, name: "Pin Bar" };
   return { bias: "neutral", quality: 0, name: "None" };
 }
-
 function analyzeTF(candles, label) {
   if (!candles || candles.length < 60) return null;
   const closes = candles.map((c) => c.close);
@@ -147,10 +129,7 @@ function analyzeTF(candles, label) {
   const ema21 = ema(closes, 21);
   const idx = candles.length - 1;
   const last = candles[idx];
-  const mid = bands.middle[idx];
-  const up = bands.upper[idx];
-  const lo = bands.lower[idx];
-  const w = bands.width[idx];
+  const mid = bands.middle[idx], up = bands.upper[idx], lo = bands.lower[idx], w = bands.width[idx];
   const widths = bands.width.slice(-60).filter((v) => v != null).sort((a, b) => a - b);
   const sqThresh = widths[Math.floor(widths.length * 0.25)] || w;
   const recentW = bands.width.slice(-20).filter((v) => v != null);
@@ -165,14 +144,11 @@ function analyzeTF(candles, label) {
   const touchUp = last.high >= up * 0.998 || last.close >= up * 0.996;
   const recentLo = candles.slice(-21, -1).map((c) => c.low);
   const recentHi = candles.slice(-21, -1).map((c) => c.high);
-  const support = Math.min(...recentLo);
-  const resist = Math.max(...recentHi);
+  const support = Math.min(...recentLo), resist = Math.max(...recentHi);
   const nearSup = last.low <= support * 1.002;
   const nearRes = last.high >= resist * 0.998;
-  const bias =
-    pos < 32 ? "bullish" : pos > 68 ? "bearish" : emaBull ? "bullish" : emaBear ? "bearish" : "neutral";
+  const bias = pos < 32 ? "bullish" : pos > 68 ? "bearish" : emaBull ? "bullish" : emaBear ? "bearish" : "neutral";
   const structure = squeeze ? "SQUEEZE" : pos <= 8 ? "NEAR LOWER" : pos >= 92 ? "NEAR UPPER" : "RANGE";
-
   return {
     label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, structure,
     emaBull, emaBear, priceAboveMid: last.close > mid, priceBelowMid: last.close < mid,
@@ -182,13 +158,11 @@ function analyzeTF(candles, label) {
     meanShort: touchUp && rev.quality >= 0.75 && rsiV[idx] > 68 && nearRes,
   };
 }
-
 function scoreSignal(h1, m15, m5, funding) {
   if (!h1 || !m15 || !m5) return null;
   const majorBull = h1.bias === "bullish" && h1.emaBull && h1.priceAboveMid;
   const majorBear = h1.bias === "bearish" && h1.emaBear && h1.priceBelowMid;
   if (!m5.volume.spike && Math.abs(m5.volume.pressure) < 10) return null;
-
   let s1 = 40;
   if (majorBull) s1 = 92;
   else if (h1.bias === "bullish" && h1.emaBull) s1 = 72;
@@ -196,12 +170,10 @@ function scoreSignal(h1, m15, m5, funding) {
   else if (majorBear) s1 = 8;
   else if (h1.bias === "bearish" && h1.emaBear) s1 = 28;
   else if (h1.bias === "bearish") s1 = 45;
-
   let s15 = 45;
   if (m15.bias === "bullish" || (m15.structure === "RANGE" && m15.position < 40)) s15 = 78;
   else if (m15.bias === "bearish" || (m15.structure === "RANGE" && m15.position > 60)) s15 = 22;
   if (m15.structure === "SQUEEZE") s15 = 55;
-
   let s5 = 40;
   if (m5.meanLong) s5 = 90;
   else if (m5.meanShort) s5 = 10;
@@ -209,7 +181,6 @@ function scoreSignal(h1, m15, m5, funding) {
   else if (m5.squeeze && m5.volume.spike && m5.volume.pressure < -10) s5 = 18;
   else if (m5.emaBull) s5 = 65;
   else if (m5.emaBear) s5 = 35;
-
   let sVol = 40;
   if (m5.volume.spike && m5.volume.pressure > 15) sVol = 88;
   else if (m5.volume.spike && m5.volume.pressure > 8) sVol = 70;
@@ -217,33 +188,22 @@ function scoreSignal(h1, m15, m5, funding) {
   else if (m5.volume.spike && m5.volume.pressure < -8) sVol = 30;
   if (funding < -0.0004) sVol = Math.min(95, sVol + 12);
   if (funding > 0.0004) sVol = Math.max(5, sVol - 12);
-
   let sMom = 45;
   if (m5.rsi < 28) sMom = 78;
   if (m5.rsi > 72) sMom = 22;
-
   let sStruct = 50;
   if (m5.squeeze || m15.squeeze) sStruct = 70;
   if (h1.structure === "NEAR UPPER" && majorBull) sStruct = 80;
   if (h1.structure === "NEAR LOWER" && majorBear) sStruct = 20;
-
   const prob = clamp(s1 * 0.28 + s15 * 0.15 + s5 * 0.24 + sVol * 0.18 + sMom * 0.1 + sStruct * 0.05, 0, 100);
-
   let direction = "NEUTRAL";
   if (prob >= 62 && majorBull) direction = "BULLISH";
   if (prob <= 38 && majorBear) direction = "BEARISH";
   if (direction === "BULLISH" && !majorBull) direction = "NEUTRAL";
   if (direction === "BEARISH" && !majorBear) direction = "NEUTRAL";
   if (direction === "NEUTRAL") return null;
-
-  return {
-    direction,
-    action: direction === "BULLISH" ? "LONG" : "SHORT",
-    probability: Math.round(prob),
-    h1, m15, m5, majorBull, majorBear,
-  };
+  return { direction, action: direction === "BULLISH" ? "LONG" : "SHORT", probability: Math.round(prob), h1, m15, m5 };
 }
-
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
   const recent = candles.slice(-14);
@@ -269,7 +229,6 @@ function buildLevels(candles, signal, mark) {
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
   return { entry, sl, tp1, tp2, rr };
 }
-
 async function sendDiscord(signals) {
   if (!DISCORD_WEBHOOK) {
     console.log("No DISCORD_WEBHOOK secret — skip Discord");
@@ -296,7 +255,7 @@ async function sendDiscord(signals) {
         { name: "5M", value: s.m5.structure, inline: true },
         { name: "Volume", value: s.m5.volume.side, inline: true },
       ],
-      footer: { text: "Strict Scanner · GitHub Actions · Risk max 0.75%" },
+      footer: { text: "Strict Scanner · Bybit · GitHub Actions · Risk max 0.75%" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -309,45 +268,45 @@ async function sendDiscord(signals) {
   }
 }
 
+/** Bybit kline: list is newest-first → reverse, drop incomplete last bar after reverse */
+async function fetchBybitKlines(symbol, interval, limit = 100) {
+  const url = `${BYBIT}/v5/market/kline?category=linear&symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const data = await getJson(url);
+  const list = data?.result?.list || [];
+  const candles = list
+    .map((r) => ({
+      open: +r[1],
+      high: +r[2],
+      low: +r[3],
+      close: +r[4],
+      volume: +r[5],
+    }))
+    .reverse();
+  // drop last (possibly forming)
+  return candles.length > 1 ? candles.slice(0, -1) : candles;
+}
+
 async function main() {
-  console.log("=== Strict Crypto Scanner (GitHub Actions) ===");
+  console.log("=== Strict Crypto Scanner (Bybit + GitHub Actions) ===");
   console.log(new Date().toISOString());
+  console.log("Discord secret:", DISCORD_WEBHOOK ? "YES" : "NO (set DISCORD_WEBHOOK in repo secrets)");
 
-  const [tickers, premiums, info] = await Promise.all([
-    getJson(`${API}/ticker/24hr`),
-    getJson(`${API}/premiumIndex`),
-    getJson(`${API}/exchangeInfo`),
-  ]);
+  const tickersRes = await getJson(`${BYBIT}/v5/market/tickers?category=linear`);
+  const tickers = (tickersRes?.result?.list || []).filter((t) => t.symbol.endsWith("USDT"));
 
-  const excluded = new Set(["USDC", "USDT", "BUSD", "FDUSD", "TUSD", "DAI", "USDE"]);
-  const symbols = info.symbols
-    .filter(
-      (s) =>
-        s.status === "TRADING" &&
-        s.contractType === "PERPETUAL" &&
-        s.quoteAsset === "USDT" &&
-        !excluded.has(s.baseAsset)
-    )
-    .map((s) => s.symbol);
-
-  const tickerMap = Object.fromEntries(tickers.map((t) => [t.symbol, t]));
-  const premiumMap = Object.fromEntries(premiums.map((p) => [p.symbol, p]));
-
-  const candidates = symbols
-    .map((sym) => {
-      const t = tickerMap[sym];
-      if (!t) return null;
-      const vol = +t.quoteVolume || 0;
-      const chg = Math.abs(+t.priceChangePercent || 0);
-      if (vol < 8_000_000 || chg > 22) return null;
+  const candidates = tickers
+    .map((t) => {
+      const turnover = +t.turnover24h || 0;
+      const chg = Math.abs(+t.price24hPcnt || 0) * 100;
+      if (turnover < 5_000_000 || chg > 25) return null;
       return {
-        symbol: sym,
-        base: sym.replace("USDT", ""),
-        volume: vol,
-        change: +t.priceChangePercent,
-        score: Math.log10(Math.max(vol, 1)) * 0.6 + Math.min(chg / 8, 1) * 0.4,
-        mark: +(premiumMap[sym]?.markPrice || t.lastPrice),
-        funding: +(premiumMap[sym]?.lastFundingRate || 0),
+        symbol: t.symbol,
+        base: t.symbol.replace("USDT", ""),
+        volume: turnover,
+        change: (+t.price24hPcnt || 0) * 100,
+        score: Math.log10(Math.max(turnover, 1)) * 0.6 + Math.min(chg / 8, 1) * 0.4,
+        mark: +t.markPrice || +t.lastPrice,
+        funding: +t.fundingRate || 0,
       };
     })
     .filter(Boolean)
@@ -359,26 +318,32 @@ async function main() {
   const signals = [];
   for (const c of candidates) {
     try {
-      const [h1r, m15r, m5r] = await Promise.all([
-        getJson(`${API}/klines?symbol=${c.symbol}&interval=1h&limit=100`),
-        getJson(`${API}/klines?symbol=${c.symbol}&interval=15m&limit=100`),
-        getJson(`${API}/klines?symbol=${c.symbol}&interval=5m&limit=100`),
+      const [h1c, m15c, m5c] = await Promise.all([
+        fetchBybitKlines(c.symbol, "60", 100),
+        fetchBybitKlines(c.symbol, "15", 100),
+        fetchBybitKlines(c.symbol, "5", 100),
       ]);
-      const h1c = parseKlines(h1r);
-      const m15c = parseKlines(m15r);
-      const m5c = parseKlines(m5r);
       const h1 = analyzeTF(h1c, "1H");
       const m15 = analyzeTF(m15c, "15M");
       const m5 = analyzeTF(m5c, "5M");
       const scored = scoreSignal(h1, m15, m5, c.funding);
-      if (!scored) continue;
-      if (scored.probability < MIN_PROB_VALID) continue;
+      if (!scored || scored.probability < MIN_PROB_VALID) continue;
       const levels = buildLevels(m5c, scored, c.mark);
       if (levels.rr < MIN_RR) continue;
       signals.push({
-        base: c.base, symbol: c.symbol, action: scored.action, probability: scored.probability,
-        entry: levels.entry, sl: levels.sl, tp1: levels.tp1, tp2: levels.tp2, rr: levels.rr,
-        h1: scored.h1, m15: scored.m15, m5: scored.m5, change: c.change,
+        base: c.base,
+        symbol: c.symbol,
+        action: scored.action,
+        probability: scored.probability,
+        entry: levels.entry,
+        sl: levels.sl,
+        tp1: levels.tp1,
+        tp2: levels.tp2,
+        rr: levels.rr,
+        h1: scored.h1,
+        m15: scored.m15,
+        m5: scored.m5,
+        change: c.change,
       });
     } catch (e) {
       console.warn(`Skip ${c.base}:`, e.message);
