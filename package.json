@@ -1,0 +1,12 @@
+{
+  "name": "crypto-strict-scanner",
+  "version": "1.0.0",
+  "description": "Strict Quality Crypto Futures Scanner - GitHub Actions",
+  "main": "scanner.js",
+  "scripts": {
+    "scan": "node scanner.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
