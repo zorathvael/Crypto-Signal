@@ -1,10 +1,10 @@
 /**
  * Strict Quality Crypto Futures Scanner
- * Data: Bybit Linear (GitHub Actions cannot reach Binance - HTTP 451)
+ * Data: OKX USDT-SWAP (public, works on GitHub Actions)
  * Alerts: Discord via DISCORD_WEBHOOK secret
  */
 
-const BYBIT = "https://api.bybit.com";
+const OKX = "https://www.okx.com";
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
@@ -22,7 +22,9 @@ function formatPrice(v) {
 }
 
 async function getJson(url) {
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": "StrictCryptoScanner/1.0" },
+  });
   if (!res.ok) throw new Error(`API ${res.status} ${url}`);
   return res.json();
 }
@@ -255,7 +257,7 @@ async function sendDiscord(signals) {
         { name: "5M", value: s.m5.structure, inline: true },
         { name: "Volume", value: s.m5.volume.side, inline: true },
       ],
-      footer: { text: "Strict Scanner · Bybit · GitHub Actions · Risk max 0.75%" },
+      footer: { text: "Strict Scanner · OKX SWAP · GitHub Actions · Risk max 0.75%" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -268,45 +270,62 @@ async function sendDiscord(signals) {
   }
 }
 
-/** Bybit kline: list is newest-first → reverse, drop incomplete last bar after reverse */
-async function fetchBybitKlines(symbol, interval, limit = 100) {
-  const url = `${BYBIT}/v5/market/kline?category=linear&symbol=${symbol}&interval=${interval}&limit=${limit}`;
+/** OKX candles: newest first. bar = 1m,5m,15m,1H,... confirm 0 = incomplete */
+async function fetchOkxCandles(instId, bar, limit = 100) {
+  const url = `${OKX}/api/v5/market/candles?instId=${encodeURIComponent(instId)}&bar=${bar}&limit=${limit}`;
   const data = await getJson(url);
-  const list = data?.result?.list || [];
+  const list = data?.data || [];
   const candles = list
+    .filter((r) => r[8] === "1" || r[8] === 1 || r[8] === "0") // keep; drop forming below
     .map((r) => ({
       open: +r[1],
       high: +r[2],
       low: +r[3],
       close: +r[4],
       volume: +r[5],
+      confirm: String(r[8]),
     }))
     .reverse();
-  // drop last (possibly forming)
-  return candles.length > 1 ? candles.slice(0, -1) : candles;
+  // drop last if incomplete
+  if (candles.length && candles[candles.length - 1].confirm === "0") candles.pop();
+  return candles;
+}
+
+async function fetchFunding(instId) {
+  try {
+    const data = await getJson(`${OKX}/api/v5/public/funding-rate?instId=${encodeURIComponent(instId)}`);
+    return +(data?.data?.[0]?.fundingRate || 0);
+  } catch {
+    return 0;
+  }
 }
 
 async function main() {
-  console.log("=== Strict Crypto Scanner (Bybit + GitHub Actions) ===");
+  console.log("=== Strict Crypto Scanner (OKX SWAP + GitHub Actions) ===");
   console.log(new Date().toISOString());
-  console.log("Discord secret:", DISCORD_WEBHOOK ? "YES" : "NO (set DISCORD_WEBHOOK in repo secrets)");
+  console.log("Discord secret:", DISCORD_WEBHOOK ? "YES" : "NO");
 
-  const tickersRes = await getJson(`${BYBIT}/v5/market/tickers?category=linear`);
-  const tickers = (tickersRes?.result?.list || []).filter((t) => t.symbol.endsWith("USDT"));
+  const tickersRes = await getJson(`${OKX}/api/v5/market/tickers?instType=SWAP`);
+  const tickers = (tickersRes?.data || []).filter((t) => t.instId.endsWith("-USDT-SWAP"));
 
   const candidates = tickers
     .map((t) => {
-      const turnover = +t.turnover24h || 0;
-      const chg = Math.abs(+t.price24hPcnt || 0) * 100;
-      if (turnover < 5_000_000 || chg > 25) return null;
+      const last = +t.last || 0;
+      const open = +t.open24h || last;
+      const baseVol = +t.volCcy24h || 0;
+      const turnover = baseVol * last; // approx quote volume
+      const chg = open ? ((last - open) / open) * 100 : 0;
+      if (turnover < 3_000_000 || Math.abs(chg) > 25) return null;
+      // skip weird leveraged tokens
+      const base = t.instId.replace("-USDT-SWAP", "");
+      if (/^[0-9]/.test(base) || base.includes("UP") || base.includes("DOWN")) return null;
       return {
-        symbol: t.symbol,
-        base: t.symbol.replace("USDT", ""),
+        instId: t.instId,
+        base,
         volume: turnover,
-        change: (+t.price24hPcnt || 0) * 100,
-        score: Math.log10(Math.max(turnover, 1)) * 0.6 + Math.min(chg / 8, 1) * 0.4,
-        mark: +t.markPrice || +t.lastPrice,
-        funding: +t.fundingRate || 0,
+        change: chg,
+        score: Math.log10(Math.max(turnover, 1)) * 0.6 + Math.min(Math.abs(chg) / 8, 1) * 0.4,
+        mark: last,
       };
     })
     .filter(Boolean)
@@ -318,21 +337,22 @@ async function main() {
   const signals = [];
   for (const c of candidates) {
     try {
-      const [h1c, m15c, m5c] = await Promise.all([
-        fetchBybitKlines(c.symbol, "60", 100),
-        fetchBybitKlines(c.symbol, "15", 100),
-        fetchBybitKlines(c.symbol, "5", 100),
+      const [h1c, m15c, m5c, funding] = await Promise.all([
+        fetchOkxCandles(c.instId, "1H", 100),
+        fetchOkxCandles(c.instId, "15m", 100),
+        fetchOkxCandles(c.instId, "5m", 100),
+        fetchFunding(c.instId),
       ]);
       const h1 = analyzeTF(h1c, "1H");
       const m15 = analyzeTF(m15c, "15M");
       const m5 = analyzeTF(m5c, "5M");
-      const scored = scoreSignal(h1, m15, m5, c.funding);
+      const scored = scoreSignal(h1, m15, m5, funding);
       if (!scored || scored.probability < MIN_PROB_VALID) continue;
       const levels = buildLevels(m5c, scored, c.mark);
       if (levels.rr < MIN_RR) continue;
       signals.push({
         base: c.base,
-        symbol: c.symbol,
+        symbol: c.instId,
         action: scored.action,
         probability: scored.probability,
         entry: levels.entry,
