@@ -1,11 +1,13 @@
 /**
  * Strict Quality Crypto Futures Scanner
- * Data: OKX USDT-SWAP (public, works on GitHub Actions)
- * Alerts: Discord via DISCORD_WEBHOOK secret
+ * Data: OKX USDT-SWAP
+ * Alerts: Discord + Telegram channel
  */
 
 const OKX = "https://www.okx.com";
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 2.0;
@@ -231,6 +233,56 @@ function buildLevels(candles, signal, mark) {
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
   return { entry, sl, tp1, tp2, rr };
 }
+
+function formatTelegramMessage(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
+  const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
+  return (
+    `${tag} · <b>${s.base}</b> ${arrow}\n` +
+    `\n` +
+    `📊 Probability: <b>${s.probability}%</b>\n` +
+    `🎯 Entry: <code>${formatPrice(s.entry)}</code>\n` +
+    `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
+    `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
+    `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}\n` +
+    `\n` +
+    `1H: ${s.h1.structure} · 5M: ${s.m5.structure} · Vol: ${s.m5.volume.side}\n` +
+    `\n` +
+    `<i>Strict Scanner · OKX · Risk max 0.75% · Not financial advice</i>`
+  );
+}
+
+async function sendTelegram(signals) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.log("No TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID — skip Telegram");
+    return;
+  }
+  if (!signals.length) return;
+
+  for (const s of signals) {
+    const text = formatTelegramMessage(s);
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) {
+      console.error("Telegram failed:", res.status, JSON.stringify(body));
+    } else {
+      console.log(`Telegram sent: ${s.base} ${s.action} ${s.probability}%`);
+    }
+  }
+}
+
 async function sendDiscord(signals) {
   if (!DISCORD_WEBHOOK) {
     console.log("No DISCORD_WEBHOOK secret — skip Discord");
@@ -257,7 +309,7 @@ async function sendDiscord(signals) {
         { name: "5M", value: s.m5.structure, inline: true },
         { name: "Volume", value: s.m5.volume.side, inline: true },
       ],
-      footer: { text: "Strict Scanner · OKX SWAP · GitHub Actions · Risk max 0.75%" },
+      footer: { text: "Strict Scanner · OKX SWAP · Risk max 0.75%" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -270,13 +322,12 @@ async function sendDiscord(signals) {
   }
 }
 
-/** OKX candles: newest first. bar = 1m,5m,15m,1H,... confirm 0 = incomplete */
 async function fetchOkxCandles(instId, bar, limit = 100) {
   const url = `${OKX}/api/v5/market/candles?instId=${encodeURIComponent(instId)}&bar=${bar}&limit=${limit}`;
   const data = await getJson(url);
   const list = data?.data || [];
   const candles = list
-    .filter((r) => r[8] === "1" || r[8] === 1 || r[8] === "0") // keep; drop forming below
+    .filter((r) => r[8] === "1" || r[8] === 1 || r[8] === "0")
     .map((r) => ({
       open: +r[1],
       high: +r[2],
@@ -286,7 +337,6 @@ async function fetchOkxCandles(instId, bar, limit = 100) {
       confirm: String(r[8]),
     }))
     .reverse();
-  // drop last if incomplete
   if (candles.length && candles[candles.length - 1].confirm === "0") candles.pop();
   return candles;
 }
@@ -301,9 +351,10 @@ async function fetchFunding(instId) {
 }
 
 async function main() {
-  console.log("=== Strict Crypto Scanner (OKX SWAP + GitHub Actions) ===");
+  console.log("=== Strict Crypto Scanner (OKX + Discord + Telegram) ===");
   console.log(new Date().toISOString());
-  console.log("Discord secret:", DISCORD_WEBHOOK ? "YES" : "NO");
+  console.log("Discord:", DISCORD_WEBHOOK ? "YES" : "NO");
+  console.log("Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO");
 
   const tickersRes = await getJson(`${OKX}/api/v5/market/tickers?instType=SWAP`);
   const tickers = (tickersRes?.data || []).filter((t) => t.instId.endsWith("-USDT-SWAP"));
@@ -313,10 +364,9 @@ async function main() {
       const last = +t.last || 0;
       const open = +t.open24h || last;
       const baseVol = +t.volCcy24h || 0;
-      const turnover = baseVol * last; // approx quote volume
+      const turnover = baseVol * last;
       const chg = open ? ((last - open) / open) * 100 : 0;
       if (turnover < 3_000_000 || Math.abs(chg) > 25) return null;
-      // skip weird leveraged tokens
       const base = t.instId.replace("-USDT-SWAP", "");
       if (/^[0-9]/.test(base) || base.includes("UP") || base.includes("DOWN")) return null;
       return {
@@ -373,7 +423,9 @@ async function main() {
   signals.sort((a, b) => b.probability - a.probability);
   console.log(`High quality signals: ${signals.length}`);
   signals.forEach((s) => console.log(`  ${s.base} ${s.action} ${s.probability}% R:R 1:${s.rr.toFixed(1)}`));
+
   await sendDiscord(signals);
+  await sendTelegram(signals);
   console.log("Done.");
 }
 
