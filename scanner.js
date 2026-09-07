@@ -12,7 +12,7 @@ const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 2.0;
 const CANDIDATE_LIMIT = 36;
-const SQUARE_POST_COUNT = 3; // selalu target 3 koin top Valid+ ke Square (setiap run)
+const SQUARE_POST_COUNT = 3;
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -322,6 +322,7 @@ function formatSquareMessage(s) {
     s.setup === "SQUEEZE" ? "Squeeze Breakout" : "Trend Continuation";
   const bias1h = s.h1.bias || "—";
   const bias15 = s.m15.bias || "—";
+  // Max 3 hashtags (Binance Square API limit)
   return (
     `📊 Market Signal · ${s.base}/USDT\n` +
     `\n` +
@@ -343,9 +344,9 @@ function formatSquareMessage(s) {
     `Volume: ${s.m5.volume.side} · RSI: ${Number(s.m5.rsi).toFixed(0)}\n` +
     `\n` +
     `Risk management: max 0.75% equity per idea.\n` +
-    `This is educational market analysis, not financial advice.\n` +
+    `Educational analysis only — not financial advice.\n` +
     `\n` +
-    `#${s.base} #Crypto #Futures #Trading #MarketAnalysis #${s.action}`
+    `#Crypto #Futures #${s.action}`
   );
 }
 
@@ -354,7 +355,6 @@ async function sendBinanceSquare(signals) {
     console.log("Binance Square: skip (no BINANCE_SQUARE_OPENAPI_KEY)");
     return;
   }
-  // Top 3 Valid+ (≥75%), sorted by confidence — applies every run
   const ranked = [...signals]
     .filter((s) => s.probability >= MIN_PROB_VALID)
     .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
@@ -367,7 +367,9 @@ async function sendBinanceSquare(signals) {
     console.log(`Binance Square: only ${premium.length}/${SQUARE_POST_COUNT} Valid+ available (posting all)`);
   }
   console.log(`Binance Square batch: ${premium.length} coin(s) → ${premium.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")}`);
-  for (const s of premium) {
+  for (let i = 0; i < premium.length; i++) {
+    const s = premium[i];
+    if (i > 0) await new Promise((r) => setTimeout(r, 1500));
     try {
       const res = await fetch(
         "https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add",
@@ -429,7 +431,9 @@ async function sendDiscord(signals) {
     console.log("No high-quality signals");
     return;
   }
-  for (const s of signals) {
+  for (let i = 0; i < signals.length; i++) {
+    const s = signals[i];
+    if (i > 0) await new Promise((r) => setTimeout(r, 400));
     const isSniper = s.probability >= MIN_PROB_SNIPER;
     const color = s.action === "LONG" ? 0x35ef9a : 0xff5c7a;
     const embed = {
