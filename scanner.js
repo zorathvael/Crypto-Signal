@@ -1,6 +1,6 @@
 /**
  * Strict Quality Futures Scanner v2.2
- * Discord + Telegram (all Valid+) + Binance Square (top 3 Valid+)
+ * Discord + Telegram (all Valid+) + Binance Square (1 post = top 3 coins)
  */
 
 const OKX = "https://www.okx.com";
@@ -12,7 +12,7 @@ const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 2.0;
 const CANDIDATE_LIMIT = 36;
-const SQUARE_POST_COUNT = 3;
+const SQUARE_POST_COUNT = 3; // selalu target 3 koin top Valid+ ke Square (setiap run)
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -315,39 +315,34 @@ function formatTelegramMessage(s) {
   );
 }
 
-function formatSquareMessage(s) {
-  const side = s.action === "LONG" ? "LONG 🟢" : "SHORT 🔴";
-  const setupLabel =
-    s.setup === "MEAN_REV" ? "Mean Reversion" :
-    s.setup === "SQUEEZE" ? "Squeeze Breakout" : "Trend Continuation";
-  const bias1h = s.h1.bias || "—";
-  const bias15 = s.m15.bias || "—";
-  // Max 3 hashtags (Binance Square API limit)
+function formatSquareCoinBlock(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const tag = isSniper ? "SNIPER" : "VALID";
+  const side = s.action === "LONG" ? "LONG" : "SHORT";
+  const sideMark = s.action === "LONG" ? "🟢" : "🔴";
   return (
-    `📊 Market Signal · ${s.base}/USDT\n` +
+    `${tag} · ${s.base} ${sideMark} ${side}\n` +
     `\n` +
-    `Direction: ${side}\n` +
-    `Confidence: ${s.probability}%\n` +
-    `Setup: ${setupLabel}\n` +
-    `\n` +
-    `—— Trade Plan ——\n` +
+    `Probabilitas: ${s.probability}%\n` +
+    `Setup: ${s.setup}\n` +
     `Entry: ${formatPrice(s.entry)}\n` +
-    `Stop Loss: ${formatPrice(s.sl)}\n` +
-    `Take Profit 1: ${formatPrice(s.tp1)}\n` +
-    `Take Profit 2: ${formatPrice(s.tp2)}\n` +
-    `Risk : Reward ≈ 1:${s.rr.toFixed(1)}\n` +
+    `SL: ${formatPrice(s.sl)}\n` +
+    `TP1: ${formatPrice(s.tp1)}\n` +
+    `TP2: ${formatPrice(s.tp2)}\n` +
+    `R:R 1:${s.rr.toFixed(1)}\n` +
     `\n` +
-    `—— Confluence ——\n` +
-    `1H structure: ${s.h1.structure} (${bias1h})\n` +
-    `15M bias: ${bias15}\n` +
-    `5M structure: ${s.m5.structure}\n` +
-    `Volume: ${s.m5.volume.side} · RSI: ${Number(s.m5.rsi).toFixed(0)}\n` +
-    `\n` +
-    `Risk management: max 0.75% equity per idea.\n` +
-    `Educational analysis only — not financial advice.\n` +
-    `\n` +
-    `#Crypto #Futures #${s.action}`
+    `1H ${s.h1.structure} · 15M ${s.m15.bias} · 5M ${s.m5.structure}\n` +
+    `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}`
   );
+}
+
+function formatSquareBatchMessage(coins) {
+  const header = "Sinyal Ketat Kripto\n";
+  const body = coins.map((s) => formatSquareCoinBlock(s)).join("\n\n————————————\n\n");
+  const footer =
+    "\n\nRisk max 0.75% per ide · Analisis edukasi, bukan saran finansial.\n" +
+    "#Crypto #Futures #Trading";
+  return header + "\n" + body + footer;
 }
 
 async function sendBinanceSquare(signals) {
@@ -355,47 +350,52 @@ async function sendBinanceSquare(signals) {
     console.log("Binance Square: skip (no BINANCE_SQUARE_OPENAPI_KEY)");
     return;
   }
+  // Satu post = top 3 Valid+ (bukan 3 post terpisah)
   const ranked = [...signals]
     .filter((s) => s.probability >= MIN_PROB_VALID)
     .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
-  const premium = ranked.slice(0, SQUARE_POST_COUNT);
-  if (!premium.length) {
+  const batch = ranked.slice(0, SQUARE_POST_COUNT);
+  if (!batch.length) {
     console.log("Binance Square: no Valid signals this run");
     return;
   }
-  if (premium.length < SQUARE_POST_COUNT) {
-    console.log(`Binance Square: only ${premium.length}/${SQUARE_POST_COUNT} Valid+ available (posting all)`);
+  if (batch.length < SQUARE_POST_COUNT) {
+    console.log(`Binance Square: only ${batch.length}/${SQUARE_POST_COUNT} Valid+ available`);
   }
-  console.log(`Binance Square batch: ${premium.length} coin(s) → ${premium.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")}`);
-  for (let i = 0; i < premium.length; i++) {
-    const s = premium[i];
-    if (i > 0) await new Promise((r) => setTimeout(r, 1500));
-    try {
-      const res = await fetch(
-        "https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add",
-        {
-          method: "POST",
-          headers: {
-            "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
-            "Content-Type": "application/json",
-            clienttype: "binanceSkill",
-          },
-          body: JSON.stringify({ bodyTextOnly: formatSquareMessage(s) }),
-        }
-      );
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || String(payload.code) !== "000000") {
-        console.error("Binance Square failed:", res.status, payload.code, payload.message || JSON.stringify(payload));
-      } else {
-        const id = payload.data?.id;
-        console.log(
-          `Binance Square sent: ${s.base} ${s.action} ${s.probability}%` +
-            (id ? ` → https://www.binance.com/square/post/${id}` : "")
-        );
+  console.log(
+    `Binance Square 1 post · ${batch.length} coin(s) → ` +
+      batch.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")
+  );
+  try {
+    const res = await fetch(
+      "https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add",
+      {
+        method: "POST",
+        headers: {
+          "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
+          "Content-Type": "application/json",
+          clienttype: "binanceSkill",
+        },
+        body: JSON.stringify({ bodyTextOnly: formatSquareBatchMessage(batch) }),
       }
-    } catch (e) {
-      console.error("Binance Square error:", e.message);
+    );
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || String(payload.code) !== "000000") {
+      console.error(
+        "Binance Square failed:",
+        res.status,
+        payload.code,
+        payload.message || JSON.stringify(payload)
+      );
+    } else {
+      const id = payload.data?.id;
+      console.log(
+        `Binance Square sent (${batch.length} coins)` +
+          (id ? ` → https://www.binance.com/square/post/${id}` : "")
+      );
     }
+  } catch (e) {
+    console.error("Binance Square error:", e.message);
   }
 }
 
@@ -486,7 +486,7 @@ async function fetchFunding(instId) {
 }
 
 async function main() {
-  console.log("=== Strict Scanner v2.2 (Discord + Telegram + Binance Square x3) ===");
+  console.log("=== Strict Scanner v2.2 (Discord + Telegram + Square 1×3) ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
