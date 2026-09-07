@@ -2,9 +2,10 @@ name: Strict Crypto Scanner
 
 on:
   schedule:
-    # Otomatis 24/7 — tiap jam di menit 0 dan 45 (UTC)
-    # ≈ setiap 45 menit tanpa aksi manual
-    - cron: "0,45 * * * *"
+    # Dua baris terpisah = lebih stabil di GitHub Actions ketimbang "0,45"
+    # Tiap jam menit 0 dan 45 (UTC) = 24/7 tanpa manual
+    - cron: "0 * * * *"
+    - cron: "45 * * * *"
   workflow_dispatch:
 
 jobs:
