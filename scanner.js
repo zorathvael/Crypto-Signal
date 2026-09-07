@@ -1,6 +1,6 @@
 /**
  * Strict Quality Futures Scanner v2.1
- * Discord + Telegram + Binance Square
+ * Discord + Telegram + Binance Square (SNIPER only)
  */
 
 const OKX = "https://www.okx.com";
@@ -315,21 +315,36 @@ function formatTelegramMessage(s) {
 }
 
 function formatSquareMessage(s) {
-  const isSniper = s.probability >= MIN_PROB_SNIPER;
-  const tag = isSniper ? "SNIPER" : "VALID";
+  const side = s.action === "LONG" ? "LONG 🟢" : "SHORT 🔴";
+  const setupLabel =
+    s.setup === "MEAN_REV" ? "Mean Reversion" :
+    s.setup === "SQUEEZE" ? "Squeeze Breakout" : "Trend Continuation";
+  const bias1h = s.h1.bias || "—";
+  const bias15 = s.m15.bias || "—";
   return (
-    `${tag} · ${s.base} ${s.action}\n\n` +
-    `Probability: ${s.probability}%\n` +
-    `Setup: ${s.setup}\n` +
+    `📊 Market Signal · ${s.base}/USDT\n` +
+    `\n` +
+    `Direction: ${side}\n` +
+    `Confidence: ${s.probability}%\n` +
+    `Setup: ${setupLabel}\n` +
+    `\n` +
+    `—— Trade Plan ——\n` +
     `Entry: ${formatPrice(s.entry)}\n` +
-    `SL: ${formatPrice(s.sl)}\n` +
-    `TP1: ${formatPrice(s.tp1)}\n` +
-    `TP2: ${formatPrice(s.tp2)}\n` +
-    `R:R 1:${s.rr.toFixed(1)}\n\n` +
-    `1H ${s.h1.structure} · 15M ${s.m15.bias} · 5M ${s.m5.structure}\n` +
-    `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
-    `Strict Scanner · Risk max 0.75% · NFA\n` +
-    `#crypto #futures #${s.base} #${s.action}`
+    `Stop Loss: ${formatPrice(s.sl)}\n` +
+    `Take Profit 1: ${formatPrice(s.tp1)}\n` +
+    `Take Profit 2: ${formatPrice(s.tp2)}\n` +
+    `Risk : Reward ≈ 1:${s.rr.toFixed(1)}\n` +
+    `\n` +
+    `—— Confluence ——\n` +
+    `1H structure: ${s.h1.structure} (${bias1h})\n` +
+    `15M bias: ${bias15}\n` +
+    `5M structure: ${s.m5.structure}\n` +
+    `Volume: ${s.m5.volume.side} · RSI: ${Number(s.m5.rsi).toFixed(0)}\n` +
+    `\n` +
+    `Risk management: max 0.75% equity per idea.\n` +
+    `This is educational market analysis, not financial advice.\n` +
+    `\n` +
+    `#${s.base} #Crypto #Futures #Trading #MarketAnalysis #${s.action}`
   );
 }
 
@@ -338,8 +353,14 @@ async function sendBinanceSquare(signals) {
     console.log("Binance Square: skip (no BINANCE_SQUARE_OPENAPI_KEY)");
     return;
   }
-  if (!signals.length) return;
-  for (const s of signals) {
+  // Square = SNIPER only (≥82%) → fewer, cleaner posts for creator rewards
+  // Telegram keeps Valid + SNIPER for volume / followers
+  const premium = signals.filter((s) => s.probability >= MIN_PROB_SNIPER);
+  if (!premium.length) {
+    console.log("Binance Square: no SNIPER signals this run");
+    return;
+  }
+  for (const s of premium) {
     try {
       const res = await fetch(
         "https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add",
