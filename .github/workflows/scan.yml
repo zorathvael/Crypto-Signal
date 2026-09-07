@@ -2,7 +2,8 @@ name: Strict Crypto Scanner
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    # Setiap 30 menit (UTC)
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -24,4 +25,5 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
         run: node scanner.js
