@@ -1,7 +1,10 @@
 /**
- * Strict Quality Crypto Futures Scanner
- * Data: OKX USDT-SWAP
- * Alerts: Discord + Telegram channel
+ * Strict Quality Futures Scanner v2
+ * - Direction FIRST, then confidence (fixes inverted LONG/SHORT)
+ * - Multi-TF lock (1H + 15M agree) to reduce flip-flop
+ * - Wider universe (top 24 liquid)
+ * - Trend / Mean-reversion / Squeeze-break setups
+ * - Clean alerts (no exchange name)
  */
 
 const OKX = "https://www.okx.com";
@@ -11,9 +14,10 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 2.0;
+const CANDIDATE_LIMIT = 24;
 
-const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
-const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 
 function formatPrice(v) {
   if (!Number.isFinite(v)) return "—";
@@ -25,9 +29,9 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCryptoScanner/1.0" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCryptoScanner/2.0" },
   });
-  if (!res.ok) throw new Error(`API ${res.status} ${url}`);
+  if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
 
@@ -83,11 +87,20 @@ function rsi(values, period = 14) {
   }
   return out;
 }
+function macdHist(closes, fast = 12, slow = 26, signal = 9) {
+  const ef = ema(closes, fast);
+  const es = ema(closes, slow);
+  const line = closes.map((_, i) => (ef[i] != null && es[i] != null ? ef[i] - es[i] : null));
+  const valid = line.map((v) => (v == null ? 0 : v));
+  const sig = ema(valid, signal);
+  const hist = line.map((v, i) => (v != null && sig[i] != null ? v - sig[i] : null));
+  return hist;
+}
 function atr(candles, period = 14) {
   const ranges = candles.map((c, i) => {
     if (!i) return c.high - c.low;
-    const prev = candles[i - 1].close;
-    return Math.max(c.high - c.low, Math.abs(c.high - prev), Math.abs(c.low - prev));
+    const p = candles[i - 1].close;
+    return Math.max(c.high - c.low, Math.abs(c.high - p), Math.abs(c.low - p));
   });
   if (ranges.length < period) return null;
   let v = mean(ranges.slice(0, period));
@@ -97,17 +110,18 @@ function atr(candles, period = 14) {
 function volumeAnalysis(candles) {
   const cur = candles.at(-1);
   const recent = candles.slice(-12);
-  const base = mean(candles.slice(-25, -1).map((c) => c.volume));
+  const base = mean(candles.slice(-30, -1).map((c) => c.volume)) || 1;
   const buy = recent.reduce((s, c) => s + (c.close > c.open ? c.volume : 0), 0);
   const sell = recent.reduce((s, c) => s + (c.close <= c.open ? c.volume : 0), 0);
   const pressure = ((buy - sell) / (buy + sell || 1)) * 100;
-  const recentAvg = mean(recent.slice(-3).map((c) => c.volume));
-  const spike = cur.volume >= base * 1.5 || recentAvg >= base * 1.4;
-  return { pressure, spike, side: pressure > 10 ? "BUY" : pressure < -10 ? "SELL" : "BALANCED" };
+  const recentAvg = mean(recent.slice(-4).map((c) => c.volume));
+  const spike = cur.volume >= base * 1.35 || recentAvg >= base * 1.25;
+  return { pressure, spike, side: pressure > 8 ? "BUY" : pressure < -8 ? "SELL" : "BALANCED", base };
 }
 function detectReversal(candles) {
   const last = candles.at(-1);
   const prev = candles.at(-2);
+  if (!last || !prev) return { bias: "neutral", quality: 0, name: "None" };
   const body = Math.abs(last.close - last.open);
   const range = Math.max(last.high - last.low, 1e-12);
   const uw = last.high - Math.max(last.open, last.close);
@@ -116,118 +130,229 @@ function detectReversal(candles) {
     return { bias: "bullish", quality: 0.95, name: "Bullish Engulfing" };
   if (prev.close > prev.open && last.close < last.open && last.open >= prev.close && last.close <= prev.open)
     return { bias: "bearish", quality: 0.95, name: "Bearish Engulfing" };
-  if (lw >= body * 2.2 && uw <= body * 0.7 && last.close > last.open)
+  if (lw >= body * 2.0 && uw <= body * 0.75 && last.close >= last.open)
     return { bias: "bullish", quality: 0.85, name: "Hammer" };
-  if (uw >= body * 2.2 && lw <= body * 0.7 && last.close < last.open)
-    return { bias: "bearish", quality: 0.85, name: "Rejection" };
-  if (lw >= range * 0.6 && last.close >= last.open) return { bias: "bullish", quality: 0.8, name: "Pin Bar" };
-  if (uw >= range * 0.6 && last.close <= last.open) return { bias: "bearish", quality: 0.8, name: "Pin Bar" };
+  if (uw >= body * 2.0 && lw <= body * 0.75 && last.close <= last.open)
+    return { bias: "bearish", quality: 0.85, name: "Shooting Star" };
+  if (lw >= range * 0.58 && last.close >= last.open) return { bias: "bullish", quality: 0.8, name: "Pin Bar" };
+  if (uw >= range * 0.58 && last.close <= last.open) return { bias: "bearish", quality: 0.8, name: "Pin Bar" };
   return { bias: "neutral", quality: 0, name: "None" };
 }
+function marketStructure(candles) {
+  const n = candles.length;
+  if (n < 30) return { trend: "chop", hh: false, ll: false, hl: false, lh: false };
+  const leg = candles.slice(-20);
+  const mid = Math.floor(leg.length / 2);
+  const first = leg.slice(0, mid);
+  const second = leg.slice(mid);
+  const hi1 = Math.max(...first.map((c) => c.high));
+  const hi2 = Math.max(...second.map((c) => c.high));
+  const lo1 = Math.min(...first.map((c) => c.low));
+  const lo2 = Math.min(...second.map((c) => c.low));
+  const hh = hi2 > hi1;
+  const ll = lo2 < lo1;
+  const hl = lo2 > lo1;
+  const lh = hi2 < hi1;
+  let trend = "chop";
+  if (hh && hl) trend = "up";
+  else if (ll && lh) trend = "down";
+  return { trend, hh, ll, hl, lh };
+}
+
 function analyzeTF(candles, label) {
   if (!candles || candles.length < 60) return null;
   const closes = candles.map((c) => c.close);
-  const bands = bollinger(closes);
-  const rsiV = rsi(closes);
+  const bands = bollinger(closes, 20, 2);
+  const rsiV = rsi(closes, 14);
+  const hist = macdHist(closes);
   const ema9 = ema(closes, 9);
   const ema21 = ema(closes, 21);
+  const ema50 = ema(closes, 50);
   const idx = candles.length - 1;
   const last = candles[idx];
   const mid = bands.middle[idx], up = bands.upper[idx], lo = bands.lower[idx], w = bands.width[idx];
-  const widths = bands.width.slice(-60).filter((v) => v != null).sort((a, b) => a - b);
-  const sqThresh = widths[Math.floor(widths.length * 0.25)] || w;
-  const recentW = bands.width.slice(-20).filter((v) => v != null);
-  const squeeze20 = recentW.length >= 20 && w <= Math.min(...recentW);
-  const squeeze = w <= sqThresh || squeeze20;
+  const widths = bands.width.filter((v) => v != null);
+  const recentW = widths.slice(-20);
+  const sortedW = [...widths.slice(-60)].sort((a, b) => a - b);
+  const sqThresh = sortedW[Math.floor(sortedW.length * 0.25)] || w;
+  const squeeze = (w != null && w <= sqThresh) || (recentW.length >= 15 && w <= Math.min(...recentW) * 1.05);
   const pos = clamp(((last.close - lo) / Math.max(up - lo, 1e-12)) * 100, 0, 100);
-  const emaBull = ema9[idx] > ema21[idx];
-  const emaBear = ema9[idx] < ema21[idx];
+  const e9 = ema9[idx], e21 = ema21[idx], e50 = ema50[idx];
+  const emaBull = e9 > e21 && (e50 == null || e21 > e50 * 0.998);
+  const emaBear = e9 < e21 && (e50 == null || e21 < e50 * 1.002);
   const vol = volumeAnalysis(candles);
   const rev = detectReversal(candles);
-  const touchLo = last.low <= lo * 1.002 || last.close <= lo * 1.004;
-  const touchUp = last.high >= up * 0.998 || last.close >= up * 0.996;
-  const recentLo = candles.slice(-21, -1).map((c) => c.low);
-  const recentHi = candles.slice(-21, -1).map((c) => c.high);
-  const support = Math.min(...recentLo), resist = Math.max(...recentHi);
-  const nearSup = last.low <= support * 1.002;
-  const nearRes = last.high >= resist * 0.998;
-  const bias = pos < 32 ? "bullish" : pos > 68 ? "bearish" : emaBull ? "bullish" : emaBear ? "bearish" : "neutral";
-  const structure = squeeze ? "SQUEEZE" : pos <= 8 ? "NEAR LOWER" : pos >= 92 ? "NEAR UPPER" : "RANGE";
+  const ms = marketStructure(candles);
+  const macdNow = hist[idx];
+  const macdPrev = hist[idx - 1];
+  const macdUp = macdNow != null && macdPrev != null && macdNow > macdPrev;
+  const macdDown = macdNow != null && macdPrev != null && macdNow < macdPrev;
+  const touchLo = last.low <= lo * 1.003 || last.close <= lo * 1.005;
+  const touchUp = last.high >= up * 0.997 || last.close >= up * 0.995;
+  const swingLo = Math.min(...candles.slice(-21, -1).map((c) => c.low));
+  const swingHi = Math.max(...candles.slice(-21, -1).map((c) => c.high));
+  const nearSup = last.low <= swingLo * 1.003;
+  const nearRes = last.high >= swingHi * 0.997;
+
+  // Directional bias for THIS timeframe (not a global probability)
+  let biasScore = 0; // -100 bear .. +100 bull
+  if (emaBull) biasScore += 25;
+  if (emaBear) biasScore -= 25;
+  if (ms.trend === "up") biasScore += 20;
+  if (ms.trend === "down") biasScore -= 20;
+  if (last.close > mid) biasScore += 10;
+  if (last.close < mid) biasScore -= 10;
+  if (macdNow > 0) biasScore += 8;
+  if (macdNow < 0) biasScore -= 8;
+  if (macdUp) biasScore += 7;
+  if (macdDown) biasScore -= 7;
+  if (rsiV[idx] > 55) biasScore += 5;
+  if (rsiV[idx] < 45) biasScore -= 5;
+  if (vol.pressure > 12) biasScore += 8;
+  if (vol.pressure < -12) biasScore -= 8;
+  biasScore = clamp(biasScore, -100, 100);
+
+  const bias = biasScore >= 18 ? "bullish" : biasScore <= -18 ? "bearish" : "neutral";
+  const structure = squeeze ? "SQUEEZE" : pos <= 12 ? "NEAR LOWER" : pos >= 88 ? "NEAR UPPER" : "RANGE";
+
   return {
-    label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, structure,
+    label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
     emaBull, emaBear, priceAboveMid: last.close > mid, priceBelowMid: last.close < mid,
-    rsi: rsiV[idx], volume: vol, reversal: rev, touchLower: touchLo, touchUpper: touchUp,
-    nearSupport: nearSup, nearResistance: nearRes,
-    meanLong: touchLo && rev.quality >= 0.75 && rsiV[idx] < 32 && nearSup,
-    meanShort: touchUp && rev.quality >= 0.75 && rsiV[idx] > 68 && nearRes,
+    rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown, macdNow,
+    touchLower: touchLo, touchUpper: touchUp, nearSupport: nearSup, nearResistance: nearRes,
+    meanLong: touchLo && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 35,
+    meanShort: touchUp && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 65,
   };
 }
+
+/**
+ * Direction first → then confidence for THAT direction only.
+ * Fixes the old bug where SHORT needed low "prob" and failed MIN 75.
+ */
 function scoreSignal(h1, m15, m5, funding) {
   if (!h1 || !m15 || !m5) return null;
-  const majorBull = h1.bias === "bullish" && h1.emaBull && h1.priceAboveMid;
-  const majorBear = h1.bias === "bearish" && h1.emaBear && h1.priceBelowMid;
-  if (!m5.volume.spike && Math.abs(m5.volume.pressure) < 10) return null;
-  let s1 = 40;
-  if (majorBull) s1 = 92;
-  else if (h1.bias === "bullish" && h1.emaBull) s1 = 72;
-  else if (h1.bias === "bullish") s1 = 55;
-  else if (majorBear) s1 = 8;
-  else if (h1.bias === "bearish" && h1.emaBear) s1 = 28;
-  else if (h1.bias === "bearish") s1 = 45;
-  let s15 = 45;
-  if (m15.bias === "bullish" || (m15.structure === "RANGE" && m15.position < 40)) s15 = 78;
-  else if (m15.bias === "bearish" || (m15.structure === "RANGE" && m15.position > 60)) s15 = 22;
-  if (m15.structure === "SQUEEZE") s15 = 55;
-  let s5 = 40;
-  if (m5.meanLong) s5 = 90;
-  else if (m5.meanShort) s5 = 10;
-  else if (m5.squeeze && m5.volume.spike && m5.volume.pressure > 10) s5 = 82;
-  else if (m5.squeeze && m5.volume.spike && m5.volume.pressure < -10) s5 = 18;
-  else if (m5.emaBull) s5 = 65;
-  else if (m5.emaBear) s5 = 35;
-  let sVol = 40;
-  if (m5.volume.spike && m5.volume.pressure > 15) sVol = 88;
-  else if (m5.volume.spike && m5.volume.pressure > 8) sVol = 70;
-  else if (m5.volume.spike && m5.volume.pressure < -15) sVol = 12;
-  else if (m5.volume.spike && m5.volume.pressure < -8) sVol = 30;
-  if (funding < -0.0004) sVol = Math.min(95, sVol + 12);
-  if (funding > 0.0004) sVol = Math.max(5, sVol - 12);
-  let sMom = 45;
-  if (m5.rsi < 28) sMom = 78;
-  if (m5.rsi > 72) sMom = 22;
-  let sStruct = 50;
-  if (m5.squeeze || m15.squeeze) sStruct = 70;
-  if (h1.structure === "NEAR UPPER" && majorBull) sStruct = 80;
-  if (h1.structure === "NEAR LOWER" && majorBear) sStruct = 20;
-  const prob = clamp(s1 * 0.28 + s15 * 0.15 + s5 * 0.24 + sVol * 0.18 + sMom * 0.1 + sStruct * 0.05, 0, 100);
-  let direction = "NEUTRAL";
-  if (prob >= 62 && majorBull) direction = "BULLISH";
-  if (prob <= 38 && majorBear) direction = "BEARISH";
-  if (direction === "BULLISH" && !majorBull) direction = "NEUTRAL";
-  if (direction === "BEARISH" && !majorBear) direction = "NEUTRAL";
-  if (direction === "NEUTRAL") return null;
-  return { direction, action: direction === "BULLISH" ? "LONG" : "SHORT", probability: Math.round(prob), h1, m15, m5 };
+
+  // --- 1) Resolve direction from higher TF lock (anti flip-flop) ---
+  const h1Bull = h1.bias === "bullish" || (h1.emaBull && h1.ms.trend !== "down");
+  const h1Bear = h1.bias === "bearish" || (h1.emaBear && h1.ms.trend !== "up");
+  const m15Bull = m15.bias === "bullish" || m15.emaBull;
+  const m15Bear = m15.bias === "bearish" || m15.emaBear;
+
+  let action = null;
+  // Trend continuation
+  if (h1Bull && m15Bull && !h1Bear) action = "LONG";
+  if (h1Bear && m15Bear && !h1Bull) action = "SHORT";
+
+  // Mean reversion at extremes (only if 1H not strongly against)
+  if (!action && m5.meanLong && !h1Bear) action = "LONG";
+  if (!action && m5.meanShort && !h1Bull) action = "SHORT";
+
+  // Squeeze break with volume
+  if (!action && m5.squeeze && m5.volume.spike) {
+    if (m5.volume.pressure > 12 && m5.macdUp && !h1Bear) action = "LONG";
+    if (m5.volume.pressure < -12 && m5.macdDown && !h1Bull) action = "SHORT";
+  }
+
+  if (!action) return null;
+
+  // 5M must not strongly fight the call
+  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -30) return null;
+  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 30) return null;
+
+  // Volume participation (not always hard spike, but not dead)
+  const volOk =
+    m5.volume.spike ||
+    Math.abs(m5.volume.pressure) >= 8 ||
+    m5.meanLong ||
+    m5.meanShort;
+  if (!volOk) return null;
+
+  // --- 2) Confidence for chosen direction (0–100) ---
+  let conf = 50;
+  const dir = action === "LONG" ? 1 : -1;
+
+  // 1H weight
+  conf += dir * h1.biasScore * 0.22;
+  if (action === "LONG" && h1.emaBull) conf += 8;
+  if (action === "SHORT" && h1.emaBear) conf += 8;
+  if (action === "LONG" && h1.ms.trend === "up") conf += 6;
+  if (action === "SHORT" && h1.ms.trend === "down") conf += 6;
+
+  // 15M
+  conf += dir * m15.biasScore * 0.12;
+  if (action === "LONG" && m15Bull) conf += 5;
+  if (action === "SHORT" && m15Bear) conf += 5;
+
+  // 5M trigger
+  conf += dir * m5.biasScore * 0.1;
+  if (action === "LONG" && m5.meanLong) conf += 12;
+  if (action === "SHORT" && m5.meanShort) conf += 12;
+  if (action === "LONG" && m5.macdUp) conf += 5;
+  if (action === "SHORT" && m5.macdDown) conf += 5;
+  if (action === "LONG" && m5.reversal.bias === "bullish") conf += 6 * m5.reversal.quality;
+  if (action === "SHORT" && m5.reversal.bias === "bearish") conf += 6 * m5.reversal.quality;
+
+  // Volume
+  if (action === "LONG" && m5.volume.pressure > 10) conf += 7;
+  if (action === "SHORT" && m5.volume.pressure < -10) conf += 7;
+  if (m5.volume.spike) conf += 4;
+
+  // RSI context
+  if (action === "LONG" && m5.rsi < 40) conf += 4;
+  if (action === "LONG" && m5.rsi > 70) conf -= 8;
+  if (action === "SHORT" && m5.rsi > 60) conf += 4;
+  if (action === "SHORT" && m5.rsi < 30) conf -= 8;
+
+  // Funding (crowding)
+  if (action === "LONG" && funding < -0.0003) conf += 4;
+  if (action === "SHORT" && funding > 0.0003) conf += 4;
+  if (action === "LONG" && funding > 0.0008) conf -= 5;
+  if (action === "SHORT" && funding < -0.0008) conf -= 5;
+
+  // Squeeze expansion bonus
+  if (m5.squeeze || m15.squeeze) conf += 3;
+
+  // Multi-TF agreement bonus (anti-chop)
+  if ((action === "LONG" && h1Bull && m15Bull) || (action === "SHORT" && h1Bear && m15Bear)) conf += 6;
+
+  conf = clamp(Math.round(conf), 0, 99);
+
+  let setup = "TREND";
+  if (m5.meanLong || m5.meanShort) setup = "MEAN_REV";
+  else if (m5.squeeze || m15.squeeze) setup = "SQUEEZE";
+
+  return {
+    action,
+    probability: conf,
+    setup,
+    h1,
+    m15,
+    m5,
+  };
 }
+
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
-  const recent = candles.slice(-14);
+  const recent = candles.slice(-16);
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
-  const tick = Math.max(mark * 0.0001, 1e-12);
+  const tick = Math.max(mark * 0.00008, 1e-12);
   const m5 = signal.m5;
   let entry, sl, tp1, tp2;
   if (signal.action === "LONG") {
-    entry = Math.min(swingLow + atrV * 0.25, m5.lower + atrV * 0.2);
-    if (mark < entry * 1.01) entry = Math.min(entry, mark * 0.997);
-    sl = Math.min(swingLow - tick - atrV * 0.5, entry - atrV * 1.2);
-    tp1 = m5.middle > entry ? m5.middle : entry + atrV * 1.6;
-    tp2 = Math.max(m5.upper * 0.995, entry + atrV * 3.0);
+    entry = Math.min(mark, Math.min(swingLow + atrV * 0.2, m5.lower + atrV * 0.15));
+    if (mark < entry) entry = mark;
+    entry = Math.min(entry, mark * 1.001);
+    sl = Math.min(swingLow - tick - atrV * 0.45, entry - atrV * 1.1);
+    tp1 = m5.middle > entry ? m5.middle : entry + atrV * 1.5;
+    tp2 = Math.max(m5.upper * 0.997, entry + atrV * 2.8);
   } else {
-    entry = Math.max(swingHigh - atrV * 0.25, m5.upper - atrV * 0.2);
-    if (mark > entry * 0.99) entry = Math.max(entry, mark * 1.003);
-    sl = Math.max(swingHigh + tick + atrV * 0.5, entry + atrV * 1.2);
-    tp1 = m5.middle < entry ? m5.middle : entry - atrV * 1.6;
-    tp2 = Math.min(m5.lower * 1.005, entry - atrV * 3.0);
+    entry = Math.max(mark, Math.max(swingHigh - atrV * 0.2, m5.upper - atrV * 0.15));
+    if (mark > entry) entry = mark;
+    entry = Math.max(entry, mark * 0.999);
+    sl = Math.max(swingHigh + tick + atrV * 0.45, entry + atrV * 1.1);
+    tp1 = m5.middle < entry ? m5.middle : entry - atrV * 1.5;
+    tp2 = Math.min(m5.lower * 1.003, entry - atrV * 2.8);
   }
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
@@ -242,54 +367,51 @@ function formatTelegramMessage(s) {
     `${tag} · <b>${s.base}</b> ${arrow}\n` +
     `\n` +
     `📊 Probability: <b>${s.probability}%</b>\n` +
+    `🧩 Setup: <b>${s.setup}</b>\n` +
     `🎯 Entry: <code>${formatPrice(s.entry)}</code>\n` +
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
     `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
     `📈 R:R 1:${s.rr.toFixed(1)}\n` +
     `\n` +
-    `1H: ${s.h1.structure} · 5M: ${s.m5.structure} · Vol: ${s.m5.volume.side}\n` +
+    `1H ${s.h1.structure} · 15M ${s.m15.bias} · 5M ${s.m5.structure}\n` +
+    `Vol ${s.m5.volume.side} · RSI ${s.m5.rsi.toFixed(0)}\n` +
     `\n` +
-    `<i>Strict Scanner · OKX · Risk max 0.75% · Not financial advice</i>`
+    `<i>Strict Scanner · Risk max 0.75% · Not financial advice</i>`
   );
 }
 
 async function sendTelegram(signals) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.log("No TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID — skip Telegram");
+    console.log("Telegram: skip (no secrets)");
     return;
   }
   if (!signals.length) return;
-
   for (const s of signals) {
-    const text = formatTelegramMessage(s);
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
-        text,
+        text: formatTelegramMessage(s),
         parse_mode: "HTML",
         disable_web_page_preview: true,
       }),
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok || body.ok === false) {
-      console.error("Telegram failed:", res.status, JSON.stringify(body));
-    } else {
-      console.log(`Telegram sent: ${s.base} ${s.action} ${s.probability}%`);
-    }
+    if (!res.ok || body.ok === false) console.error("Telegram failed:", res.status, JSON.stringify(body));
+    else console.log(`Telegram sent: ${s.base} ${s.action} ${s.probability}%`);
   }
 }
 
 async function sendDiscord(signals) {
   if (!DISCORD_WEBHOOK) {
-    console.log("No DISCORD_WEBHOOK secret — skip Discord");
+    console.log("Discord: skip (no secret)");
     return;
   }
   if (!signals.length) {
-    console.log("No high-quality signals to send");
+    console.log("No high-quality signals");
     return;
   }
   for (const s of signals) {
@@ -300,22 +422,22 @@ async function sendDiscord(signals) {
       color,
       fields: [
         { name: "Probability", value: `**${s.probability}%**`, inline: true },
-        { name: "Optimal Entry", value: `$${formatPrice(s.entry)}`, inline: true },
+        { name: "Setup", value: s.setup, inline: true },
         { name: "R:R", value: `1:${s.rr.toFixed(1)}`, inline: true },
-        { name: "Stop Loss", value: `$${formatPrice(s.sl)}`, inline: true },
-        { name: "TP1", value: `$${formatPrice(s.tp1)}`, inline: true },
-        { name: "TP2", value: `$${formatPrice(s.tp2)}`, inline: true },
-        { name: "1H", value: s.h1.structure, inline: true },
-        { name: "5M", value: s.m5.structure, inline: true },
-        { name: "Volume", value: s.m5.volume.side, inline: true },
+        { name: "Entry", value: `$${formatPrice(s.entry)}`, inline: true },
+        { name: "SL", value: `$${formatPrice(s.sl)}`, inline: true },
+        { name: "TP1 / TP2", value: `$${formatPrice(s.tp1)} / $${formatPrice(s.tp2)}`, inline: true },
+        { name: "1H", value: `${s.h1.structure} (${s.h1.bias})`, inline: true },
+        { name: "15M", value: s.m15.bias, inline: true },
+        { name: "5M / Vol", value: `${s.m5.structure} / ${s.m5.volume.side}`, inline: true },
       ],
-      footer: { text: "Strict Scanner · OKX SWAP · Risk max 0.75%" },
+      footer: { text: "Strict Scanner · Risk max 0.75% · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "Strict Crypto Scanner", embeds: [embed] }),
+      body: JSON.stringify({ username: "Strict Scanner", embeds: [embed] }),
     });
     if (!res.ok) console.error("Discord failed:", res.status, await res.text());
     else console.log(`Discord sent: ${s.base} ${s.action} ${s.probability}%`);
@@ -327,7 +449,6 @@ async function fetchOkxCandles(instId, bar, limit = 100) {
   const data = await getJson(url);
   const list = data?.data || [];
   const candles = list
-    .filter((r) => r[8] === "1" || r[8] === 1 || r[8] === "0")
     .map((r) => ({
       open: +r[1],
       high: +r[2],
@@ -351,10 +472,9 @@ async function fetchFunding(instId) {
 }
 
 async function main() {
-  console.log("=== Strict Crypto Scanner (OKX + Discord + Telegram) ===");
+  console.log("=== Strict Scanner v2 (direction-first) ===");
   console.log(new Date().toISOString());
-  console.log("Discord:", DISCORD_WEBHOOK ? "YES" : "NO");
-  console.log("Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO");
+  console.log("Discord:", DISCORD_WEBHOOK ? "YES" : "NO", "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO");
 
   const tickersRes = await getJson(`${OKX}/api/v5/market/tickers?instType=SWAP`);
   const tickers = (tickersRes?.data || []).filter((t) => t.instId.endsWith("-USDT-SWAP"));
@@ -366,23 +486,23 @@ async function main() {
       const baseVol = +t.volCcy24h || 0;
       const turnover = baseVol * last;
       const chg = open ? ((last - open) / open) * 100 : 0;
-      if (turnover < 3_000_000 || Math.abs(chg) > 25) return null;
+      if (turnover < 2_000_000 || Math.abs(chg) > 28) return null;
       const base = t.instId.replace("-USDT-SWAP", "");
-      if (/^[0-9]/.test(base) || base.includes("UP") || base.includes("DOWN")) return null;
+      if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
       return {
         instId: t.instId,
         base,
         volume: turnover,
         change: chg,
-        score: Math.log10(Math.max(turnover, 1)) * 0.6 + Math.min(Math.abs(chg) / 8, 1) * 0.4,
+        score: Math.log10(Math.max(turnover, 1)) * 0.65 + Math.min(Math.abs(chg) / 10, 1) * 0.35,
         mark: last,
       };
     })
     .filter(Boolean)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 12);
+    .slice(0, CANDIDATE_LIMIT);
 
-  console.log(`Candidates: ${candidates.map((c) => c.base).join(", ")}`);
+  console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
 
   const signals = [];
   for (const c of candidates) {
@@ -402,9 +522,9 @@ async function main() {
       if (levels.rr < MIN_RR) continue;
       signals.push({
         base: c.base,
-        symbol: c.instId,
         action: scored.action,
         probability: scored.probability,
+        setup: scored.setup,
         entry: levels.entry,
         sl: levels.sl,
         tp1: levels.tp1,
@@ -413,7 +533,6 @@ async function main() {
         h1: scored.h1,
         m15: scored.m15,
         m5: scored.m5,
-        change: c.change,
       });
     } catch (e) {
       console.warn(`Skip ${c.base}:`, e.message);
@@ -422,7 +541,7 @@ async function main() {
 
   signals.sort((a, b) => b.probability - a.probability);
   console.log(`High quality signals: ${signals.length}`);
-  signals.forEach((s) => console.log(`  ${s.base} ${s.action} ${s.probability}% R:R 1:${s.rr.toFixed(1)}`));
+  signals.forEach((s) => console.log(`  ${s.base} ${s.action} ${s.probability}% ${s.setup} R:R 1:${s.rr.toFixed(1)}`));
 
   await sendDiscord(signals);
   await sendTelegram(signals);
