@@ -1,0 +1,30 @@
+name: Keep Alive
+
+# Mencegah GitHub mematikan scheduled workflow setelah 60 hari tanpa aktivitas repo.
+# Docs: https://docs.github.com/en/actions/using-workflows/disabling-and-enabling-a-workflow
+
+on:
+  schedule:
+    # Tiap tanggal 1 jam 12:00 UTC (~sebulan sekali) — cukup reset timer 60 hari
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Empty keep-alive commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep-alive — prevent scheduled workflow auto-disable"
+          git push origin main
