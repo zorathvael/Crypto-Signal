@@ -2,14 +2,15 @@ name: Strict Crypto Scanner
 
 on:
   schedule:
-    # Setiap 30 menit (UTC)
-    - cron: "*/30 * * * *"
+    # Otomatis 24/7 — tiap jam di menit 0 dan 45 (UTC)
+    # ≈ setiap 45 menit tanpa aksi manual
+    - cron: "0,45 * * * *"
   workflow_dispatch:
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
