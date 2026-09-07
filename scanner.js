@@ -11,8 +11,8 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 2.0;
-const CANDIDATE_LIMIT = 30;
-const SQUARE_POST_COUNT = 3; // minimal/target posts to Binance Square tiap run
+const CANDIDATE_LIMIT = 36;
+const SQUARE_POST_COUNT = 3; // selalu target 3 koin top Valid+ ke Square (setiap run)
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -363,7 +363,10 @@ async function sendBinanceSquare(signals) {
     console.log("Binance Square: no Valid signals this run");
     return;
   }
-  console.log(`Binance Square batch: ${premium.length} coin(s) → ${premium.map((s) => s.base).join(", ")}`);
+  if (premium.length < SQUARE_POST_COUNT) {
+    console.log(`Binance Square: only ${premium.length}/${SQUARE_POST_COUNT} Valid+ available (posting all)`);
+  }
+  console.log(`Binance Square batch: ${premium.length} coin(s) → ${premium.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")}`);
   for (const s of premium) {
     try {
       const res = await fetch(
@@ -479,7 +482,7 @@ async function fetchFunding(instId) {
 }
 
 async function main() {
-  console.log("=== Strict Scanner v2.2 (Discord + Telegram + Square top3) ===");
+  console.log("=== Strict Scanner v2.2 (Discord + Telegram + Binance Square x3) ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
