@@ -1,11 +1,831 @@
 /**
- * Strict Core Scanner v2.4.3 — Ichimoku 9/26/52 confirmation
- * Compressed payload (zlib) for reliable deploy
+ * Strict Core Scanner v2.4.4
+ * Clean direction · soft BTC · Ichimoku 9/26/52 confirmation
+ * Square card bright/large · levels on OKX SWAP (zone if other venue)
  */
-const zlib = require("zlib");
-const Module = require("module");
-const code = zlib.inflateSync(Buffer.from("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", "base64")).toString("utf8");
-const m = new Module(__filename, module.parent);
-m.filename = __filename;
-m.paths = module.paths;
-m._compile(code, __filename);
+
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
+
+const OKX = "https://www.okx.com";
+const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
+const MIN_PROB_VALID = 75;
+const MIN_PROB_SNIPER = 82;
+const MIN_RR = 2.0;
+const CANDIDATE_LIMIT = 36;
+const SQUARE_POST_COUNT = 3;
+
+const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+
+function formatPrice(v) {
+  if (!Number.isFinite(v)) return "—";
+  if (v < 0.000001) return v.toFixed(10);
+  if (v < 0.001) return v.toFixed(8);
+  if (v < 1) return v.toFixed(5);
+  return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+async function getJson(url) {
+  const res = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.4" },
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+function sma(values, period) {
+  return values.map((_, i) => (i + 1 < period ? null : mean(values.slice(i + 1 - period, i + 1))));
+}
+function ema(values, period) {
+  const out = Array(values.length).fill(null);
+  if (values.length < period) return out;
+  let prev = mean(values.slice(0, period));
+  out[period - 1] = prev;
+  const k = 2 / (period + 1);
+  for (let i = period; i < values.length; i++) {
+    prev = (values[i] - prev) * k + prev;
+    out[i] = prev;
+  }
+  return out;
+}
+function stdDev(values) {
+  const avg = mean(values);
+  return Math.sqrt(mean(values.map((v) => (v - avg) ** 2)));
+}
+function bollinger(closes, period = 20, mult = 2) {
+  const mid = sma(closes, period);
+  const upper = Array(closes.length).fill(null);
+  const lower = Array(closes.length).fill(null);
+  const width = Array(closes.length).fill(null);
+  for (let i = period - 1; i < closes.length; i++) {
+    const win = closes.slice(i + 1 - period, i + 1);
+    const dev = stdDev(win);
+    upper[i] = mid[i] + mult * dev;
+    lower[i] = mid[i] - mult * dev;
+    width[i] = mid[i] ? ((upper[i] - lower[i]) / mid[i]) * 100 : null;
+  }
+  return { middle: mid, upper, lower, width };
+}
+function rsi(values, period = 14) {
+  const out = Array(values.length).fill(null);
+  if (values.length <= period) return out;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const ch = values[i] - values[i - 1];
+    gains += Math.max(ch, 0);
+    losses += Math.max(-ch, 0);
+  }
+  let avgG = gains / period, avgL = losses / period;
+  out[period] = avgL ? 100 - 100 / (1 + avgG / avgL) : 100;
+  for (let i = period + 1; i < values.length; i++) {
+    const ch = values[i] - values[i - 1];
+    avgG = (avgG * (period - 1) + Math.max(ch, 0)) / period;
+    avgL = (avgL * (period - 1) + Math.max(-ch, 0)) / period;
+    out[i] = avgL ? 100 - 100 / (1 + avgG / avgL) : 100;
+  }
+  return out;
+}
+function macdHist(closes, fast = 12, slow = 26, signal = 9) {
+  const ef = ema(closes, fast);
+  const es = ema(closes, slow);
+  const line = closes.map((_, i) => (ef[i] != null && es[i] != null ? ef[i] - es[i] : null));
+  const valid = line.map((v) => (v == null ? 0 : v));
+  const sig = ema(valid, signal);
+  return line.map((v, i) => (v != null && sig[i] != null ? v - sig[i] : null));
+}
+function atr(candles, period = 14) {
+  const ranges = candles.map((c, i) => {
+    if (!i) return c.high - c.low;
+    const p = candles[i - 1].close;
+    return Math.max(c.high - c.low, Math.abs(c.high - p), Math.abs(c.low - p));
+  });
+  if (ranges.length < period) return null;
+  let v = mean(ranges.slice(0, period));
+  for (let i = period; i < ranges.length; i++) v = (v * (period - 1) + ranges[i]) / period;
+  return v;
+}
+function adx(candles, period = 14) {
+  if (!candles || candles.length < period + 2) return null;
+  const tr = [], plusDM = [], minusDM = [];
+  for (let i = 1; i < candles.length; i++) {
+    const h = candles[i].high, l = candles[i].low;
+    const ph = candles[i - 1].high, pl = candles[i - 1].low, pc = candles[i - 1].close;
+    tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+    const up = h - ph, down = pl - l;
+    plusDM.push(up > down && up > 0 ? up : 0);
+    minusDM.push(down > up && down > 0 ? down : 0);
+  }
+  let atrS = mean(tr.slice(0, period));
+  let pDM = mean(plusDM.slice(0, period));
+  let mDM = mean(minusDM.slice(0, period));
+  const dxArr = [];
+  for (let i = period; i < tr.length; i++) {
+    atrS = (atrS * (period - 1) + tr[i]) / period;
+    pDM = (pDM * (period - 1) + plusDM[i]) / period;
+    mDM = (mDM * (period - 1) + minusDM[i]) / period;
+    const pDI = atrS ? (100 * pDM) / atrS : 0;
+    const mDI = atrS ? (100 * mDM) / atrS : 0;
+    const sum = pDI + mDI;
+    dxArr.push(sum ? (100 * Math.abs(pDI - mDI)) / sum : 0);
+  }
+  if (dxArr.length < period) return dxArr.length ? mean(dxArr) : null;
+  let adxV = mean(dxArr.slice(0, period));
+  for (let i = period; i < dxArr.length; i++) adxV = (adxV * (period - 1) + dxArr[i]) / period;
+  return adxV;
+}
+
+/** Ichimoku Kinko Hyo 9/26/52 — structure confirmation (not sole direction) */
+function ichimoku(candles, tenkanP = 9, kijunP = 26, senkouP = 52) {
+  const n = candles.length;
+  if (!candles || n < senkouP + kijunP + 2) return null;
+
+  const midHL = (i, period) => {
+    let hi = -Infinity, lo = Infinity;
+    const from = i - period + 1;
+    if (from < 0) return null;
+    for (let j = from; j <= i; j++) {
+      if (candles[j].high > hi) hi = candles[j].high;
+      if (candles[j].low < lo) lo = candles[j].low;
+    }
+    return (hi + lo) / 2;
+  };
+
+  const idx = n - 1;
+  const tenkan = midHL(idx, tenkanP);
+  const kijun = midHL(idx, kijunP);
+  if (tenkan == null || kijun == null) return null;
+
+  const cloudIdx = idx - kijunP;
+  if (cloudIdx < senkouP - 1) return null;
+  const tenkanPast = midHL(cloudIdx, tenkanP);
+  const kijunPast = midHL(cloudIdx, kijunP);
+  const spanB = midHL(cloudIdx, senkouP);
+  if (tenkanPast == null || kijunPast == null || spanB == null) return null;
+  const spanA = (tenkanPast + kijunPast) / 2;
+
+  const close = candles[idx].close;
+  const cloudTop = Math.max(spanA, spanB);
+  const cloudBot = Math.min(spanA, spanB);
+  const cloudBull = spanA >= spanB;
+
+  let priceVsCloud = "INSIDE";
+  if (close > cloudTop) priceVsCloud = "ABOVE";
+  else if (close < cloudBot) priceVsCloud = "BELOW";
+
+  const tkBull = tenkan > kijun;
+  const tkBear = tenkan < kijun;
+
+  const past = candles[idx - kijunP];
+  let chikou = "NEUTRAL";
+  if (past) {
+    if (close > past.high) chikou = "BULL";
+    else if (close < past.low) chikou = "BEAR";
+  }
+
+  const spanANow = (tenkan + kijun) / 2;
+  const spanBNow = midHL(idx, senkouP);
+  const futureCloudBull = spanBNow != null ? spanANow >= spanBNow : cloudBull;
+
+  let lean = 0;
+  if (priceVsCloud === "ABOVE") lean += 1;
+  if (priceVsCloud === "BELOW") lean -= 1;
+  if (tkBull) lean += 1;
+  if (tkBear) lean -= 1;
+  if (cloudBull) lean += 0.5;
+  else lean -= 0.5;
+  if (chikou === "BULL") lean += 0.5;
+  if (chikou === "BEAR") lean -= 0.5;
+  if (futureCloudBull && lean > 0) lean += 0.25;
+  if (!futureCloudBull && lean < 0) lean -= 0.25;
+
+  const bias = lean >= 1.5 ? "bullish" : lean <= -1.5 ? "bearish" : "neutral";
+
+  return {
+    tenkan, kijun, spanA, spanB, cloudTop, cloudBot, cloudBull,
+    priceVsCloud, tkBull, tkBear, chikou, futureCloudBull, lean, bias,
+    label: priceVsCloud === "ABOVE" ? "Cloud↑" : priceVsCloud === "BELOW" ? "Cloud↓" : "Cloud≈",
+  };
+}
+
+function volumeAnalysis(candles) {
+  const cur = candles.at(-1);
+  const recent = candles.slice(-12);
+  const base = mean(candles.slice(-30, -1).map((c) => c.volume)) || 1;
+  const buy = recent.reduce((s, c) => s + (c.close > c.open ? c.volume : 0), 0);
+  const sell = recent.reduce((s, c) => s + (c.close <= c.open ? c.volume : 0), 0);
+  const pressure = ((buy - sell) / (buy + sell || 1)) * 100;
+  const recentAvg = mean(recent.slice(-4).map((c) => c.volume));
+  const spike = cur.volume >= base * 1.35 || recentAvg >= base * 1.25;
+  return { pressure, spike, side: pressure > 8 ? "BUY" : pressure < -8 ? "SELL" : "BALANCED", base };
+}
+function detectReversal(candles) {
+  const last = candles.at(-1);
+  const prev = candles.at(-2);
+  if (!last || !prev) return { bias: "neutral", quality: 0, name: "None" };
+  const body = Math.abs(last.close - last.open);
+  const range = Math.max(last.high - last.low, 1e-12);
+  const uw = last.high - Math.max(last.open, last.close);
+  const lw = Math.min(last.open, last.close) - last.low;
+  if (prev.close < prev.open && last.close > last.open && last.open <= prev.close && last.close >= prev.open)
+    return { bias: "bullish", quality: 0.95, name: "Bullish Engulfing" };
+  if (prev.close > prev.open && last.close < last.open && last.open >= prev.close && last.close <= prev.open)
+    return { bias: "bearish", quality: 0.95, name: "Bearish Engulfing" };
+  if (lw >= body * 2.0 && uw <= body * 0.75 && last.close >= last.open)
+    return { bias: "bullish", quality: 0.85, name: "Hammer" };
+  if (uw >= body * 2.0 && lw <= body * 0.75 && last.close <= last.open)
+    return { bias: "bearish", quality: 0.85, name: "Shooting Star" };
+  if (lw >= range * 0.58 && last.close >= last.open) return { bias: "bullish", quality: 0.8, name: "Pin Bar" };
+  if (uw >= range * 0.58 && last.close <= last.open) return { bias: "bearish", quality: 0.8, name: "Pin Bar" };
+  return { bias: "neutral", quality: 0, name: "None" };
+}
+function marketStructure(candles) {
+  if (candles.length < 30) return { trend: "chop" };
+  const leg = candles.slice(-20);
+  const mid = Math.floor(leg.length / 2);
+  const first = leg.slice(0, mid);
+  const second = leg.slice(mid);
+  const hi1 = Math.max(...first.map((c) => c.high));
+  const hi2 = Math.max(...second.map((c) => c.high));
+  const lo1 = Math.min(...first.map((c) => c.low));
+  const lo2 = Math.min(...second.map((c) => c.low));
+  if (hi2 > hi1 && lo2 > lo1) return { trend: "up" };
+  if (lo2 < lo1 && hi2 < hi1) return { trend: "down" };
+  return { trend: "chop" };
+}
+function analyzeTF(candles, label) {
+  if (!candles || candles.length < 60) return null;
+  const closes = candles.map((c) => c.close);
+  const bands = bollinger(closes, 20, 2);
+  const rsiV = rsi(closes, 14);
+  const hist = macdHist(closes);
+  const adxV = adx(candles, 14);
+  const ema9 = ema(closes, 9);
+  const ema21 = ema(closes, 21);
+  const ema50 = ema(closes, 50);
+  const idx = candles.length - 1;
+  const last = candles[idx];
+  const mid = bands.middle[idx], up = bands.upper[idx], lo = bands.lower[idx], w = bands.width[idx];
+  const widths = bands.width.filter((v) => v != null);
+  const recentW = widths.slice(-20);
+  const sortedW = [...widths.slice(-60)].sort((a, b) => a - b);
+  const sqThresh = sortedW[Math.floor(sortedW.length * 0.25)] || w;
+  const squeeze = (w != null && w <= sqThresh) || (recentW.length >= 15 && w <= Math.min(...recentW) * 1.05);
+  const pos = clamp(((last.close - lo) / Math.max(up - lo, 1e-12)) * 100, 0, 100);
+  const e9 = ema9[idx], e21 = ema21[idx], e50 = ema50[idx];
+  const emaBull = e9 > e21 && (e50 == null || e21 > e50 * 0.998);
+  const emaBear = e9 < e21 && (e50 == null || e21 < e50 * 1.002);
+  const vol = volumeAnalysis(candles);
+  const rev = detectReversal(candles);
+  const ms = marketStructure(candles);
+  const macdNow = hist[idx];
+  const macdPrev = hist[idx - 1];
+  const macdUp = macdNow != null && macdPrev != null && macdNow > macdPrev;
+  const macdDown = macdNow != null && macdPrev != null && macdNow < macdPrev;
+  const touchLo = last.low <= lo * 1.003 || last.close <= lo * 1.005;
+  const touchUp = last.high >= up * 0.997 || last.close >= up * 0.995;
+  let biasScore = 0;
+  if (emaBull) biasScore += 25;
+  if (emaBear) biasScore -= 25;
+  if (ms.trend === "up") biasScore += 20;
+  if (ms.trend === "down") biasScore -= 20;
+  if (last.close > mid) biasScore += 10;
+  if (last.close < mid) biasScore -= 10;
+  if (macdNow > 0) biasScore += 8;
+  if (macdNow < 0) biasScore -= 8;
+  if (macdUp) biasScore += 7;
+  if (macdDown) biasScore -= 7;
+  if (rsiV[idx] > 55) biasScore += 5;
+  if (rsiV[idx] < 45) biasScore -= 5;
+  if (vol.pressure > 12) biasScore += 8;
+  if (vol.pressure < -12) biasScore -= 8;
+  biasScore = clamp(biasScore, -100, 100);
+  const bias = biasScore >= 18 ? "bullish" : biasScore <= -18 ? "bearish" : "neutral";
+  const structure = squeeze ? "SQUEEZE" : pos <= 12 ? "NEAR LOWER" : pos >= 88 ? "NEAR UPPER" : "RANGE";
+  const ichi = ichimoku(candles);
+  return {
+    label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
+    emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown,
+    meanLong: touchLo && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 35,
+    meanShort: touchUp && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 65,
+    adx: adxV,
+    ichi,
+  };
+}
+function scoreSignal(h1, m15, m5, funding, btcBias) {
+  if (!h1 || !m15 || !m5) return null;
+  const h1Bull = h1.bias === "bullish" || (h1.emaBull && h1.ms.trend === "up");
+  const h1Bear = h1.bias === "bearish" || (h1.emaBear && h1.ms.trend === "down");
+  const m15Bull = m15.bias === "bullish" || m15.emaBull;
+  const m15Bear = m15.bias === "bearish" || m15.emaBear;
+  const adxMax = Math.max(h1.adx != null ? h1.adx : 0, m15.adx != null ? m15.adx : 0);
+  let action = null, path = null;
+  if (h1Bull && m15Bull && !h1Bear && !m15Bear) { action = "LONG"; path = "TREND"; }
+  else if (h1Bear && m15Bear && !h1Bull && !m15Bull) { action = "SHORT"; path = "TREND"; }
+  else if (m5.meanLong && !h1Bear) { action = "LONG"; path = "MEAN_REV"; }
+  else if (m5.meanShort && !h1Bull) { action = "SHORT"; path = "MEAN_REV"; }
+  else if (m5.squeeze && m5.volume.spike && Math.abs(m5.volume.pressure) >= 14) {
+    if (m5.volume.pressure >= 14 && m5.macdUp && !h1Bear) { action = "LONG"; path = "SQUEEZE"; }
+    else if (m5.volume.pressure <= -14 && m5.macdDown && !h1Bull) { action = "SHORT"; path = "SQUEEZE"; }
+  }
+  if (!action) return null;
+  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -35) return null;
+  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 35) return null;
+  if (action === "LONG" && m5.volume.pressure < -20) return null;
+  if (action === "SHORT" && m5.volume.pressure > 20) return null;
+  if (path === "TREND" && adxMax < 18 && !m5.volume.spike) return null;
+  if (path === "SQUEEZE" && adxMax > 35) return null;
+  let btcAdj = 0;
+  if (btcBias && Math.abs(btcBias.score) >= 25) {
+    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 3 : -4;
+    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 3 : -4;
+  }
+  let conf = 52;
+  const d = action === "LONG" ? 1 : -1;
+  conf += d * h1.biasScore * 0.2;
+  if (action === "LONG" && h1.emaBull) conf += 8;
+  if (action === "SHORT" && h1.emaBear) conf += 8;
+  if (action === "LONG" && h1.ms.trend === "up") conf += 7;
+  if (action === "SHORT" && h1.ms.trend === "down") conf += 7;
+  conf += d * m15.biasScore * 0.12;
+  if (action === "LONG" && m15Bull) conf += 6;
+  if (action === "SHORT" && m15Bear) conf += 6;
+  conf += d * m5.biasScore * 0.08;
+  if (path === "MEAN_REV") conf += 12;
+  if (path === "SQUEEZE") conf += 8;
+  if (action === "LONG" && m5.macdUp) conf += 5;
+  if (action === "SHORT" && m5.macdDown) conf += 5;
+  if (action === "LONG" && m5.reversal.bias === "bullish") conf += 6 * m5.reversal.quality;
+  if (action === "SHORT" && m5.reversal.bias === "bearish") conf += 6 * m5.reversal.quality;
+  if (action === "LONG" && m5.volume.pressure > 10) conf += 6;
+  if (action === "SHORT" && m5.volume.pressure < -10) conf += 6;
+  if (m5.volume.spike) conf += 3;
+  if (action === "LONG" && m5.rsi < 40) conf += 3;
+  if (action === "LONG" && m5.rsi > 72) conf -= 10;
+  if (action === "SHORT" && m5.rsi > 60) conf += 3;
+  if (action === "SHORT" && m5.rsi < 28) conf -= 10;
+  if (action === "LONG" && funding < -0.0003) conf += 3;
+  if (action === "SHORT" && funding > 0.0003) conf += 3;
+  if (adxMax >= 25 && path === "TREND") conf += 5;
+  else if (adxMax < 16 && path === "TREND") conf -= 8;
+  conf += btcAdj;
+
+  // Ichimoku soft confirmation (H1 primary, 15M secondary) — does not invent direction
+  const ichiH = h1.ichi;
+  const ichiM = m15.ichi;
+  if (ichiH) {
+    if (action === "LONG") {
+      if (ichiH.priceVsCloud === "ABOVE") conf += 6;
+      else if (ichiH.priceVsCloud === "BELOW") conf -= 10;
+      else conf -= 2;
+      if (ichiH.tkBull) conf += 4;
+      if (ichiH.tkBear) conf -= 3;
+      if (ichiH.cloudBull) conf += 3;
+      if (ichiH.chikou === "BULL") conf += 3;
+      if (ichiH.chikou === "BEAR") conf -= 2;
+      if (ichiH.futureCloudBull) conf += 2;
+    } else {
+      if (ichiH.priceVsCloud === "BELOW") conf += 6;
+      else if (ichiH.priceVsCloud === "ABOVE") conf -= 10;
+      else conf -= 2;
+      if (ichiH.tkBear) conf += 4;
+      if (ichiH.tkBull) conf -= 3;
+      if (!ichiH.cloudBull) conf += 3;
+      if (ichiH.chikou === "BEAR") conf += 3;
+      if (ichiH.chikou === "BULL") conf -= 2;
+      if (!ichiH.futureCloudBull) conf += 2;
+    }
+  }
+  if (ichiM) {
+    if (action === "LONG" && ichiM.priceVsCloud === "ABOVE" && ichiM.tkBull) conf += 3;
+    if (action === "SHORT" && ichiM.priceVsCloud === "BELOW" && ichiM.tkBear) conf += 3;
+    if (action === "LONG" && ichiM.priceVsCloud === "BELOW" && ichiM.tkBear) conf -= 4;
+    if (action === "SHORT" && ichiM.priceVsCloud === "ABOVE" && ichiM.tkBull) conf -= 4;
+  }
+
+  conf = clamp(Math.round(conf), 0, 99);
+  if (path === "TREND" && !(h1Bull || h1Bear)) conf = Math.min(conf, 74);
+  if (conf < 75) return null;
+  return { action, probability: conf, setup: path, h1, m15, m5, adx: adxMax };
+}
+function buildLevels(candles, signal, mark) {
+  const atrV = atr(candles) || mark * 0.005;
+  const recent = candles.slice(-16);
+  const swingLow = Math.min(...recent.map((c) => c.low));
+  const swingHigh = Math.max(...recent.map((c) => c.high));
+  const tick = Math.max(mark * 0.00008, 1e-12);
+  const m5 = signal.m5;
+  let entry, sl, tp1, tp2;
+  if (signal.action === "LONG") {
+    entry = Math.min(mark, Math.min(swingLow + atrV * 0.2, m5.lower + atrV * 0.15));
+    if (mark < entry) entry = mark;
+    entry = Math.min(entry, mark * 1.001);
+    sl = Math.min(swingLow - tick - atrV * 0.45, entry - atrV * 1.1);
+    tp1 = m5.middle > entry ? m5.middle : entry + atrV * 1.5;
+    tp2 = Math.max(m5.upper * 0.997, entry + atrV * 2.8);
+  } else {
+    entry = Math.max(mark, Math.max(swingHigh - atrV * 0.2, m5.upper - atrV * 0.15));
+    if (mark > entry) entry = mark;
+    entry = Math.max(entry, mark * 0.999);
+    sl = Math.max(swingHigh + tick + atrV * 0.45, entry + atrV * 1.1);
+    tp1 = m5.middle < entry ? m5.middle : entry - atrV * 1.5;
+    tp2 = Math.min(m5.lower * 1.003, entry - atrV * 2.8);
+  }
+  const risk = Math.abs(entry - sl);
+  const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
+  return { entry, sl, tp1, tp2, rr };
+}
+function formatTelegramMessage(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
+  const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
+  return (
+    `${tag} · <b>${s.base}</b> ${arrow}\n\n` +
+    `📊 Probability: <b>${s.probability}%</b>\n` +
+    `🧩 Setup: <b>${s.setup}</b>\n` +
+    `🎯 Entry: <code>${formatPrice(s.entry)}</code>\n` +
+    `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
+    `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
+    `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}\n\n` +
+    `1H ${s.h1.structure} · 15M ${s.m15.bias} · 5M ${s.m5.structure}\n` +
+    `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}` +
+    (s.h1.ichi
+      ? `\n☁️ Ichi 1H ${s.h1.ichi.label} · TK${s.h1.ichi.tkBull ? "↑" : s.h1.ichi.tkBear ? "↓" : "·"} · Chikou ${s.h1.ichi.chikou}`
+      : "") +
+    `\n\n` +
+    `<i>Strict Core v2.4 · Score not guarantee · Risk max 0.75% · NFA</i>`
+  );
+}
+function formatSquareCoinBlock(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const grade = isSniper ? "SNIPER" : "VALID";
+  const side = s.action === "LONG" ? "LONG" : "SHORT";
+  const mark = s.action === "LONG" ? "🟢" : "🔴";
+  return (
+    `${grade}  ·  ${s.base}  ${mark} ${side}\n` +
+    `Score ${s.probability}%  ·  ${s.setup}  ·  R:R 1:${s.rr.toFixed(1)}\n` +
+    `Entry  ${formatPrice(s.entry)}\n` +
+    `SL     ${formatPrice(s.sl)}\n` +
+    `TP1    ${formatPrice(s.tp1)}   ·   TP2  ${formatPrice(s.tp2)}\n` +
+    `Context  1H ${s.h1.structure}  ·  15M ${s.m15.bias}  ·  Vol ${s.m5.volume.side}` +
+    (s.h1.ichi
+      ? `\nIchimoku  ${s.h1.ichi.label}  TK${s.h1.ichi.tkBull ? "↑" : s.h1.ichi.tkBear ? "↓" : "·"}  Chikou ${s.h1.ichi.chikou}`
+      : "")
+  );
+}
+function formatSquareBatchMessage(coins) {
+  const now = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "medium", timeStyle: "short" });
+  const lines = [
+    "STRICT CORE  ·  Futures Scan",
+    `WIB ${now}`,
+    "",
+    "Setup terpilih (struktur ketat, bukan sinyal acak):",
+    "",
+  ];
+  coins.forEach((s, i) => {
+    if (i > 0) lines.push("────────────────");
+    lines.push(formatSquareCoinBlock(s));
+    lines.push("");
+  });
+  lines.push("Risk max 0.75% per ide");
+  lines.push("Edukasi saja — bukan saran finansial");
+  lines.push("#Crypto #Futures #Trading");
+  return lines.join("\n").trim();
+}
+function buildSquareCardSvg(coins) {
+  const W = 1600;
+  const H = 1400;
+  const rows = coins.slice(0, 3);
+  const rowH = 340;
+  const startY = 180;
+  const pad = 56;
+  const esc = (x) =>
+    String(x ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  let cards = "";
+  rows.forEach((s, i) => {
+    const y = startY + i * (rowH + 24);
+    const isLong = s.action === "LONG";
+    const accent = isLong ? "#059669" : "#e11d48";
+    const soft = isLong ? "#ecfdf5" : "#fff1f2";
+    const grade = s.probability >= MIN_PROB_SNIPER ? "SNIPER" : "VALID";
+    const side = isLong ? "LONG" : "SHORT";
+    cards += `
+    <rect x="${pad}" y="${y}" width="${W - pad * 2}" height="${rowH}" rx="24" fill="${soft}" stroke="${accent}" stroke-width="3"/>
+    <rect x="${pad}" y="${y}" width="14" height="${rowH}" rx="6" fill="${accent}"/>
+    <text x="${pad + 48}" y="${y + 58}" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#0f172a">${esc(s.base)}</text>
+    <text x="${pad + 48}" y="${y + 112}" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="${accent}">${side}   ·   ${grade}   ·   ${s.probability}%</text>
+    <text x="${pad + 48}" y="${y + 172}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#1e293b">Entry  ${esc(formatPrice(s.entry))}</text>
+    <text x="${pad + 48}" y="${y + 216}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#1e293b">SL       ${esc(formatPrice(s.sl))}</text>
+    <text x="${pad + 48}" y="${y + 260}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#1e293b">TP1    ${esc(formatPrice(s.tp1))}      TP2  ${esc(formatPrice(s.tp2))}</text>
+    <text x="${pad + 48}" y="${y + 308}" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}  ·  15M ${esc(s.m15.bias)}</text>
+    <text x="${W - pad - 40}" y="${y + 180}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" fill="${accent}">${isLong ? "▲" : "▼"}</text>`;
+  });
+  const now = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#ffffff"/>
+  <rect x="0" y="0" width="${W}" height="140" fill="#0f172a"/>
+  <text x="${pad}" y="64" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#ffffff">STRICT CORE</text>
+  <text x="${pad}" y="108" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#94a3b8">Futures structure scan  ·  ${esc(now)} WIB</text>
+  <text x="${W - pad}" y="72" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#38bdf8">Top ${rows.length} Valid+</text>
+  ${cards}
+  <text x="${pad}" y="${H - 36}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#64748b">Risk max 0.75% per idea  ·  Educational only  ·  Not financial advice</text>
+</svg>`;
+}
+function renderSquareCardPng(coins) {
+  const dir = "/tmp/square-card";
+  fs.mkdirSync(dir, { recursive: true });
+  const svgPath = path.join(dir, "card.svg");
+  const pngPath = path.join(dir, "card.png");
+  fs.writeFileSync(svgPath, buildSquareCardSvg(coins), "utf8");
+  try {
+    execFileSync("rsvg-convert", ["-w", "1600", "-h", "1400", svgPath, "-o", pngPath], { stdio: "pipe" });
+  } catch (e) {
+    console.warn("rsvg-convert failed, Square will post text only:", e.message);
+    return null;
+  }
+  if (!fs.existsSync(pngPath)) return null;
+  return pngPath;
+}
+async function squareApi(endpoint, apiKey, body, useV2 = true) {
+  const base = useV2
+    ? "https://www.binance.com/bapi/composite/v2/public/pgc/openApi"
+    : "https://www.binance.com/bapi/composite/v1/public/pgc/openApi";
+  const res = await fetch(`${base}${endpoint}`, {
+    method: "POST",
+    headers: {
+      "X-Square-OpenAPI-Key": apiKey,
+      "Content-Type": "application/json",
+      clienttype: "binanceSkill",
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (String(json.code) !== "000000") {
+    throw new Error(`Square API ${endpoint} [${json.code}]: ${json.message || res.status}`);
+  }
+  return json.data;
+}
+async function uploadSquareImage(apiKey, pngPath) {
+  const imageName = path.basename(pngPath);
+  const { presignedUrl, fileTicket } = await squareApi("/image/presignedUrl", apiKey, { imageName }, true);
+  const buf = fs.readFileSync(pngPath);
+  const put = await fetch(presignedUrl, { method: "PUT", headers: { "Content-Type": "image/png" }, body: buf });
+  if (!put.ok) throw new Error(`S3 upload failed: ${put.status}`);
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const st = await squareApi("/image/imageStatus", apiKey, { fileTicket }, true);
+    if (st.status === 1 && st.imageUrl) return st.imageUrl;
+    if (st.status === 2) throw new Error(`Image process failed: ${st.failedReason || "unknown"}`);
+    console.log(`  Square image processing... (${i + 1}/10)`);
+  }
+  throw new Error("Square image poll timeout");
+}
+async function sendBinanceSquare(signals) {
+  if (!BINANCE_SQUARE_KEY) {
+    console.log("Binance Square: skip (no BINANCE_SQUARE_OPENAPI_KEY)");
+    return;
+  }
+  const ranked = [...signals]
+    .filter((s) => s.probability >= MIN_PROB_VALID)
+    .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
+  const batch = ranked.slice(0, SQUARE_POST_COUNT);
+  if (!batch.length) {
+    console.log("Binance Square: no Valid signals this run");
+    return;
+  }
+  console.log(
+    `Binance Square 1 post · ${batch.length} coin(s) → ` +
+      batch.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")
+  );
+  const text = formatSquareBatchMessage(batch);
+  const body = { contentType: 1, bodyTextOnly: text };
+  try {
+    const pngPath = renderSquareCardPng(batch);
+    if (pngPath) {
+      console.log("Square: uploading professional card image...");
+      const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
+      body.imageList = [imageUrl];
+      console.log("Square: image ready");
+    }
+  } catch (e) {
+    console.warn("Square image skip (text-only fallback):", e.message);
+  }
+  try {
+    const res = await fetch("https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add", {
+      method: "POST",
+      headers: {
+        "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
+        "Content-Type": "application/json",
+        clienttype: "binanceSkill",
+      },
+      body: JSON.stringify(body),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || String(payload.code) !== "000000") {
+      console.error("Binance Square failed:", res.status, payload.code, payload.message || JSON.stringify(payload));
+    } else {
+      const id = payload.data?.id;
+      console.log(
+        `Binance Square sent (${batch.length} coins` +
+          (body.imageList ? " + image" : "") +
+          `)` +
+          (id ? ` → https://www.binance.com/square/post/${id}` : "")
+      );
+    }
+  } catch (e) {
+    console.error("Binance Square error:", e.message);
+  }
+}
+async function sendTelegram(signals) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.log("Telegram: skip (no secrets)");
+    return;
+  }
+  if (!signals.length) return;
+  for (const s of signals) {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: formatTelegramMessage(s),
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) console.error("Telegram failed:", res.status, JSON.stringify(body));
+    else console.log(`Telegram sent: ${s.base} ${s.action} ${s.probability}%`);
+  }
+}
+async function sendDiscord(signals) {
+  if (!DISCORD_WEBHOOK) {
+    console.log("Discord: skip (no secret)");
+    return;
+  }
+  if (!signals.length) {
+    console.log("No high-quality signals");
+    return;
+  }
+  for (let i = 0; i < signals.length; i++) {
+    const s = signals[i];
+    if (i > 0) await new Promise((r) => setTimeout(r, 400));
+    const isSniper = s.probability >= MIN_PROB_SNIPER;
+    const color = s.action === "LONG" ? 0x35ef9a : 0xff5c7a;
+    const embed = {
+      title: `${isSniper ? "🎯 SNIPER" : "✅ VALID"} · ${s.base} ${s.action}`,
+      color,
+      fields: [
+        { name: "Probability", value: `**${s.probability}%**`, inline: true },
+        { name: "Setup", value: s.setup, inline: true },
+        { name: "R:R", value: `1:${s.rr.toFixed(1)}`, inline: true },
+        { name: "Entry", value: `$${formatPrice(s.entry)}`, inline: true },
+        { name: "SL", value: `$${formatPrice(s.sl)}`, inline: true },
+        { name: "TP1 / TP2", value: `$${formatPrice(s.tp1)} / $${formatPrice(s.tp2)}`, inline: true },
+        { name: "1H", value: `${s.h1.structure} (${s.h1.bias})`, inline: true },
+        { name: "15M", value: s.m15.bias, inline: true },
+        { name: "5M / Vol", value: `${s.m5.structure} / ${s.m5.volume.side}`, inline: true },
+        ...(s.h1.ichi
+          ? [{ name: "Ichimoku 1H", value: `${s.h1.ichi.label} · TK${s.h1.ichi.tkBull ? "↑" : s.h1.ichi.tkBear ? "↓" : "·"} · ${s.h1.ichi.chikou}`, inline: true }]
+          : []),
+      ],
+      footer: { text: "Strict Core v2.4 · Score not guarantee · NFA" },
+      timestamp: new Date().toISOString(),
+    };
+    const res = await fetch(DISCORD_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "Strict Core", embeds: [embed] }),
+    });
+    if (!res.ok) console.error("Discord failed:", res.status, await res.text());
+    else console.log(`Discord sent: ${s.base} ${s.action} ${s.probability}%`);
+  }
+}
+async function fetchOkxCandles(instId, bar, limit = 100) {
+  const url = `${OKX}/api/v5/market/candles?instId=${encodeURIComponent(instId)}&bar=${bar}&limit=${limit}`;
+  const data = await getJson(url);
+  const list = data?.data || [];
+  const candles = list
+    .map((r) => ({
+      open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5], confirm: String(r[8]),
+    }))
+    .reverse();
+  if (candles.length && candles[candles.length - 1].confirm === "0") candles.pop();
+  return candles;
+}
+async function fetchFunding(instId) {
+  try {
+    const data = await getJson(`${OKX}/api/v5/public/funding-rate?instId=${encodeURIComponent(instId)}`);
+    return +(data?.data?.[0]?.fundingRate || 0);
+  } catch {
+    return 0;
+  }
+}
+async function main() {
+  console.log("=== Strict Core v2.4.4 | Ichimoku confirm | Square card ===");
+  console.log(new Date().toISOString());
+  console.log(
+    "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
+    "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
+    "| Square:", BINANCE_SQUARE_KEY ? "YES" : "NO"
+  );
+  let btcBias = { bias: "neutral", score: 0 };
+  try {
+    const btcCandles = await fetchOkxCandles("BTC-USDT-SWAP", "1H", 100);
+    const btcTF = analyzeTF(btcCandles, "BTC1H");
+    if (btcTF) {
+      btcBias = { bias: btcTF.bias, score: btcTF.biasScore, adx: btcTF.adx };
+      console.log(`BTC soft bias: ${btcBias.bias} (score ${btcBias.score}, ADX ${btcBias.adx != null ? btcBias.adx.toFixed(1) : "n/a"})`);
+    }
+  } catch (e) {
+    console.warn("BTC bias skip:", e.message);
+  }
+  const tickersRes = await getJson(`${OKX}/api/v5/market/tickers?instType=SWAP`);
+  const tickers = (tickersRes?.data || []).filter((t) => t.instId.endsWith("-USDT-SWAP"));
+  const candidates = tickers
+    .map((t) => {
+      const last = +t.last || 0;
+      const open = +t.open24h || last;
+      const baseVol = +t.volCcy24h || 0;
+      const turnover = baseVol * last;
+      const chg = open ? ((last - open) / open) * 100 : 0;
+      if (turnover < 2_000_000 || Math.abs(chg) > 28) return null;
+      const base = t.instId.replace("-USDT-SWAP", "");
+      if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
+      return {
+        instId: t.instId,
+        base,
+        volume: turnover,
+        change: chg,
+        score: Math.log10(Math.max(turnover, 1)) * 0.65 + Math.min(Math.abs(chg) / 10, 1) * 0.35,
+        mark: last,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, CANDIDATE_LIMIT);
+  console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
+  const signals = [];
+  for (const c of candidates) {
+    try {
+      const [h1c, m15c, m5c, funding] = await Promise.all([
+        fetchOkxCandles(c.instId, "1H", 100),
+        fetchOkxCandles(c.instId, "15m", 100),
+        fetchOkxCandles(c.instId, "5m", 100),
+        fetchFunding(c.instId),
+      ]);
+      const h1 = analyzeTF(h1c, "1H");
+      const m15 = analyzeTF(m15c, "15M");
+      const m5 = analyzeTF(m5c, "5M");
+      const scored = scoreSignal(h1, m15, m5, funding, btcBias);
+      if (!scored || scored.probability < MIN_PROB_VALID) continue;
+      const levels = buildLevels(m5c, scored, c.mark);
+      if (levels.rr < MIN_RR) continue;
+      signals.push({
+        base: c.base,
+        action: scored.action,
+        probability: scored.probability,
+        setup: scored.setup,
+        entry: levels.entry,
+        sl: levels.sl,
+        tp1: levels.tp1,
+        tp2: levels.tp2,
+        rr: levels.rr,
+        h1: scored.h1,
+        m15: scored.m15,
+        m5: scored.m5,
+      });
+    } catch (e) {
+      console.warn(`Skip ${c.base}:`, e.message);
+    }
+  }
+  signals.sort((a, b) => b.probability - a.probability);
+  console.log(`Strict signals: ${signals.length}`);
+  signals.forEach((s) => console.log(`  ${s.base} ${s.action} ${s.probability}% ${s.setup} R:R 1:${s.rr.toFixed(1)}`));
+  await sendDiscord(signals);
+  await sendTelegram(signals);
+  await sendBinanceSquare(signals);
+  console.log("Done.");
+}
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
