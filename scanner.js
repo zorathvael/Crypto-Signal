@@ -1,6 +1,6 @@
 /**
- * Strict Core Scanner v2.4.1
- * Clean direction · soft BTC · professional Square card (image + polished text)
+ * Strict Core Scanner v2.4.2
+ * Clean direction · soft BTC · Square card bright/large (mobile readable)
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -32,7 +32,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.1" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.2" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -381,20 +381,56 @@ function formatSquareBatchMessage(coins) {
   return lines.join("\n").trim();
 }
 function buildSquareCardSvg(coins) {
-  const W = 1200, H = 630;
+  const W = 1600;
+  const H = 1400;
   const rows = coins.slice(0, 3);
-  const rowH = 150, startY = 130;
-  const esc = (x) => String(x ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const rowH = 340;
+  const startY = 180;
+  const pad = 56;
+  const esc = (x) =>
+    String(x ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   let cards = "";
   rows.forEach((s, i) => {
-    const y = startY + i * rowH;
+    const y = startY + i * (rowH + 24);
     const isLong = s.action === "LONG";
-    const accent = isLong ? "#22c55e" : "#f43f5e";
+    const accent = isLong ? "#059669" : "#e11d48";
+    const soft = isLong ? "#ecfdf5" : "#fff1f2";
     const grade = s.probability >= MIN_PROB_SNIPER ? "SNIPER" : "VALID";
-    cards += `\n    <rect x="48" y="${y}" width="1104" height="136" rx="16" fill="#12141c" stroke="#2a2f3d" stroke-width="1"/>\n    <rect x="48" y="${y}" width="8" height="136" rx="4" fill="${accent}"/>\n    <text x="80" y="${y + 36}" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#f1f5f9">${esc(s.base)}</text>\n    <text x="80" y="${y + 64}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="${accent}">${isLong ? "LONG" : "SHORT"}  ·  ${grade}  ·  ${s.probability}%</text>\n    <text x="80" y="${y + 96}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#94a3b8">Entry ${esc(formatPrice(s.entry))}   SL ${esc(formatPrice(s.sl))}   TP1 ${esc(formatPrice(s.tp1))}   TP2 ${esc(formatPrice(s.tp2))}</text>\n    <text x="80" y="${y + 120}" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748b">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}</text>\n    <text x="1080" y="${y + 70}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="${accent}">${isLong ? "▲" : "▼"}</text>`;
+    const side = isLong ? "LONG" : "SHORT";
+    cards += `
+    <rect x="${pad}" y="${y}" width="${W - pad * 2}" height="${rowH}" rx="24" fill="${soft}" stroke="${accent}" stroke-width="3"/>
+    <rect x="${pad}" y="${y}" width="14" height="${rowH}" rx="6" fill="${accent}"/>
+    <text x="${pad + 48}" y="${y + 58}" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#0f172a">${esc(s.base)}</text>
+    <text x="${pad + 48}" y="${y + 112}" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="${accent}">${side}   ·   ${grade}   ·   ${s.probability}%</text>
+    <text x="${pad + 48}" y="${y + 172}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#1e293b">Entry  ${esc(formatPrice(s.entry))}</text>
+    <text x="${pad + 48}" y="${y + 216}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#1e293b">SL       ${esc(formatPrice(s.sl))}</text>
+    <text x="${pad + 48}" y="${y + 260}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#1e293b">TP1    ${esc(formatPrice(s.tp1))}      TP2  ${esc(formatPrice(s.tp2))}</text>
+    <text x="${pad + 48}" y="${y + 308}" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}  ·  15M ${esc(s.m15.bias)}</text>
+    <text x="${W - pad - 40}" y="${y + 180}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" fill="${accent}">${isLong ? "▲" : "▼"}</text>`;
   });
-  const now = new Date().toLocaleString("en-GB", { timeZone: "Asia/Jakarta", hour12: false });
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\n  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b0d12"/><stop offset="100%" stop-color="#151822"/></linearGradient></defs>\n  <rect width="${W}" height="${H}" fill="url(#bg)"/>\n  <text x="48" y="52" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#f8fafc">STRICT CORE</text>\n  <text x="48" y="82" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">Futures structure scan  ·  ${esc(now)} WIB</text>\n  <text x="1152" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#475569">Top ${rows.length} Valid+</text>\n  ${cards}\n  <text x="48" y="600" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#475569">Risk max 0.75%  ·  Educational only  ·  Not financial advice</text>\n</svg>`;
+  const now = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#ffffff"/>
+  <rect x="0" y="0" width="${W}" height="140" fill="#0f172a"/>
+  <text x="${pad}" y="64" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#ffffff">STRICT CORE</text>
+  <text x="${pad}" y="108" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#94a3b8">Futures structure scan  ·  ${esc(now)} WIB</text>
+  <text x="${W - pad}" y="72" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#38bdf8">Top ${rows.length} Valid+</text>
+  ${cards}
+  <text x="${pad}" y="${H - 36}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#64748b">Risk max 0.75% per idea  ·  Educational only  ·  Not financial advice</text>
+</svg>`;
 }
 function renderSquareCardPng(coins) {
   const dir = "/tmp/square-card";
@@ -403,7 +439,7 @@ function renderSquareCardPng(coins) {
   const pngPath = path.join(dir, "card.png");
   fs.writeFileSync(svgPath, buildSquareCardSvg(coins), "utf8");
   try {
-    execFileSync("rsvg-convert", ["-w", "1200", "-h", "630", svgPath, "-o", pngPath], { stdio: "pipe" });
+    execFileSync("rsvg-convert", ["-w", "1600", "-h", "1400", svgPath, "-o", pngPath], { stdio: "pipe" });
   } catch (e) {
     console.warn("rsvg-convert failed, Square will post text only:", e.message);
     return null;
@@ -584,7 +620,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.4.1 | clean direction | Square pro card ===");
+  console.log("=== Strict Core v2.4.2 | Square card bright + large ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
