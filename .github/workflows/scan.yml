@@ -2,8 +2,6 @@ name: Strict Crypto Scanner
 
 on:
   schedule:
-    # Dua baris terpisah = lebih stabil di GitHub Actions ketimbang "0,45"
-    # Tiap jam menit 0 dan 45 (UTC) = 24/7 tanpa manual
     - cron: "0 * * * *"
     - cron: "45 * * * *"
   workflow_dispatch:
@@ -21,6 +19,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Install SVG renderer (Square card)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq librsvg2-bin
 
       - name: Run Strict Scanner
         env:
