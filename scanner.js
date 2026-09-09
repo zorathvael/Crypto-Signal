@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.6.2
+ * Strict Core Scanner v2.7.0
  * v2.5.2 liquidity entry · TP3 runner · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -17,7 +17,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 72;
+const CANDIDATE_LIMIT = 40;
 const SQUARE_POST_COUNT = 3;
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.6.2" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.7.0" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -331,7 +331,7 @@ function councilConsensus(h1, m15, m5, h4) {
   return { side, net, votes: votes.length, t1, t15, t4 };
 }
 
-function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
+function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null) {
   if (!h1 || !m15 || !m5) return null;
 
   const t1 = tfTrend(h1);
@@ -408,6 +408,12 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   }
 
   if (!action) return null;
+  const ob = book || { imbalance: 0, side: "FLAT" };
+  if (action === "LONG" && ob.side === "ASK" && (ob.imbalance ?? 0) <= -12) return null;
+  if (action === "SHORT" && ob.side === "BID" && (ob.imbalance ?? 0) >= 12) return null;
+  if (action === "LONG" && (ob.imbalance ?? 0) <= -22) return null;
+  if (action === "SHORT" && (ob.imbalance ?? 0) >= 22) return null;
+
 
   // Council: block only when it actively opposes the action
   const council = councilConsensus(h1, m15, m5, h4);
@@ -516,6 +522,15 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   else if (adxMax < 14 && path === "TREND") conf -= 6;
 
   conf += btcAdj;
+  if (book) {
+    if (action === "LONG" && book.imbalance >= 12) conf += 6;
+    else if (action === "LONG" && book.imbalance >= 5) conf += 3;
+    else if (action === "LONG" && book.imbalance < -5) conf -= 5;
+    if (action === "SHORT" && book.imbalance <= -12) conf += 6;
+    else if (action === "SHORT" && book.imbalance <= -5) conf += 3;
+    else if (action === "SHORT" && book.imbalance > 5) conf -= 5;
+    if (book.spread != null && book.spread > 0.08) conf -= 4;
+  }
   conf += chasePen;
   conf = clamp(Math.round(conf), 0, 99);
   if (conf < 75) return null;
@@ -531,6 +546,7 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
     h4,
     adx: adxMax,
     trends: { h1: t1, m15: t15, h4: t4 },
+    book: book ? { imbalance: book.imbalance, side: book.side, spread: book.spread } : null,
   };
 }
 
@@ -669,7 +685,7 @@ function formatTelegramMessage(s) {
     `🚀 TP3: <code>${formatPrice(s.tp3)}</code>\n` +
     `📈 R:R 1:${s.rr.toFixed(1)}\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1.bias} · 15M ${s.trends ? s.trends.m15 : s.m15.bias} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
-    `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
+    `Vol ${s.m5.volume.side}${s.book ? " · Book " + s.book.side + " (" + s.book.imbalance + ")" : ""} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
     `<i>Strict Core · Entry ONLY after sweep/reclaim · Risk max 0.5% · NFA</i>`
   );
 }
@@ -750,7 +766,7 @@ function buildSquareCardSvg(coins) {
     <text x="${pad + 28}" y="${y + 178}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
     <text x="${pad + 28}" y="${y + 210}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
     <text x="${pad + 28}" y="${y + 242}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
-    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}</text>
+    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}${s.book ? " · Book " + esc(s.book.side) : ""}</text>
     <text x="${pad + 28}" y="${y + 312}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
   });
 
@@ -964,8 +980,60 @@ async function fetchFunding(instId) {
     return 0;
   }
 }
+
+async function fetchOrderBook(instId, sz = 20) {
+  try {
+    const data = await getJson(
+      `${OKX}/api/v5/market/books?instId=${encodeURIComponent(instId)}&sz=${sz}`
+    );
+    const row = (data && data.data && data.data[0]) || null;
+    if (!row) return null;
+    const bids = (row.bids || []).map((x) => ({ price: +x[0], size: +x[1] }));
+    const asks = (row.asks || []).map((x) => ({ price: +x[0], size: +x[1] }));
+    return { bids, asks, ts: row.ts };
+  } catch {
+    return null;
+  }
+}
+
+function analyzeOrderBook(book) {
+  if (!book || !book.bids || !book.bids.length || !book.asks || !book.asks.length) {
+    return { imbalance: 0, side: "FLAT", bidVol: 0, askVol: 0, spread: 0, mid: null };
+  }
+  const depthBid = book.bids.slice(0, 15);
+  const depthAsk = book.asks.slice(0, 15);
+  let bidVol = 0, askVol = 0;
+  depthBid.forEach((b, i) => {
+    const w = 1 - i * 0.04;
+    bidVol += b.size * Math.max(w, 0.4);
+  });
+  depthAsk.forEach((a, i) => {
+    const w = 1 - i * 0.04;
+    askVol += a.size * Math.max(w, 0.4);
+  });
+  const total = bidVol + askVol || 1;
+  const imbalance = ((bidVol - askVol) / total) * 100;
+  const bestBid = book.bids[0].price;
+  const bestAsk = book.asks[0].price;
+  const mid = (bestBid + bestAsk) / 2;
+  const spread = mid ? ((bestAsk - bestBid) / mid) * 100 : 0;
+  let side = "FLAT";
+  if (imbalance >= 12) side = "BID";
+  else if (imbalance <= -12) side = "ASK";
+  return {
+    imbalance: +imbalance.toFixed(2),
+    side,
+    bidVol,
+    askVol,
+    spread: +spread.toFixed(4),
+    mid,
+    bestBid,
+    bestAsk,
+  };
+}
+
 async function main() {
-  console.log("=== Strict Core v2.6.2 | more signals · still anti-chase ===");
+  console.log("=== Strict Core v2.7.0 | order book bid/ask gate · imbalance ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1011,18 +1079,20 @@ async function main() {
   const signals = [];
   for (const c of candidates) {
     try {
-      const [h1c, m15c, m5c, h4c, funding] = await Promise.all([
+      const [h1c, m15c, m5c, h4c, funding, rawBook] = await Promise.all([
         fetchOkxCandles(c.instId, "1H", 100),
         fetchOkxCandles(c.instId, "15m", 100),
         fetchOkxCandles(c.instId, "5m", 100),
         fetchOkxCandles(c.instId, "4H", 100),
         fetchFunding(c.instId),
+        fetchOrderBook(c.instId, 20),
       ]);
       const h1 = analyzeTF(h1c, "1H");
       const m15 = analyzeTF(m15c, "15M");
       const m5 = analyzeTF(m5c, "5M");
       const h4 = analyzeTF(h4c, "4H");
-      const scored = scoreSignal(h1, m15, m5, h4, funding, btcBias);
+      const book = analyzeOrderBook(rawBook);
+      const scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book);
       if (!scored || scored.probability < MIN_PROB_VALID) continue;
       const levels = buildLevels(m5c, scored, c.mark);
       if (levels.rr < MIN_RR) continue;
@@ -1042,6 +1112,7 @@ async function main() {
         h4: scored.h4,
         trends: scored.trends,
       });
+      await new Promise((r) => setTimeout(r, 150));
     } catch (e) {
       console.warn(`Skip ${c.base}:`, e.message);
     }
