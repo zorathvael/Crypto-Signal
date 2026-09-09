@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.5.4
+ * Strict Core Scanner v2.6.0
  * v2.5.2 liquidity entry · TP3 runner · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.4" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.6.0" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -534,50 +534,62 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 }
 
 function buildLevels(candles, signal, mark) {
+  // CRITICAL FIX vs repeated SL hits:
+  // Do NOT sit limit orders inside the liquidity pool.
+  // Only enter AFTER a sweep wick has printed and price reclaimed.
+  // Entry = reclaim/mark | SL = beyond the sweep wick that already happened.
   const atrV = atr(candles) || mark * 0.005;
   const recent = candles.slice(-30);
-  const swingLow = Math.min(...recent.map((c) => c.low));
-  const swingHigh = Math.max(...recent.map((c) => c.high));
-  // Deeper pool: 2nd-lowest / 2nd-highest to avoid single-wick fake levels
-  const lows = [...recent.map((c) => c.low)].sort((a, b) => a - b);
-  const highs = [...recent.map((c) => c.high)].sort((a, b) => b - a);
-  const deepLow = lows[Math.min(2, lows.length - 1)];
-  const deepHigh = highs[Math.min(2, highs.length - 1)];
   const last = candles[candles.length - 1];
   const prev = candles[candles.length - 2] || last;
+  const prev2 = candles[candles.length - 3] || prev;
   const m5 = signal.m5;
   const tick = Math.max(mark * 0.00012, 1e-12);
 
-  // User feedback: SL keeps hitting → entry MUST be deeper, SL even further
-  // LONG: entry lower (discount), SL below deep liquidity
-  // SHORT: entry higher (premium), SL above deep liquidity
+  const lows = recent.map((c) => c.low);
+  const highs = recent.map((c) => c.high);
+  const swingLow = Math.min(...lows);
+  const swingHigh = Math.max(...highs);
+  // Prior structure excluding last candle (the sweep candidate)
+  const prior = candles.slice(-30, -1);
+  const priorLow = Math.min(...prior.map((c) => c.low));
+  const priorHigh = Math.max(...prior.map((c) => c.high));
+
   let entry, sl, tp1, tp2, tp3, mode;
 
   if (signal.action === "LONG") {
-    const band = m5.lower != null ? m5.lower : deepLow;
-    // Blend deep swing + BB lower — bias toward the LOWER of the two
-    const zone = Math.min(deepLow, band, swingLow);
-    entry = zone + atrV * 0.08; // sit just above the pool
+    // Sweep = took lows below prior structure then closed back up
+    const wickLow = Math.min(last.low, prev.low);
     const swept =
-      last.low <= zone * 1.003 &&
-      last.close > Math.max(last.open, zone) &&
-      last.close > (prev.low + prev.high) / 2;
-    if (swept) {
-      entry = Math.min(mark, zone + atrV * 0.2);
-      mode = "SWEEP";
-    } else if (mark <= entry * 1.006) {
-      entry = Math.min(mark, entry);
-      mode = "ZONE";
-    } else if (mark < entry) {
-      entry = mark;
-      mode = "RECLAIM";
-    } else {
-      mode = "LIMIT"; // wait for price to come down — do not chase
+      wickLow < priorLow - atrV * 0.05 &&
+      last.close > wickLow + atrV * 0.25 &&
+      last.close >= last.open * 0.998 &&
+      last.close > (last.low + last.high) / 2;
+
+    // Soft reclaim: bounce from lower third without full sweep
+    const reclaim =
+      !swept &&
+      (m5.position ?? 50) <= 40 &&
+      last.close > last.open &&
+      last.low <= (m5.lower != null ? m5.lower * 1.01 : priorLow * 1.01) &&
+      last.close > last.low + (last.high - last.low) * 0.55;
+
+    if (!swept && !reclaim) {
+      // No confirmation yet — reject levels (caller will skip signal)
+      return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
     }
-    // SL deeper than previous version (anti-hunt)
-    sl = zone - atrV * 1.05 - tick;
-    if (entry - sl < atrV * 1.55) sl = entry - atrV * 1.55;
-    if (entry - sl > atrV * 3.0) sl = entry - atrV * 3.0;
+
+    mode = swept ? "SWEEP" : "RECLAIM";
+    entry = mark; // enter after confirmation, not inside the pool
+    // SL beyond the wick that ALREADY printed (+ small buffer)
+    const sweepFloor = swept ? wickLow : Math.min(last.low, prev.low, m5.lower != null ? m5.lower : last.low);
+    sl = sweepFloor - atrV * 0.35 - tick;
+    // Ensure minimum room but not insane
+    if (entry - sl < atrV * 0.9) sl = entry - atrV * 0.9;
+    if (entry - sl > atrV * 2.8) sl = entry - atrV * 2.8;
+    // Never place SL above entry
+    if (!(sl < entry)) sl = entry - atrV * 1.1;
+
     const risk = entry - sl;
     tp1 = entry + risk * 1.6;
     tp2 = entry + risk * 2.6;
@@ -588,28 +600,32 @@ function buildLevels(candles, signal, mark) {
     if (tp2 <= tp1) tp2 = tp1 + risk * 0.7;
     if (tp3 <= tp2) tp3 = tp2 + risk * 1.2;
   } else {
-    const band = m5.upper != null ? m5.upper : deepHigh;
-    const zone = Math.max(deepHigh, band, swingHigh);
-    entry = zone - atrV * 0.08;
+    const wickHigh = Math.max(last.high, prev.high);
     const swept =
-      last.high >= zone * 0.997 &&
-      last.close < Math.min(last.open, zone) &&
-      last.close < (prev.low + prev.high) / 2;
-    if (swept) {
-      entry = Math.max(mark, zone - atrV * 0.2);
-      mode = "SWEEP";
-    } else if (mark >= entry * 0.994) {
-      entry = Math.max(mark, entry);
-      mode = "ZONE";
-    } else if (mark > entry) {
-      entry = mark;
-      mode = "RECLAIM";
-    } else {
-      mode = "LIMIT";
+      wickHigh > priorHigh + atrV * 0.05 &&
+      last.close < wickHigh - atrV * 0.25 &&
+      last.close <= last.open * 1.002 &&
+      last.close < (last.low + last.high) / 2;
+
+    const reclaim =
+      !swept &&
+      (m5.position ?? 50) >= 60 &&
+      last.close < last.open &&
+      last.high >= (m5.upper != null ? m5.upper * 0.99 : priorHigh * 0.99) &&
+      last.close < last.high - (last.high - last.low) * 0.55;
+
+    if (!swept && !reclaim) {
+      return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
     }
-    sl = zone + atrV * 1.05 + tick;
-    if (sl - entry < atrV * 1.55) sl = entry + atrV * 1.55;
-    if (sl - entry > atrV * 3.0) sl = entry + atrV * 3.0;
+
+    mode = swept ? "SWEEP" : "RECLAIM";
+    entry = mark;
+    const sweepCeil = swept ? wickHigh : Math.max(last.high, prev.high, m5.upper != null ? m5.upper : last.high);
+    sl = sweepCeil + atrV * 0.35 + tick;
+    if (sl - entry < atrV * 0.9) sl = entry + atrV * 0.9;
+    if (sl - entry > atrV * 2.8) sl = entry + atrV * 2.8;
+    if (!(sl > entry)) sl = entry + atrV * 1.1;
+
     const risk = sl - entry;
     tp1 = entry - risk * 1.6;
     tp2 = entry - risk * 2.6;
@@ -622,11 +638,6 @@ function buildLevels(candles, signal, mark) {
   }
 
   const risk = Math.abs(entry - sl);
-  const dist = Math.abs(mark - entry);
-  // Reject chase: mark too far from deep entry zone
-  if (mode === "LIMIT" && dist > atrV * 2.2) {
-    return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
-  }
   if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2 && tp2 <= tp3)) {
     return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
   }
@@ -654,7 +665,7 @@ function formatTelegramMessage(s) {
     `📈 R:R 1:${s.rr.toFixed(1)}\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1.bias} · 15M ${s.trends ? s.trends.m15 : s.m15.bias} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.5 · TP3 runner · Risk max 0.75% · NFA</i>`
+    `<i>Strict Core · Entry ONLY after sweep/reclaim · Risk max 0.5% · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -949,7 +960,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.5.4 | council consensus · deeper SL-zone entry ===");
+  console.log("=== Strict Core v2.6.0 | post-sweep entry only · SL beyond printed wick ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
