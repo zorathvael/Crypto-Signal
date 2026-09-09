@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.7.1" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.7.2" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -690,56 +690,68 @@ function formatTelegramMessage(s) {
   );
 }
 function formatSquareCoinBlock(s) {
-  const side = s.action === "LONG" ? "Long" : "Short";
-  const bias =
-    s.action === "LONG"
-      ? "Struktur masih mendukung kenaikan selama hold di atas zona entry."
-      : "Struktur masih mendukung penurunan selama gagal hold di atas zona entry.";
-  const bookLine =
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
+  const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
+  const mode = s.mode ? ` · ${s.mode}` : "";
+  const book =
     s.book && s.book.side && s.book.side !== "FLAT"
-      ? `Order book cenderung ${s.book.side === "BID" ? "beli" : "jual"} (imbalance ${s.book.imbalance}).`
-      : null;
-  const lines = [
-    `${s.base} — ide ${side}`,
-    `Zona entry di sekitar ${formatPrice(s.entry)}.`,
-    `Invalid jika tembus ${formatPrice(s.sl)}.`,
-    `Target bertahap: ${formatPrice(s.tp1)} → ${formatPrice(s.tp2)} → ${formatPrice(s.tp3 || s.tp2)}.`,
-    `R:R sekitar 1:${s.rr.toFixed(1)}. ${bias}`,
-  ];
-  if (bookLine) lines.push(bookLine);
+      ? `\nBook ${s.book.side} (${s.book.imbalance})`
+      : "";
   const tf = s.trends
-    ? `Timeframe: 1H ${s.trends.h1}, 15M ${s.trends.m15}, 4H ${s.trends.h4}.`
-    : null;
-  if (tf) lines.push(tf);
-  return lines.join("\n");
+    ? `1H ${s.trends.h1} · 15M ${s.trends.m15} · 4H ${s.trends.h4}`
+    : `1H ${s.h1?.bias || "—"} · 15M ${s.m15?.bias || "—"}`;
+  const rsi = s.m5?.rsi != null ? Number(s.m5.rsi).toFixed(0) : "—";
+  const vol = s.m5?.volume?.side || "—";
+  return (
+    `${tag} · ${s.base} ${arrow}\n` +
+    `\n` +
+    `📊 Probability: ${s.probability}%\n` +
+    `🧩 Setup: ${s.setup}\n` +
+    `🎯 Entry: ${formatPrice(s.entry)}${mode}\n` +
+    `🛑 SL: ${formatPrice(s.sl)}\n` +
+    `🎯 TP1: ${formatPrice(s.tp1)}\n` +
+    `🎯 TP2: ${formatPrice(s.tp2)}\n` +
+    `🚀 TP3: ${formatPrice(s.tp3 || s.tp2)}\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}\n` +
+    `\n` +
+    `${tf}\n` +
+    `Vol ${vol} · RSI ${rsi}` +
+    book
+  );
 }
-function formatSquareBatchMessage(coins) {
-  const hour = new Date().toLocaleString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const openers = [
-    "Catatan pasar sore ini — beberapa pair yang sedang saya pantau:",
-    "Update singkat futures: ini zona yang menarik perhatian saya hari ini.",
-    "Beberapa setup yang terlihat rapi di chart dan order book:",
-    "Sharing ide trading (bukan ajakan entry). Baca levelnya dulu.",
-  ];
-  const opener = openers[Math.floor(Date.now() / 600000) % openers.length];
 
-  const lines = [opener, ""];
+function formatSquareBatchMessage(coins) {
+  const headers = [
+    "Pagi, ini beberapa pair yang lagi saya cek di chart.",
+    "Update singkat dari pantauan futures hari ini.",
+    "Baru selesai scan — ada beberapa setup yang cukup rapi.",
+    "Sharing catatan level, silakan dicermati sendiri ya.",
+    "Ini ide yang sedang saya pantau, bukan ajakan entry.",
+    "Setelah cek struktur & order book, ini yang menarik perhatian.",
+  ];
+  const footers = [
+    "Risk kecil saja. Jangan FOMO — invalid levelnya jelas di atas.",
+    "Selalu pakai SL. Ini edukasi chart, bukan saran keuangan.",
+    "Kelola risiko sendiri ya. Pasar bisa berubah kapan saja.",
+    "Kalau belum yakin, skip saja. Masih banyak setup lain nanti.",
+    "Catatan pribadi untuk referensi. NFA.",
+  ];
+  const hi = headers[Math.floor(Date.now() / 900000) % headers.length];
+  const fo = footers[Math.floor(Date.now() / 900000) % footers.length];
+
+  const lines = [hi, ""];
   coins.forEach((s, i) => {
-    if (i > 0) lines.push("");
+    if (i > 0) lines.push("", "────────────", "");
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push(
-    "Kelola risiko sendiri. Posisi kecil saja — ini edukasi chart & struktur, bukan rekomendasi keuangan."
-  );
-  lines.push(`Dicatat sekitar pukul ${hour} WIB.`);
+  lines.push("Strict Core · Entry after confirmation · Risk max 0.5% · NFA");
+  lines.push("");
+  lines.push(fo);
   return lines.join("\n").trim();
 }
+
 function buildSquareCardSvg(coins) {
   // Portrait mobile 720×1520 — readable on phone without zoom
   const W = 720;
@@ -1051,7 +1063,7 @@ function analyzeOrderBook(book) {
 }
 
 async function main() {
-  console.log("=== Strict Core v2.7.1 | Square human copy · no hashtags ===");
+  console.log("=== Strict Core v2.7.2 | Square format user-style ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
