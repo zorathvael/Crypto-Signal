@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.7.0" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.7.1" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -690,36 +690,54 @@ function formatTelegramMessage(s) {
   );
 }
 function formatSquareCoinBlock(s) {
-  const isSniper = s.probability >= MIN_PROB_SNIPER;
-  const grade = isSniper ? "SNIPER" : "VALID";
-  const side = s.action === "LONG" ? "LONG" : "SHORT";
-  const mark = s.action === "LONG" ? "🟢" : "🔴";
-  return (
-    `${grade}  ·  ${s.base}  ${mark} ${side}\n` +
-    `Score ${s.probability}%  ·  ${s.setup}  ·  R:R 1:${s.rr.toFixed(1)}\n` +
-    `Entry  ${formatPrice(s.entry)}\n` +
-    `SL     ${formatPrice(s.sl)}\n` +
-    `TP1    ${formatPrice(s.tp1)}   ·   TP2  ${formatPrice(s.tp2)}   ·   TP3  ${formatPrice(s.tp3 || s.tp2)}\n` +
-    `Context  1H ${s.h1.structure}  ·  15M ${s.m15.bias}  ·  Vol ${s.m5.volume.side}`
-  );
+  const side = s.action === "LONG" ? "Long" : "Short";
+  const bias =
+    s.action === "LONG"
+      ? "Struktur masih mendukung kenaikan selama hold di atas zona entry."
+      : "Struktur masih mendukung penurunan selama gagal hold di atas zona entry.";
+  const bookLine =
+    s.book && s.book.side && s.book.side !== "FLAT"
+      ? `Order book cenderung ${s.book.side === "BID" ? "beli" : "jual"} (imbalance ${s.book.imbalance}).`
+      : null;
+  const lines = [
+    `${s.base} — ide ${side}`,
+    `Zona entry di sekitar ${formatPrice(s.entry)}.`,
+    `Invalid jika tembus ${formatPrice(s.sl)}.`,
+    `Target bertahap: ${formatPrice(s.tp1)} → ${formatPrice(s.tp2)} → ${formatPrice(s.tp3 || s.tp2)}.`,
+    `R:R sekitar 1:${s.rr.toFixed(1)}. ${bias}`,
+  ];
+  if (bookLine) lines.push(bookLine);
+  const tf = s.trends
+    ? `Timeframe: 1H ${s.trends.h1}, 15M ${s.trends.m15}, 4H ${s.trends.h4}.`
+    : null;
+  if (tf) lines.push(tf);
+  return lines.join("\n");
 }
 function formatSquareBatchMessage(coins) {
-  const now = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "medium", timeStyle: "short" });
-  const lines = [
-    "STRICT CORE  ·  Futures Scan",
-    `WIB ${now}`,
-    "",
-    "Setup terpilih (struktur ketat, bukan sinyal acak):",
-    "",
-  ];
-  coins.forEach((s, i) => {
-    if (i > 0) lines.push("────────────────");
-    lines.push(formatSquareCoinBlock(s));
-    lines.push("");
+  const hour = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   });
-  lines.push("Risk max 0.75% per ide");
-  lines.push("Edukasi saja — bukan saran finansial");
-  lines.push("#Crypto #Futures #Trading");
+  const openers = [
+    "Catatan pasar sore ini — beberapa pair yang sedang saya pantau:",
+    "Update singkat futures: ini zona yang menarik perhatian saya hari ini.",
+    "Beberapa setup yang terlihat rapi di chart dan order book:",
+    "Sharing ide trading (bukan ajakan entry). Baca levelnya dulu.",
+  ];
+  const opener = openers[Math.floor(Date.now() / 600000) % openers.length];
+
+  const lines = [opener, ""];
+  coins.forEach((s, i) => {
+    if (i > 0) lines.push("");
+    lines.push(formatSquareCoinBlock(s));
+  });
+  lines.push("");
+  lines.push(
+    "Kelola risiko sendiri. Posisi kecil saja — ini edukasi chart & struktur, bukan rekomendasi keuangan."
+  );
+  lines.push(`Dicatat sekitar pukul ${hour} WIB.`);
   return lines.join("\n").trim();
 }
 function buildSquareCardSvg(coins) {
@@ -1033,7 +1051,7 @@ function analyzeOrderBook(book) {
 }
 
 async function main() {
-  console.log("=== Strict Core v2.7.0 | order book bid/ask gate · imbalance ===");
+  console.log("=== Strict Core v2.7.1 | Square human copy · no hashtags ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
