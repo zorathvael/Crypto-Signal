@@ -1,7 +1,7 @@
 
 /**
  * Strict Core Scanner v2.4.5
- * Clean direction · soft BTC · Square card bright/large (mobile readable)
+ * v2.4.6 slope-lock anti-invert · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.5" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.6" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -233,86 +233,214 @@ function analyzeTF(candles, label) {
   biasScore = clamp(biasScore, -100, 100);
   const bias = biasScore >= 18 ? "bullish" : biasScore <= -18 ? "bearish" : "neutral";
   const structure = squeeze ? "SQUEEZE" : pos <= 12 ? "NEAR LOWER" : pos >= 88 ? "NEAR UPPER" : "RANGE";
+  // Price slope (%): positive = rising, negative = falling — hard direction anchor
+  const slope = (n) => {
+    if (idx < n) return 0;
+    const a = closes[idx - n], b = closes[idx];
+    return a ? ((b - a) / a) * 100 : 0;
+  };
+  const slope6 = slope(6);
+  const slope12 = slope(12);
   return {
     label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
     emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown,
     meanLong: touchLo && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 35,
     meanShort: touchUp && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 65,
     adx: adxV,
+    slope6, slope12,
+    close: last.close,
+    ema21: e21,
   };
 }
 function tfTrend(tf) {
   if (!tf) return "neutral";
-  const bull = (tf.emaBull && (tf.ms.trend === "up" || tf.bias === "bullish")) || (tf.bias === "bullish" && tf.biasScore >= 25 && tf.ms.trend !== "down");
-  const bear = (tf.emaBear && (tf.ms.trend === "down" || tf.bias === "bearish")) || (tf.bias === "bearish" && tf.biasScore <= -25 && tf.ms.trend !== "up");
-  if (bull && !bear) return "bullish";
-  if (bear && !bull) return "bearish";
+  // Majority vote — needs ≥2 bullish or ≥2 bearish votes (anti-flip)
+  let votes = 0;
+  if (tf.emaBull) votes += 1;
+  if (tf.emaBear) votes -= 1;
+  if (tf.ms.trend === "up") votes += 1;
+  if (tf.ms.trend === "down") votes -= 1;
+  if (tf.bias === "bullish" && tf.biasScore >= 22) votes += 1;
+  if (tf.bias === "bearish" && tf.biasScore <= -22) votes -= 1;
+  if (tf.slope12 != null) {
+    if (tf.slope12 > 0.2) votes += 1;
+    if (tf.slope12 < -0.2) votes -= 1;
+  }
+  // Price vs EMA21 as structural anchor
+  if (tf.close != null && tf.ema21 != null) {
+    if (tf.close > tf.ema21) votes += 1;
+    if (tf.close < tf.ema21) votes -= 1;
+  }
+  if (votes >= 2) return "bullish";
+  if (votes <= -2) return "bearish";
   return "neutral";
 }
 function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   if (!h1 || !m15 || !m5) return null;
-  const t1 = tfTrend(h1), t15 = tfTrend(m15), t4 = tfTrend(h4);
-  const h1Bull = t1 === "bullish", h1Bear = t1 === "bearish";
-  const m15Bull = t15 === "bullish", m15Bear = t15 === "bearish";
+
+  const t1 = tfTrend(h1);
+  const t15 = tfTrend(m15);
+  const t4 = tfTrend(h4);
   const adxMax = Math.max(h1.adx != null ? h1.adx : 0, m15.adx != null ? m15.adx : 0);
-  let action = null, path = null;
-  if (h1Bull && m15Bull && t4 !== "bearish") { action = "LONG"; path = "TREND"; }
-  else if (h1Bear && m15Bear && t4 !== "bullish") { action = "SHORT"; path = "TREND"; }
-  else if (m5.meanLong && !h1Bear && t4 !== "bearish") { action = "LONG"; path = "MEAN_REV"; }
-  else if (m5.meanShort && !h1Bull && t4 !== "bullish") { action = "SHORT"; path = "MEAN_REV"; }
-  else if (m5.squeeze && m5.volume.spike && Math.abs(m5.volume.pressure) >= 14) {
-    if (m5.volume.pressure >= 14 && m5.macdUp && t1 !== "bearish" && t15 !== "bearish" && t4 !== "bearish") { action = "LONG"; path = "SQUEEZE"; }
-    else if (m5.volume.pressure <= -14 && m5.macdDown && t1 !== "bullish" && t15 !== "bullish" && t4 !== "bullish") { action = "SHORT"; path = "SQUEEZE"; }
+
+  // --- HARD slope lock (price must move the same way as the signal) ---
+  const h1Up = (h1.slope12 ?? 0) > 0.15;
+  const h1Down = (h1.slope12 ?? 0) < -0.15;
+  const m15Up = (m15.slope6 ?? 0) > 0.1;
+  const m15Down = (m15.slope6 ?? 0) < -0.1;
+
+  let action = null;
+  let path = null;
+
+  // TREND: 1H + 15M same direction + slope confirms + 4H not opposing
+  if (t1 === "bullish" && t15 === "bullish" && t4 !== "bearish" && h1Up && !h1Down) {
+    action = "LONG";
+    path = "TREND";
+  } else if (t1 === "bearish" && t15 === "bearish" && t4 !== "bullish" && h1Down && !h1Up) {
+    action = "SHORT";
+    path = "TREND";
   }
+
+  // MEAN_REV: only with HTF permission AND slope not fighting hard
+  if (!action) {
+    if (
+      m5.meanLong &&
+      t1 !== "bearish" &&
+      t4 !== "bearish" &&
+      !h1Down &&
+      (h1.slope12 ?? 0) > -0.8
+    ) {
+      action = "LONG";
+      path = "MEAN_REV";
+    } else if (
+      m5.meanShort &&
+      t1 !== "bullish" &&
+      t4 !== "bullish" &&
+      !h1Up &&
+      (h1.slope12 ?? 0) < 0.8
+    ) {
+      action = "SHORT";
+      path = "MEAN_REV";
+    }
+  }
+
+  // SQUEEZE: volume + macd + no HTF fight
+  if (!action && m5.squeeze && m5.volume.spike && Math.abs(m5.volume.pressure) >= 14) {
+    if (
+      m5.volume.pressure >= 14 &&
+      m5.macdUp &&
+      t1 !== "bearish" &&
+      t15 !== "bearish" &&
+      t4 !== "bearish" &&
+      !h1Down
+    ) {
+      action = "LONG";
+      path = "SQUEEZE";
+    } else if (
+      m5.volume.pressure <= -14 &&
+      m5.macdDown &&
+      t1 !== "bullish" &&
+      t15 !== "bullish" &&
+      t4 !== "bullish" &&
+      !h1Up
+    ) {
+      action = "SHORT";
+      path = "SQUEEZE";
+    }
+  }
+
   if (!action) return null;
-  if (action === "LONG" && (t15 === "bearish" || t1 === "bearish")) return null;
-  if (action === "SHORT" && (t15 === "bullish" || t1 === "bullish")) return null;
-  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -35) return null;
-  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 35) return null;
-  if (action === "LONG" && m5.volume.pressure < -20) return null;
-  if (action === "SHORT" && m5.volume.pressure > 20) return null;
-  if (path === "TREND" && adxMax < 18 && !m5.volume.spike) return null;
-  if (path === "SQUEEZE" && adxMax > 35) return null;
+
+  // --- Final anti-invert gates (absolute) ---
+  if (action === "LONG" && (t1 === "bearish" || t15 === "bearish")) return null;
+  if (action === "SHORT" && (t1 === "bullish" || t15 === "bullish")) return null;
+  if (action === "LONG" && h1Down && path === "TREND") return null;
+  if (action === "SHORT" && h1Up && path === "TREND") return null;
+  if (action === "LONG" && m15Down && path === "TREND") return null;
+  if (action === "SHORT" && m15Up && path === "TREND") return null;
+  if (action === "LONG" && (h1.slope12 ?? 0) < -1.0) return null; // strong dump → no long
+  if (action === "SHORT" && (h1.slope12 ?? 0) > 1.0) return null; // strong pump → no short
+  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -30) return null;
+  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 30) return null;
+  if (action === "LONG" && m5.volume.pressure < -22) return null;
+  if (action === "SHORT" && m5.volume.pressure > 22) return null;
+  if (path === "TREND" && adxMax < 16 && !m5.volume.spike) return null;
+  if (path === "SQUEEZE" && adxMax > 38) return null;
+
   let btcAdj = 0;
   if (btcBias && Math.abs(btcBias.score) >= 25) {
-    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 3 : -4;
-    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 3 : -4;
+    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 3 : -6;
+    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 3 : -6;
   }
-  let conf = 52;
-  const d = action === "LONG" ? 1 : -1;
-  conf += d * h1.biasScore * 0.2;
-  if (action === "LONG" && h1.emaBull) conf += 8;
-  if (action === "SHORT" && h1.emaBear) conf += 8;
-  if (action === "LONG" && h1.ms.trend === "up") conf += 7;
-  if (action === "SHORT" && h1.ms.trend === "down") conf += 7;
-  conf += d * m15.biasScore * 0.12;
-  if (action === "LONG" && m15Bull) conf += 6;
-  if (action === "SHORT" && m15Bear) conf += 6;
-  conf += d * m5.biasScore * 0.08;
-  if (path === "MEAN_REV") conf += 12;
-  if (path === "SQUEEZE") conf += 8;
-  if (action === "LONG" && m5.macdUp) conf += 5;
-  if (action === "SHORT" && m5.macdDown) conf += 5;
-  if (action === "LONG" && m5.reversal.bias === "bullish") conf += 6 * m5.reversal.quality;
-  if (action === "SHORT" && m5.reversal.bias === "bearish") conf += 6 * m5.reversal.quality;
-  if (action === "LONG" && m5.volume.pressure > 10) conf += 6;
-  if (action === "SHORT" && m5.volume.pressure < -10) conf += 6;
-  if (m5.volume.spike) conf += 3;
-  if (action === "LONG" && m5.rsi < 40) conf += 3;
-  if (action === "LONG" && m5.rsi > 72) conf -= 10;
-  if (action === "SHORT" && m5.rsi > 60) conf += 3;
-  if (action === "SHORT" && m5.rsi < 28) conf -= 10;
-  if (action === "LONG" && funding < -0.0003) conf += 3;
-  if (action === "SHORT" && funding > 0.0003) conf += 3;
-  if (adxMax >= 25 && path === "TREND") conf += 5;
-  else if (adxMax < 16 && path === "TREND") conf -= 8;
+
+  let conf = 50;
+  // Direction-aligned structure only (never reward fighting the move)
+  if (action === "LONG") {
+    if (t1 === "bullish") conf += 12;
+    if (t15 === "bullish") conf += 10;
+    if (t4 === "bullish") conf += 8;
+    else if (t4 === "neutral") conf += 2;
+    if (h1.emaBull) conf += 6;
+    if (m15.emaBull) conf += 5;
+    if (h1.ms.trend === "up") conf += 5;
+    if (m15.ms.trend === "up") conf += 4;
+    if (h1Up) conf += 6;
+    if (m15Up) conf += 4;
+    conf += Math.max(0, h1.biasScore) * 0.12;
+    conf += Math.max(0, m15.biasScore) * 0.1;
+  } else {
+    if (t1 === "bearish") conf += 12;
+    if (t15 === "bearish") conf += 10;
+    if (t4 === "bearish") conf += 8;
+    else if (t4 === "neutral") conf += 2;
+    if (h1.emaBear) conf += 6;
+    if (m15.emaBear) conf += 5;
+    if (h1.ms.trend === "down") conf += 5;
+    if (m15.ms.trend === "down") conf += 4;
+    if (h1Down) conf += 6;
+    if (m15Down) conf += 4;
+    conf += Math.max(0, -h1.biasScore) * 0.12;
+    conf += Math.max(0, -m15.biasScore) * 0.1;
+  }
+
+  if (path === "MEAN_REV") conf += 8;
+  if (path === "SQUEEZE") conf += 6;
+  if (path === "TREND" && t1 === t15 && t15 === t4 && t4 !== "neutral") conf += 6;
+
+  if (action === "LONG" && m5.macdUp) conf += 4;
+  if (action === "SHORT" && m5.macdDown) conf += 4;
+  if (action === "LONG" && m5.reversal.bias === "bullish") conf += 5 * m5.reversal.quality;
+  if (action === "SHORT" && m5.reversal.bias === "bearish") conf += 5 * m5.reversal.quality;
+  if (action === "LONG" && m5.volume.pressure > 10) conf += 5;
+  if (action === "SHORT" && m5.volume.pressure < -10) conf += 5;
+  if (m5.volume.spike) conf += 2;
+
+  if (action === "LONG" && m5.rsi < 40) conf += 2;
+  if (action === "LONG" && m5.rsi > 72) conf -= 12;
+  if (action === "SHORT" && m5.rsi > 60) conf += 2;
+  if (action === "SHORT" && m5.rsi < 28) conf -= 12;
+  if (action === "LONG" && funding < -0.0003) conf += 2;
+  if (action === "SHORT" && funding > 0.0003) conf += 2;
+  if (adxMax >= 22 && path === "TREND") conf += 4;
+  else if (adxMax < 14 && path === "TREND") conf -= 6;
+
   conf += btcAdj;
   conf = clamp(Math.round(conf), 0, 99);
-  if (path === "TREND" && !(h1Bull || h1Bear)) conf = Math.min(conf, 74);
   if (conf < 75) return null;
-  if (path === "TREND" && t1 === t15 && t4 === t1 && t4 !== "neutral") conf = Math.min(99, conf + 5);
-  return { action, probability: conf, setup: path, h1, m15, m5, h4, adx: adxMax, trends: { h1: t1, m15: t15, h4: t4 } };
+
+  return {
+    action,
+    probability: conf,
+    setup: path,
+    h1,
+    m15,
+    m5,
+    h4,
+    adx: adxMax,
+    trends: { h1: t1, m15: t15, h4: t4 },
+  };
 }
+
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
   const recent = candles.slice(-16);
@@ -321,23 +449,31 @@ function buildLevels(candles, signal, mark) {
   const tick = Math.max(mark * 0.00008, 1e-12);
   const m5 = signal.m5;
   let entry, sl, tp1, tp2;
+  // Entry = market price (mark). Levels must match action side strictly.
   if (signal.action === "LONG") {
-    entry = Math.min(mark, Math.min(swingLow + atrV * 0.2, m5.lower + atrV * 0.15));
-    if (mark < entry) entry = mark;
-    entry = Math.min(entry, mark * 1.001);
-    sl = Math.min(swingLow - tick - atrV * 0.45, entry - atrV * 1.1);
-    tp1 = m5.middle > entry ? m5.middle : entry + atrV * 1.5;
-    tp2 = Math.max(m5.upper * 0.997, entry + atrV * 2.8);
+    entry = mark;
+    // SL always below entry
+    sl = Math.min(swingLow - tick - atrV * 0.35, entry - atrV * 1.05);
+    if (!(sl < entry)) sl = entry - atrV * 1.2;
+    tp1 = Math.max(m5.middle || 0, entry + atrV * 1.4);
+    if (!(tp1 > entry)) tp1 = entry + atrV * 1.5;
+    tp2 = Math.max(m5.upper || 0, entry + atrV * 2.6);
+    if (!(tp2 > tp1)) tp2 = tp1 + atrV * 1.2;
   } else {
-    entry = Math.max(mark, Math.max(swingHigh - atrV * 0.2, m5.upper - atrV * 0.15));
-    if (mark > entry) entry = mark;
-    entry = Math.max(entry, mark * 0.999);
-    sl = Math.max(swingHigh + tick + atrV * 0.45, entry + atrV * 1.1);
-    tp1 = m5.middle < entry ? m5.middle : entry - atrV * 1.5;
-    tp2 = Math.min(m5.lower * 1.003, entry - atrV * 2.8);
+    entry = mark;
+    // SL always above entry
+    sl = Math.max(swingHigh + tick + atrV * 0.35, entry + atrV * 1.05);
+    if (!(sl > entry)) sl = entry + atrV * 1.2;
+    tp1 = Math.min(m5.middle || entry, entry - atrV * 1.4);
+    if (!(tp1 < entry)) tp1 = entry - atrV * 1.5;
+    tp2 = Math.min(m5.lower || entry, entry - atrV * 2.6);
+    if (!(tp2 < tp1)) tp2 = tp1 - atrV * 1.2;
   }
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
+  // Reject inverted level geometry
+  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2)) return { entry, sl, tp1, tp2, rr: 0 };
+  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2)) return { entry, sl, tp1, tp2, rr: 0 };
   return { entry, sl, tp1, tp2, rr };
 }
 function formatTelegramMessage(s) {
@@ -647,7 +783,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.4.5 | 1H+15M lock · 4H gate ===");
+  console.log("=== Strict Core v2.4.6 | slope-lock anti-invert · 1H+15M+4H ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
