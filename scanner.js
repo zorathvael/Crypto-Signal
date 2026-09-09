@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.5.2
+ * Strict Core Scanner v2.5.3
  * v2.5.2 liquidity entry · TP3 runner · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.2" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.3" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -622,14 +622,16 @@ function formatSquareBatchMessage(coins) {
 function buildSquareCardSvg(coins) {
   // Portrait mobile 720×1520 — readable on phone without zoom
   const W = 720;
-  const H = 1520;
   const rows = coins.slice(0, 3);
   const pad = 28;
   const headerH = 130;
-  const footerH = 56;
-  const gap = 16;
+  const footerH = 64;
+  const gap = 18;
+  // Auto height so 3 cards never crush text (TP1-3 + meta)
+  const minRow = 340;
+  const H = Math.max(1520, headerH + footerH + gap * (rows.length + 1) + minRow * Math.max(rows.length, 1));
   const usable = H - headerH - footerH - gap * (rows.length + 1);
-  const rowH = Math.floor(usable / Math.max(rows.length, 1));
+  const rowH = Math.max(340, Math.floor(usable / Math.max(rows.length, 1)));
 
   const esc = (x) =>
     String(x ?? "")
@@ -656,13 +658,13 @@ function buildSquareCardSvg(coins) {
     <text x="${pad + 28}" y="${y + 42}" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#0f172a">${esc(s.base)}</text>
     <text x="${W - pad - 24}" y="${y + 42}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="${accent}">${isLong ? "▲" : "▼"} ${side}</text>
     <text x="${pad + 28}" y="${y + 78}" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="${accent}">${grade}  ·  ${s.probability}%</text>
-    <text x="${pad + 28}" y="${y + 120}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">Entry   ${esc(formatPrice(s.entry))}</text>
-    <text x="${pad + 28}" y="${y + 152}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">SL        ${esc(formatPrice(s.sl))}</text>
-    <text x="${pad + 28}" y="${y + 184}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
-    <text x="${pad + 28}" y="${y + 216}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
-    <text x="${pad + 28}" y="${y + 244}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
-    <text x="${pad + 28}" y="${y + 252}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}</text>
-    <text x="${pad + 28}" y="${y + 284}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
+    <text x="${pad + 28}" y="${y + 114}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">Entry   ${esc(formatPrice(s.entry))}</text>
+    <text x="${pad + 28}" y="${y + 146}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">SL        ${esc(formatPrice(s.sl))}</text>
+    <text x="${pad + 28}" y="${y + 178}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
+    <text x="${pad + 28}" y="${y + 210}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
+    <text x="${pad + 28}" y="${y + 242}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
+    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}</text>
+    <text x="${pad + 28}" y="${y + 312}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
   });
 
   const now = new Date().toLocaleString("id-ID", {
@@ -876,7 +878,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.5.2 | liquidity entry · TP1-TP2-TP3 runner ===");
+  console.log("=== Strict Core v2.5.3 | card layout fix · TP3 spacing ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
