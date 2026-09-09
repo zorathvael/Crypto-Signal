@@ -1,7 +1,7 @@
 
 /**
- * Strict Core Scanner v2.4.5
- * v2.4.6 slope-lock anti-invert · 1H+15M+4H · Square card
+ * Strict Core Scanner v2.4.7
+ * v2.4.7 slope-lock + anti-chase BB · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.6" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.7" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -244,8 +244,8 @@ function analyzeTF(candles, label) {
   return {
     label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
     emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown,
-    meanLong: touchLo && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 35,
-    meanShort: touchUp && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 65,
+    meanLong: touchLo && pos <= 18 && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 38,
+    meanShort: touchUp && pos >= 82 && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 62,
     adx: adxV,
     slope6, slope12,
     close: last.close,
@@ -351,6 +351,23 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
   if (!action) return null;
 
+
+  // --- Anti-chase Bollinger (all coins) ---
+  // LONG forbidden near upper BB; SHORT forbidden near lower BB
+  const pos5 = m5.position != null ? m5.position : 50;
+  const pos15 = m15.position != null ? m15.position : 50;
+  if (action === "LONG" && (pos5 >= 85 || pos15 >= 88)) return null;
+  if (action === "SHORT" && (pos5 <= 15 || pos15 <= 12)) return null;
+  // Soft penalty zone (extended but not hard-blocked)
+  let chasePen = 0;
+  if (action === "LONG" && (pos5 >= 75 || pos15 >= 78)) chasePen -= 8;
+  if (action === "SHORT" && (pos5 <= 25 || pos15 <= 22)) chasePen -= 8;
+  // Prefer mean-rev only when truly at band extreme with room to bounce
+  if (path === "MEAN_REV") {
+    if (action === "LONG" && pos5 > 40) return null;   // mean-long must be near lower
+    if (action === "SHORT" && pos5 < 60) return null;  // mean-short must be near upper
+  }
+
   // --- Final anti-invert gates (absolute) ---
   if (action === "LONG" && (t1 === "bearish" || t15 === "bearish")) return null;
   if (action === "SHORT" && (t1 === "bullish" || t15 === "bullish")) return null;
@@ -425,6 +442,7 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   else if (adxMax < 14 && path === "TREND") conf -= 6;
 
   conf += btcAdj;
+  conf += chasePen;
   conf = clamp(Math.round(conf), 0, 99);
   if (conf < 75) return null;
 
@@ -783,7 +801,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.4.6 | slope-lock anti-invert · 1H+15M+4H ===");
+  console.log("=== Strict Core v2.4.7 | slope-lock + anti-chase BB ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
