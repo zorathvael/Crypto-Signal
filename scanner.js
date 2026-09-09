@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.5.3
+ * Strict Core Scanner v2.5.4
  * v2.5.2 liquidity entry · TP3 runner · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.3" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.4" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -275,6 +275,61 @@ function tfTrend(tf) {
   if (votes <= -2) return "bearish";
   return "neutral";
 }
+function councilConsensus(h1, m15, m5, h4) {
+  // Multi-method "discussion": each module votes LONG(+1) / SHORT(-1) / abstain(0)
+  const votes = [];
+  const push = (name, v, w = 1) => votes.push({ name, v, w });
+
+  // 1) HTF trend structure
+  const t1 = tfTrend(h1), t15 = tfTrend(m15), t4 = tfTrend(h4);
+  if (t1 === "bullish") push("1H_trend", 1, 1.4);
+  if (t1 === "bearish") push("1H_trend", -1, 1.4);
+  if (t15 === "bullish") push("15M_trend", 1, 1.2);
+  if (t15 === "bearish") push("15M_trend", -1, 1.2);
+  if (t4 === "bullish") push("4H_trend", 1, 1.0);
+  if (t4 === "bearish") push("4H_trend", -1, 1.0);
+
+  // 2) Slope (price truth)
+  if ((h1.slope12 ?? 0) > 0.2) push("1H_slope", 1, 1.3);
+  if ((h1.slope12 ?? 0) < -0.2) push("1H_slope", -1, 1.3);
+  if ((m15.slope6 ?? 0) > 0.15) push("15M_slope", 1, 0.9);
+  if ((m15.slope6 ?? 0) < -0.15) push("15M_slope", -1, 0.9);
+
+  // 3) EMA stack
+  if (h1.emaBull) push("1H_ema", 1, 1.0);
+  if (h1.emaBear) push("1H_ema", -1, 1.0);
+  if (m15.emaBull) push("15M_ema", 1, 0.8);
+  if (m15.emaBear) push("15M_ema", -1, 0.8);
+
+  // 4) Volume pressure
+  if ((m5.volume?.pressure ?? 0) > 14) push("vol", 1, 1.0);
+  if ((m5.volume?.pressure ?? 0) < -14) push("vol", -1, 1.0);
+
+  // 5) MACD momentum 5m
+  if (m5.macdUp) push("macd", 1, 0.7);
+  if (m5.macdDown) push("macd", -1, 0.7);
+
+  // 6) Market structure
+  if (h1.ms?.trend === "up") push("ms", 1, 1.1);
+  if (h1.ms?.trend === "down") push("ms", -1, 1.1);
+
+  // 7) Location penalty (don't vote long at top / short at bottom)
+  const pos = m5.position ?? 50;
+  if (pos >= 80) push("location", -1, 1.2); // favor short-side caution at highs
+  if (pos <= 20) push("location", 1, 1.2);
+
+  let score = 0, weight = 0;
+  for (const v of votes) {
+    score += v.v * v.w;
+    weight += v.w;
+  }
+  const net = weight ? score / weight : 0;
+  let side = "neutral";
+  if (net >= 0.28) side = "LONG";
+  else if (net <= -0.28) side = "SHORT";
+  return { side, net, votes: votes.length, t1, t15, t4 };
+}
+
 function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   if (!h1 || !m15 || !m5) return null;
 
@@ -352,6 +407,12 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   }
 
   if (!action) return null;
+
+  // Council must agree with proposed action (multi-method consensus)
+  const council = councilConsensus(h1, m15, m5, h4);
+  if (council.side !== "neutral" && council.side !== action) return null;
+  if (council.side === "neutral" && path === "TREND") return null;
+
 
 
   // --- Anti-chase + pullback-only TREND (all coins) ---
@@ -462,6 +523,7 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
     action,
     probability: conf,
     setup: path,
+    council: typeof council !== "undefined" ? council.net : null,
     h1,
     m15,
     m5,
@@ -473,100 +535,109 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
-  const recent = candles.slice(-24);
+  const recent = candles.slice(-30);
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
+  // Deeper pool: 2nd-lowest / 2nd-highest to avoid single-wick fake levels
+  const lows = [...recent.map((c) => c.low)].sort((a, b) => a - b);
+  const highs = [...recent.map((c) => c.high)].sort((a, b) => b - a);
+  const deepLow = lows[Math.min(2, lows.length - 1)];
+  const deepHigh = highs[Math.min(2, highs.length - 1)];
   const last = candles[candles.length - 1];
   const prev = candles[candles.length - 2] || last;
   const m5 = signal.m5;
-  const tick = Math.max(mark * 0.0001, 1e-12);
+  const tick = Math.max(mark * 0.00012, 1e-12);
 
-  // Liquidity concept: classic "SL level" IS the entry zone (stop-hunt then reverse)
-  // LONG entry ≈ swing low / lower band (where stops cluster)
-  // SHORT entry ≈ swing high / upper band
+  // User feedback: SL keeps hitting → entry MUST be deeper, SL even further
+  // LONG: entry lower (discount), SL below deep liquidity
+  // SHORT: entry higher (premium), SL above deep liquidity
   let entry, sl, tp1, tp2, tp3, mode;
 
   if (signal.action === "LONG") {
-    // Demand zone = recent swing low (stop magnet)
-    const zone = Math.min(swingLow, m5.lower != null ? m5.lower : swingLow);
-    entry = zone + atrV * 0.15; // slightly above swept lows
-    // If price already swept the zone and closed back up → market entry OK
+    const band = m5.lower != null ? m5.lower : deepLow;
+    // Blend deep swing + BB lower — bias toward the LOWER of the two
+    const zone = Math.min(deepLow, band, swingLow);
+    entry = zone + atrV * 0.08; // sit just above the pool
     const swept =
-      last.low <= zone * 1.002 &&
-      last.close > last.open &&
-      last.close > zone &&
+      last.low <= zone * 1.003 &&
+      last.close > Math.max(last.open, zone) &&
       last.close > (prev.low + prev.high) / 2;
-    if (swept || (mark <= entry * 1.008 && mark >= entry * 0.992)) {
-      entry = Math.min(mark, entry + atrV * 0.1);
-      mode = swept ? "SWEEP" : "ZONE";
+    if (swept) {
+      entry = Math.min(mark, zone + atrV * 0.2);
+      mode = "SWEEP";
+    } else if (mark <= entry * 1.006) {
+      entry = Math.min(mark, entry);
+      mode = "ZONE";
     } else if (mark < entry) {
-      // price already below zone — use mark, wait reclaim
       entry = mark;
       mode = "RECLAIM";
     } else {
-      // price above zone — limit entry at zone (do not chase)
-      mode = "LIMIT";
-      // keep entry at zone
+      mode = "LIMIT"; // wait for price to come down — do not chase
     }
-    // True SL beyond the liquidity pool (outside the hunt)
-    sl = Math.min(zone, entry) - atrV * 0.7 - tick;
-    if (entry - sl < atrV * 1.2) sl = entry - atrV * 1.2;
-    if (entry - sl > atrV * 2.6) sl = entry - atrV * 2.6;
+    // SL deeper than previous version (anti-hunt)
+    sl = zone - atrV * 1.05 - tick;
+    if (entry - sl < atrV * 1.55) sl = entry - atrV * 1.55;
+    if (entry - sl > atrV * 3.0) sl = entry - atrV * 3.0;
     const risk = entry - sl;
     tp1 = entry + risk * 1.6;
     tp2 = entry + risk * 2.6;
-    tp3 = entry + risk * 4.0; // extended runner
+    tp3 = entry + risk * 4.0;
     if (m5.middle != null && m5.middle > tp1) tp1 = m5.middle;
     if (m5.upper != null && m5.upper > tp2) tp2 = Math.max(tp2, m5.upper);
-    // stretch TP3 toward next structure if available
-    if (m5.upper != null && m5.upper > tp3) tp3 = m5.upper + atrV * 0.5;
     if (tp1 <= entry) tp1 = entry + risk * 1.6;
     if (tp2 <= tp1) tp2 = tp1 + risk * 0.7;
     if (tp3 <= tp2) tp3 = tp2 + risk * 1.2;
   } else {
-    const zone = Math.max(swingHigh, m5.upper != null ? m5.upper : swingHigh);
-    entry = zone - atrV * 0.15;
+    const band = m5.upper != null ? m5.upper : deepHigh;
+    const zone = Math.max(deepHigh, band, swingHigh);
+    entry = zone - atrV * 0.08;
     const swept =
-      last.high >= zone * 0.998 &&
-      last.close < last.open &&
-      last.close < zone &&
+      last.high >= zone * 0.997 &&
+      last.close < Math.min(last.open, zone) &&
       last.close < (prev.low + prev.high) / 2;
-    if (swept || (mark >= entry * 0.992 && mark <= entry * 1.008)) {
-      entry = Math.max(mark, entry - atrV * 0.1);
-      mode = swept ? "SWEEP" : "ZONE";
+    if (swept) {
+      entry = Math.max(mark, zone - atrV * 0.2);
+      mode = "SWEEP";
+    } else if (mark >= entry * 0.994) {
+      entry = Math.max(mark, entry);
+      mode = "ZONE";
     } else if (mark > entry) {
       entry = mark;
       mode = "RECLAIM";
     } else {
       mode = "LIMIT";
     }
-    sl = Math.max(zone, entry) + atrV * 0.7 + tick;
-    if (sl - entry < atrV * 1.2) sl = entry + atrV * 1.2;
-    if (sl - entry > atrV * 2.6) sl = entry + atrV * 2.6;
+    sl = zone + atrV * 1.05 + tick;
+    if (sl - entry < atrV * 1.55) sl = entry + atrV * 1.55;
+    if (sl - entry > atrV * 3.0) sl = entry + atrV * 3.0;
     const risk = sl - entry;
     tp1 = entry - risk * 1.6;
     tp2 = entry - risk * 2.6;
     tp3 = entry - risk * 4.0;
     if (m5.middle != null && m5.middle < tp1) tp1 = m5.middle;
     if (m5.lower != null && m5.lower < tp2) tp2 = Math.min(tp2, m5.lower);
-    if (m5.lower != null && m5.lower < tp3) tp3 = m5.lower - atrV * 0.5;
     if (tp1 >= entry) tp1 = entry - risk * 1.6;
     if (tp2 >= tp1) tp2 = tp1 - risk * 0.7;
     if (tp3 >= tp2) tp3 = tp2 - risk * 1.2;
   }
 
   const risk = Math.abs(entry - sl);
-  const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
-  // Reject if mark is chasing too far from entry zone (> 1.8 ATR away)
   const dist = Math.abs(mark - entry);
-  if (mode === "LIMIT" && dist > atrV * 1.8) {
-    return { entry, sl, tp1, tp2, tp3: tp2, rr: 0, mode, mark };
+  // Reject chase: mark too far from deep entry zone
+  if (mode === "LIMIT" && dist > atrV * 2.2) {
+    return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
   }
-  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2 && tp2 <= tp3)) return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
-  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2 && tp2 >= tp3)) return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
+  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2 && tp2 <= tp3)) {
+    return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
+  }
+  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2 && tp2 >= tp3)) {
+    return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
+  }
   const rrCore = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
   return { entry, sl, tp1, tp2, tp3, rr: rrCore, mode, mark };
 }
+
+
 function formatTelegramMessage(s) {
   const isSniper = s.probability >= MIN_PROB_SNIPER;
   const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
@@ -878,7 +949,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.5.3 | card layout fix · TP3 spacing ===");
+  console.log("=== Strict Core v2.5.4 | council consensus · deeper SL-zone entry ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
