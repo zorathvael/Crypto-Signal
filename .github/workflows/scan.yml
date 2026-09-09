@@ -20,8 +20,12 @@ jobs:
         with:
           node-version: "22"
 
+      # Soft install: apt mirror sometimes fails — scanner still runs (text-only Square)
       - name: Install SVG renderer (Square card)
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq librsvg2-bin
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq || true
+          sudo apt-get install -y -qq librsvg2-bin || echo "rsvg missing — Square will post text only"
 
       - name: Run Strict Scanner
         env:
