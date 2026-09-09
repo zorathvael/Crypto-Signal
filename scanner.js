@@ -1,7 +1,7 @@
 
 /**
- * Strict Core Scanner v2.5.1
- * v2.5.1 liquidity entry SL-zone→entry · 1H+15M+4H · Square card
+ * Strict Core Scanner v2.5.2
+ * v2.5.2 liquidity entry · TP3 runner · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.1" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.2" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -484,7 +484,7 @@ function buildLevels(candles, signal, mark) {
   // Liquidity concept: classic "SL level" IS the entry zone (stop-hunt then reverse)
   // LONG entry ≈ swing low / lower band (where stops cluster)
   // SHORT entry ≈ swing high / upper band
-  let entry, sl, tp1, tp2, mode;
+  let entry, sl, tp1, tp2, tp3, mode;
 
   if (signal.action === "LONG") {
     // Demand zone = recent swing low (stop magnet)
@@ -515,10 +515,14 @@ function buildLevels(candles, signal, mark) {
     const risk = entry - sl;
     tp1 = entry + risk * 1.6;
     tp2 = entry + risk * 2.6;
+    tp3 = entry + risk * 4.0; // extended runner
     if (m5.middle != null && m5.middle > tp1) tp1 = m5.middle;
     if (m5.upper != null && m5.upper > tp2) tp2 = Math.max(tp2, m5.upper);
+    // stretch TP3 toward next structure if available
+    if (m5.upper != null && m5.upper > tp3) tp3 = m5.upper + atrV * 0.5;
     if (tp1 <= entry) tp1 = entry + risk * 1.6;
     if (tp2 <= tp1) tp2 = tp1 + risk * 0.7;
+    if (tp3 <= tp2) tp3 = tp2 + risk * 1.2;
   } else {
     const zone = Math.max(swingHigh, m5.upper != null ? m5.upper : swingHigh);
     entry = zone - atrV * 0.15;
@@ -542,10 +546,13 @@ function buildLevels(candles, signal, mark) {
     const risk = sl - entry;
     tp1 = entry - risk * 1.6;
     tp2 = entry - risk * 2.6;
+    tp3 = entry - risk * 4.0;
     if (m5.middle != null && m5.middle < tp1) tp1 = m5.middle;
     if (m5.lower != null && m5.lower < tp2) tp2 = Math.min(tp2, m5.lower);
+    if (m5.lower != null && m5.lower < tp3) tp3 = m5.lower - atrV * 0.5;
     if (tp1 >= entry) tp1 = entry - risk * 1.6;
     if (tp2 >= tp1) tp2 = tp1 - risk * 0.7;
+    if (tp3 >= tp2) tp3 = tp2 - risk * 1.2;
   }
 
   const risk = Math.abs(entry - sl);
@@ -553,11 +560,12 @@ function buildLevels(candles, signal, mark) {
   // Reject if mark is chasing too far from entry zone (> 1.8 ATR away)
   const dist = Math.abs(mark - entry);
   if (mode === "LIMIT" && dist > atrV * 1.8) {
-    return { entry, sl, tp1, tp2, rr: 0, mode, mark };
+    return { entry, sl, tp1, tp2, tp3: tp2, rr: 0, mode, mark };
   }
-  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2)) return { entry, sl, tp1, tp2, rr: 0, mode };
-  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2)) return { entry, sl, tp1, tp2, rr: 0, mode };
-  return { entry, sl, tp1, tp2, rr, mode, mark };
+  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2 && tp2 <= tp3)) return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
+  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2 && tp2 >= tp3)) return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
+  const rrCore = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
+  return { entry, sl, tp1, tp2, tp3, rr: rrCore, mode, mark };
 }
 function formatTelegramMessage(s) {
   const isSniper = s.probability >= MIN_PROB_SNIPER;
@@ -571,10 +579,11 @@ function formatTelegramMessage(s) {
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
     `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
+    `🚀 TP3: <code>${formatPrice(s.tp3)}</code>\n` +
     `📈 R:R 1:${s.rr.toFixed(1)}\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1.bias} · 15M ${s.trends ? s.trends.m15 : s.m15.bias} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.5 · Entry = zona likuiditas · Risk max 0.75% · NFA</i>`
+    `<i>Strict Core v2.5 · TP3 runner · Risk max 0.75% · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -587,7 +596,7 @@ function formatSquareCoinBlock(s) {
     `Score ${s.probability}%  ·  ${s.setup}  ·  R:R 1:${s.rr.toFixed(1)}\n` +
     `Entry  ${formatPrice(s.entry)}\n` +
     `SL     ${formatPrice(s.sl)}\n` +
-    `TP1    ${formatPrice(s.tp1)}   ·   TP2  ${formatPrice(s.tp2)}\n` +
+    `TP1    ${formatPrice(s.tp1)}   ·   TP2  ${formatPrice(s.tp2)}   ·   TP3  ${formatPrice(s.tp3 || s.tp2)}\n` +
     `Context  1H ${s.h1.structure}  ·  15M ${s.m15.bias}  ·  Vol ${s.m5.volume.side}`
   );
 }
@@ -651,6 +660,7 @@ function buildSquareCardSvg(coins) {
     <text x="${pad + 28}" y="${y + 152}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">SL        ${esc(formatPrice(s.sl))}</text>
     <text x="${pad + 28}" y="${y + 184}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
     <text x="${pad + 28}" y="${y + 216}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
+    <text x="${pad + 28}" y="${y + 244}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
     <text x="${pad + 28}" y="${y + 252}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}</text>
     <text x="${pad + 28}" y="${y + 284}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
   });
@@ -828,7 +838,7 @@ async function sendDiscord(signals) {
         { name: "R:R", value: `1:${s.rr.toFixed(1)}`, inline: true },
         { name: "Entry", value: `$${formatPrice(s.entry)}`, inline: true },
         { name: "SL", value: `$${formatPrice(s.sl)}`, inline: true },
-        { name: "TP1 / TP2", value: `$${formatPrice(s.tp1)} / $${formatPrice(s.tp2)}`, inline: true },
+        { name: "TP1 / TP2 / TP3", value: `$${formatPrice(s.tp1)} / $${formatPrice(s.tp2)} / $${formatPrice(s.tp3 || s.tp2)}`, inline: false },
         { name: "1H", value: `${s.h1.structure} (${s.h1.bias})`, inline: true },
         { name: "15M", value: s.m15.bias, inline: true },
         { name: "5M / Vol", value: `${s.m5.structure} / ${s.m5.volume.side}`, inline: true },
@@ -866,7 +876,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.5.1 | liquidity entry (SL-zone→entry) · anti-hunt ===");
+  console.log("=== Strict Core v2.5.2 | liquidity entry · TP1-TP2-TP3 runner ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -935,7 +945,7 @@ async function main() {
         entry: levels.entry, mode: levels.mode || null,
         sl: levels.sl,
         tp1: levels.tp1,
-        tp2: levels.tp2,
+        tp2: levels.tp2, tp3: levels.tp3,
         rr: levels.rr,
         h1: scored.h1,
         m15: scored.m15,
