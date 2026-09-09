@@ -1,7 +1,7 @@
 
 /**
- * Strict Core Scanner v2.4.9
- * v2.4.9 anti-chase · tradeable RR · 1H+15M+4H · Square card
+ * Strict Core Scanner v2.5.0
+ * v2.5.0 pullback entry · structure SL · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -16,7 +16,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 1.6;
+const MIN_RR = 1.8;
 const CANDIDATE_LIMIT = 48;
 const SQUARE_POST_COUNT = 3;
 
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.9" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.0" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -354,25 +354,30 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   if (!action) return null;
 
 
-  // --- Anti-chase Bollinger (all coins) ---
-  // Hard block only at extreme chase; soft penalty before that
+  // --- Anti-chase + pullback-only TREND (all coins) ---
   const pos5 = m5.position != null ? m5.position : 50;
   const pos15 = m15.position != null ? m15.position : 50;
-  // Extreme chase = liquidity grab zone (USELESS-like)
-  if (action === "LONG" && (pos5 >= 92 || (pos5 >= 88 && (m5.rsi ?? 50) > 70))) return null;
-  if (action === "SHORT" && (pos5 <= 8 || (pos5 <= 12 && (m5.rsi ?? 50) < 30))) return null;
-  if (action === "LONG" && pos15 >= 94) return null;
-  if (action === "SHORT" && pos15 <= 6) return null;
-  let chasePen = 0;
-  if (action === "LONG" && (pos5 >= 80 || pos15 >= 82)) chasePen -= 10;
-  else if (action === "LONG" && (pos5 >= 70 || pos15 >= 72)) chasePen -= 5;
-  if (action === "SHORT" && (pos5 <= 20 || pos15 <= 18)) chasePen -= 10;
-  else if (action === "SHORT" && (pos5 <= 30 || pos15 <= 28)) chasePen -= 5;
-  // MEAN_REV must be at the band (true reversion)
-  if (path === "MEAN_REV") {
-    if (action === "LONG" && pos5 > 35) return null;
-    if (action === "SHORT" && pos5 < 65) return null;
+  // TREND: only enter on pullback zone inside the trend (not at extremes)
+  // LONG pullback = mid/lower half of BB; SHORT pullback = mid/upper half
+  if (path === "TREND") {
+    if (action === "LONG" && pos5 >= 72) return null;   // too high → wait pullback
+    if (action === "SHORT" && pos5 <= 28) return null;  // too low → wait pullback
+    if (action === "LONG" && pos15 >= 78) return null;
+    if (action === "SHORT" && pos15 <= 22) return null;
   }
+  // Extreme chase hard block (any path)
+  if (action === "LONG" && (pos5 >= 90 || (pos5 >= 85 && (m5.rsi ?? 50) > 68))) return null;
+  if (action === "SHORT" && (pos5 <= 10 || (pos5 <= 15 && (m5.rsi ?? 50) < 32))) return null;
+  let chasePen = 0;
+  if (action === "LONG" && pos5 >= 65) chasePen -= 6;
+  if (action === "SHORT" && pos5 <= 35) chasePen -= 6;
+  if (path === "MEAN_REV") {
+    if (action === "LONG" && pos5 > 32) return null;
+    if (action === "SHORT" && pos5 < 68) return null;
+  }
+  // RSI extreme against direction
+  if (action === "LONG" && (m5.rsi ?? 50) > 72) return null;
+  if (action === "SHORT" && (m5.rsi ?? 50) < 28) return null;
 
   // --- Final anti-invert gates (absolute) ---
   if (action === "LONG" && (t1 === "bearish" || t15 === "bearish")) return null;
@@ -468,34 +473,45 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
-  const recent = candles.slice(-12);
+  // Wider swing window — SL beyond noise / stop-hunt zone
+  const recent = candles.slice(-20);
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
-  const tick = Math.max(mark * 0.00008, 1e-12);
+  const tick = Math.max(mark * 0.0001, 1e-12);
   const m5 = signal.m5;
-  let entry, sl, tp1, tp2;
-  entry = mark;
+  let entry = mark, sl, tp1, tp2;
+  // Min risk ~1.4 ATR so random wicks don't kill the trade
+  const minRisk = atrV * 1.4;
+  const maxRisk = atrV * 2.4;
   if (signal.action === "LONG") {
-    // Tighter SL: prefer structure but cap distance at 1.6 ATR (keeps RR tradeable)
-    const slStruct = swingLow - tick - atrV * 0.2;
-    const slCap = entry - atrV * 1.6;
-    sl = Math.max(slStruct, slCap); // closer to entry
-    if (!(sl < entry * 0.999)) sl = entry - atrV * 1.15;
-    tp1 = entry + atrV * 1.6;
-    if (m5.middle != null && m5.middle > entry) tp1 = Math.max(tp1, m5.middle);
-    tp2 = entry + atrV * 2.8;
-    if (m5.upper != null && m5.upper > tp1) tp2 = Math.max(tp2, m5.upper);
-    if (!(tp2 > tp1)) tp2 = tp1 + atrV;
+    // SL below swing low + buffer (whale sweep room)
+    let slStruct = swingLow - atrV * 0.45 - tick;
+    // Clamp risk between minRisk and maxRisk
+    if (entry - slStruct < minRisk) slStruct = entry - minRisk;
+    if (entry - slStruct > maxRisk) slStruct = entry - maxRisk;
+    sl = slStruct;
+    if (!(sl < entry)) sl = entry - minRisk;
+    const risk = entry - sl;
+    tp1 = entry + risk * 1.5;
+    tp2 = entry + risk * 2.5;
+    // Prefer BB targets if farther (better RR) but never closer than min
+    if (m5.middle != null && m5.middle > tp1) tp1 = m5.middle;
+    if (m5.upper != null && m5.upper > tp2) tp2 = m5.upper;
+    if (tp1 <= entry) tp1 = entry + risk * 1.5;
+    if (tp2 <= tp1) tp2 = tp1 + risk * 0.8;
   } else {
-    const slStruct = swingHigh + tick + atrV * 0.2;
-    const slCap = entry + atrV * 1.6;
-    sl = Math.min(slStruct, slCap); // closer to entry
-    if (!(sl > entry * 1.001)) sl = entry + atrV * 1.15;
-    tp1 = entry - atrV * 1.6;
-    if (m5.middle != null && m5.middle < entry) tp1 = Math.min(tp1, m5.middle);
-    tp2 = entry - atrV * 2.8;
-    if (m5.lower != null && m5.lower < tp1) tp2 = Math.min(tp2, m5.lower);
-    if (!(tp2 < tp1)) tp2 = tp1 - atrV;
+    let slStruct = swingHigh + atrV * 0.45 + tick;
+    if (slStruct - entry < minRisk) slStruct = entry + minRisk;
+    if (slStruct - entry > maxRisk) slStruct = entry + maxRisk;
+    sl = slStruct;
+    if (!(sl > entry)) sl = entry + minRisk;
+    const risk = sl - entry;
+    tp1 = entry - risk * 1.5;
+    tp2 = entry - risk * 2.5;
+    if (m5.middle != null && m5.middle < tp1) tp1 = m5.middle;
+    if (m5.lower != null && m5.lower < tp2) tp2 = m5.lower;
+    if (tp1 >= entry) tp1 = entry - risk * 1.5;
+    if (tp2 >= tp1) tp2 = tp1 - risk * 0.8;
   }
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
@@ -810,7 +826,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.4.9 | anti-chase · tradeable RR · live signals ===");
+  console.log("=== Strict Core v2.5.0 | pullback entry · structure SL · anti-hunt ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
