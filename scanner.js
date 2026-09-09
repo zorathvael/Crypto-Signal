@@ -1,7 +1,7 @@
 
 /**
- * Strict Core Scanner v2.5.0
- * v2.5.0 pullback entry · structure SL · 1H+15M+4H · Square card
+ * Strict Core Scanner v2.5.1
+ * v2.5.1 liquidity entry SL-zone→entry · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.0" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.5.1" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -473,51 +473,91 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
-  // Wider swing window — SL beyond noise / stop-hunt zone
-  const recent = candles.slice(-20);
+  const recent = candles.slice(-24);
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
-  const tick = Math.max(mark * 0.0001, 1e-12);
+  const last = candles[candles.length - 1];
+  const prev = candles[candles.length - 2] || last;
   const m5 = signal.m5;
-  let entry = mark, sl, tp1, tp2;
-  // Min risk ~1.4 ATR so random wicks don't kill the trade
-  const minRisk = atrV * 1.4;
-  const maxRisk = atrV * 2.4;
+  const tick = Math.max(mark * 0.0001, 1e-12);
+
+  // Liquidity concept: classic "SL level" IS the entry zone (stop-hunt then reverse)
+  // LONG entry ≈ swing low / lower band (where stops cluster)
+  // SHORT entry ≈ swing high / upper band
+  let entry, sl, tp1, tp2, mode;
+
   if (signal.action === "LONG") {
-    // SL below swing low + buffer (whale sweep room)
-    let slStruct = swingLow - atrV * 0.45 - tick;
-    // Clamp risk between minRisk and maxRisk
-    if (entry - slStruct < minRisk) slStruct = entry - minRisk;
-    if (entry - slStruct > maxRisk) slStruct = entry - maxRisk;
-    sl = slStruct;
-    if (!(sl < entry)) sl = entry - minRisk;
+    // Demand zone = recent swing low (stop magnet)
+    const zone = Math.min(swingLow, m5.lower != null ? m5.lower : swingLow);
+    entry = zone + atrV * 0.15; // slightly above swept lows
+    // If price already swept the zone and closed back up → market entry OK
+    const swept =
+      last.low <= zone * 1.002 &&
+      last.close > last.open &&
+      last.close > zone &&
+      last.close > (prev.low + prev.high) / 2;
+    if (swept || (mark <= entry * 1.008 && mark >= entry * 0.992)) {
+      entry = Math.min(mark, entry + atrV * 0.1);
+      mode = swept ? "SWEEP" : "ZONE";
+    } else if (mark < entry) {
+      // price already below zone — use mark, wait reclaim
+      entry = mark;
+      mode = "RECLAIM";
+    } else {
+      // price above zone — limit entry at zone (do not chase)
+      mode = "LIMIT";
+      // keep entry at zone
+    }
+    // True SL beyond the liquidity pool (outside the hunt)
+    sl = Math.min(zone, entry) - atrV * 0.7 - tick;
+    if (entry - sl < atrV * 1.2) sl = entry - atrV * 1.2;
+    if (entry - sl > atrV * 2.6) sl = entry - atrV * 2.6;
     const risk = entry - sl;
-    tp1 = entry + risk * 1.5;
-    tp2 = entry + risk * 2.5;
-    // Prefer BB targets if farther (better RR) but never closer than min
+    tp1 = entry + risk * 1.6;
+    tp2 = entry + risk * 2.6;
     if (m5.middle != null && m5.middle > tp1) tp1 = m5.middle;
-    if (m5.upper != null && m5.upper > tp2) tp2 = m5.upper;
-    if (tp1 <= entry) tp1 = entry + risk * 1.5;
-    if (tp2 <= tp1) tp2 = tp1 + risk * 0.8;
+    if (m5.upper != null && m5.upper > tp2) tp2 = Math.max(tp2, m5.upper);
+    if (tp1 <= entry) tp1 = entry + risk * 1.6;
+    if (tp2 <= tp1) tp2 = tp1 + risk * 0.7;
   } else {
-    let slStruct = swingHigh + atrV * 0.45 + tick;
-    if (slStruct - entry < minRisk) slStruct = entry + minRisk;
-    if (slStruct - entry > maxRisk) slStruct = entry + maxRisk;
-    sl = slStruct;
-    if (!(sl > entry)) sl = entry + minRisk;
+    const zone = Math.max(swingHigh, m5.upper != null ? m5.upper : swingHigh);
+    entry = zone - atrV * 0.15;
+    const swept =
+      last.high >= zone * 0.998 &&
+      last.close < last.open &&
+      last.close < zone &&
+      last.close < (prev.low + prev.high) / 2;
+    if (swept || (mark >= entry * 0.992 && mark <= entry * 1.008)) {
+      entry = Math.max(mark, entry - atrV * 0.1);
+      mode = swept ? "SWEEP" : "ZONE";
+    } else if (mark > entry) {
+      entry = mark;
+      mode = "RECLAIM";
+    } else {
+      mode = "LIMIT";
+    }
+    sl = Math.max(zone, entry) + atrV * 0.7 + tick;
+    if (sl - entry < atrV * 1.2) sl = entry + atrV * 1.2;
+    if (sl - entry > atrV * 2.6) sl = entry + atrV * 2.6;
     const risk = sl - entry;
-    tp1 = entry - risk * 1.5;
-    tp2 = entry - risk * 2.5;
+    tp1 = entry - risk * 1.6;
+    tp2 = entry - risk * 2.6;
     if (m5.middle != null && m5.middle < tp1) tp1 = m5.middle;
-    if (m5.lower != null && m5.lower < tp2) tp2 = m5.lower;
-    if (tp1 >= entry) tp1 = entry - risk * 1.5;
-    if (tp2 >= tp1) tp2 = tp1 - risk * 0.8;
+    if (m5.lower != null && m5.lower < tp2) tp2 = Math.min(tp2, m5.lower);
+    if (tp1 >= entry) tp1 = entry - risk * 1.6;
+    if (tp2 >= tp1) tp2 = tp1 - risk * 0.7;
   }
+
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
-  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2)) return { entry, sl, tp1, tp2, rr: 0 };
-  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2)) return { entry, sl, tp1, tp2, rr: 0 };
-  return { entry, sl, tp1, tp2, rr };
+  // Reject if mark is chasing too far from entry zone (> 1.8 ATR away)
+  const dist = Math.abs(mark - entry);
+  if (mode === "LIMIT" && dist > atrV * 1.8) {
+    return { entry, sl, tp1, tp2, rr: 0, mode, mark };
+  }
+  if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2)) return { entry, sl, tp1, tp2, rr: 0, mode };
+  if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2)) return { entry, sl, tp1, tp2, rr: 0, mode };
+  return { entry, sl, tp1, tp2, rr, mode, mark };
 }
 function formatTelegramMessage(s) {
   const isSniper = s.probability >= MIN_PROB_SNIPER;
@@ -527,14 +567,14 @@ function formatTelegramMessage(s) {
     `${tag} · <b>${s.base}</b> ${arrow}\n\n` +
     `📊 Probability: <b>${s.probability}%</b>\n` +
     `🧩 Setup: <b>${s.setup}</b>\n` +
-    `🎯 Entry: <code>${formatPrice(s.entry)}</code>\n` +
+    `🎯 Entry: <code>${formatPrice(s.entry)}</code>${s.mode ? " · " + s.mode : ""}\n` +
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
     `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
     `📈 R:R 1:${s.rr.toFixed(1)}\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1.bias} · 15M ${s.trends ? s.trends.m15 : s.m15.bias} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.4 · Score not guarantee · Risk max 0.75% · NFA</i>`
+    `<i>Strict Core v2.5 · Entry = zona likuiditas · Risk max 0.75% · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -826,7 +866,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.5.0 | pullback entry · structure SL · anti-hunt ===");
+  console.log("=== Strict Core v2.5.1 | liquidity entry (SL-zone→entry) · anti-hunt ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -892,7 +932,7 @@ async function main() {
         action: scored.action,
         probability: scored.probability,
         setup: scored.setup,
-        entry: levels.entry,
+        entry: levels.entry, mode: levels.mode || null,
         sl: levels.sl,
         tp1: levels.tp1,
         tp2: levels.tp2,
