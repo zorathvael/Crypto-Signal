@@ -1,8 +1,742 @@
+
 /**
- * Strict Core v2.4.5 — Square 720×1520
+ * Strict Core Scanner v2.4.5
+ * Clean direction · soft BTC · Square card bright/large (mobile readable)
+ * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
-const fs=require("fs"),path=require("path"),z=require("zlib"),M=require("module");
-const b64=[0,1,2].map(i=>fs.readFileSync(path.join(__dirname,"x"+i+".b64"),"utf8").trim()).join("");
-const code=z.inflateSync(Buffer.from(b64,"base64")).toString("utf8");
-const m=new M(__filename,module.parent);
-m.filename=__filename;m.paths=M._nodeModulePaths(__dirname);m._compile(code,__filename);
+
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
+
+const OKX = "https://www.okx.com";
+const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
+const MIN_PROB_VALID = 75;
+const MIN_PROB_SNIPER = 82;
+const MIN_RR = 2.0;
+const CANDIDATE_LIMIT = 36;
+const SQUARE_POST_COUNT = 3;
+
+const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+
+function formatPrice(v) {
+  if (!Number.isFinite(v)) return "—";
+  if (v < 0.000001) return v.toFixed(10);
+  if (v < 0.001) return v.toFixed(8);
+  if (v < 1) return v.toFixed(5);
+  return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+async function getJson(url) {
+  const res = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.5" },
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+function sma(values, period) {
+  return values.map((_, i) => (i + 1 < period ? null : mean(values.slice(i + 1 - period, i + 1))));
+}
+function ema(values, period) {
+  const out = Array(values.length).fill(null);
+  if (values.length < period) return out;
+  let prev = mean(values.slice(0, period));
+  out[period - 1] = prev;
+  const k = 2 / (period + 1);
+  for (let i = period; i < values.length; i++) {
+    prev = (values[i] - prev) * k + prev;
+    out[i] = prev;
+  }
+  return out;
+}
+function stdDev(values) {
+  const avg = mean(values);
+  return Math.sqrt(mean(values.map((v) => (v - avg) ** 2)));
+}
+function bollinger(closes, period = 20, mult = 2) {
+  const mid = sma(closes, period);
+  const upper = Array(closes.length).fill(null);
+  const lower = Array(closes.length).fill(null);
+  const width = Array(closes.length).fill(null);
+  for (let i = period - 1; i < closes.length; i++) {
+    const win = closes.slice(i + 1 - period, i + 1);
+    const dev = stdDev(win);
+    upper[i] = mid[i] + mult * dev;
+    lower[i] = mid[i] - mult * dev;
+    width[i] = mid[i] ? ((upper[i] - lower[i]) / mid[i]) * 100 : null;
+  }
+  return { middle: mid, upper, lower, width };
+}
+function rsi(values, period = 14) {
+  const out = Array(values.length).fill(null);
+  if (values.length <= period) return out;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const ch = values[i] - values[i - 1];
+    gains += Math.max(ch, 0);
+    losses += Math.max(-ch, 0);
+  }
+  let avgG = gains / period, avgL = losses / period;
+  out[period] = avgL ? 100 - 100 / (1 + avgG / avgL) : 100;
+  for (let i = period + 1; i < values.length; i++) {
+    const ch = values[i] - values[i - 1];
+    avgG = (avgG * (period - 1) + Math.max(ch, 0)) / period;
+    avgL = (avgL * (period - 1) + Math.max(-ch, 0)) / period;
+    out[i] = avgL ? 100 - 100 / (1 + avgG / avgL) : 100;
+  }
+  return out;
+}
+function macdHist(closes, fast = 12, slow = 26, signal = 9) {
+  const ef = ema(closes, fast);
+  const es = ema(closes, slow);
+  const line = closes.map((_, i) => (ef[i] != null && es[i] != null ? ef[i] - es[i] : null));
+  const valid = line.map((v) => (v == null ? 0 : v));
+  const sig = ema(valid, signal);
+  return line.map((v, i) => (v != null && sig[i] != null ? v - sig[i] : null));
+}
+function atr(candles, period = 14) {
+  const ranges = candles.map((c, i) => {
+    if (!i) return c.high - c.low;
+    const p = candles[i - 1].close;
+    return Math.max(c.high - c.low, Math.abs(c.high - p), Math.abs(c.low - p));
+  });
+  if (ranges.length < period) return null;
+  let v = mean(ranges.slice(0, period));
+  for (let i = period; i < ranges.length; i++) v = (v * (period - 1) + ranges[i]) / period;
+  return v;
+}
+function adx(candles, period = 14) {
+  if (!candles || candles.length < period + 2) return null;
+  const tr = [], plusDM = [], minusDM = [];
+  for (let i = 1; i < candles.length; i++) {
+    const h = candles[i].high, l = candles[i].low;
+    const ph = candles[i - 1].high, pl = candles[i - 1].low, pc = candles[i - 1].close;
+    tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+    const up = h - ph, down = pl - l;
+    plusDM.push(up > down && up > 0 ? up : 0);
+    minusDM.push(down > up && down > 0 ? down : 0);
+  }
+  let atrS = mean(tr.slice(0, period));
+  let pDM = mean(plusDM.slice(0, period));
+  let mDM = mean(minusDM.slice(0, period));
+  const dxArr = [];
+  for (let i = period; i < tr.length; i++) {
+    atrS = (atrS * (period - 1) + tr[i]) / period;
+    pDM = (pDM * (period - 1) + plusDM[i]) / period;
+    mDM = (mDM * (period - 1) + minusDM[i]) / period;
+    const pDI = atrS ? (100 * pDM) / atrS : 0;
+    const mDI = atrS ? (100 * mDM) / atrS : 0;
+    const sum = pDI + mDI;
+    dxArr.push(sum ? (100 * Math.abs(pDI - mDI)) / sum : 0);
+  }
+  if (dxArr.length < period) return dxArr.length ? mean(dxArr) : null;
+  let adxV = mean(dxArr.slice(0, period));
+  for (let i = period; i < dxArr.length; i++) adxV = (adxV * (period - 1) + dxArr[i]) / period;
+  return adxV;
+}
+function volumeAnalysis(candles) {
+  const cur = candles.at(-1);
+  const recent = candles.slice(-12);
+  const base = mean(candles.slice(-30, -1).map((c) => c.volume)) || 1;
+  const buy = recent.reduce((s, c) => s + (c.close > c.open ? c.volume : 0), 0);
+  const sell = recent.reduce((s, c) => s + (c.close <= c.open ? c.volume : 0), 0);
+  const pressure = ((buy - sell) / (buy + sell || 1)) * 100;
+  const recentAvg = mean(recent.slice(-4).map((c) => c.volume));
+  const spike = cur.volume >= base * 1.35 || recentAvg >= base * 1.25;
+  return { pressure, spike, side: pressure > 8 ? "BUY" : pressure < -8 ? "SELL" : "BALANCED", base };
+}
+function detectReversal(candles) {
+  const last = candles.at(-1);
+  const prev = candles.at(-2);
+  if (!last || !prev) return { bias: "neutral", quality: 0, name: "None" };
+  const body = Math.abs(last.close - last.open);
+  const range = Math.max(last.high - last.low, 1e-12);
+  const uw = last.high - Math.max(last.open, last.close);
+  const lw = Math.min(last.open, last.close) - last.low;
+  if (prev.close < prev.open && last.close > last.open && last.open <= prev.close && last.close >= prev.open)
+    return { bias: "bullish", quality: 0.95, name: "Bullish Engulfing" };
+  if (prev.close > prev.open && last.close < last.open && last.open >= prev.close && last.close <= prev.open)
+    return { bias: "bearish", quality: 0.95, name: "Bearish Engulfing" };
+  if (lw >= body * 2.0 && uw <= body * 0.75 && last.close >= last.open)
+    return { bias: "bullish", quality: 0.85, name: "Hammer" };
+  if (uw >= body * 2.0 && lw <= body * 0.75 && last.close <= last.open)
+    return { bias: "bearish", quality: 0.85, name: "Shooting Star" };
+  if (lw >= range * 0.58 && last.close >= last.open) return { bias: "bullish", quality: 0.8, name: "Pin Bar" };
+  if (uw >= range * 0.58 && last.close <= last.open) return { bias: "bearish", quality: 0.8, name: "Pin Bar" };
+  return { bias: "neutral", quality: 0, name: "None" };
+}
+function marketStructure(candles) {
+  if (candles.length < 30) return { trend: "chop" };
+  const leg = candles.slice(-20);
+  const mid = Math.floor(leg.length / 2);
+  const first = leg.slice(0, mid);
+  const second = leg.slice(mid);
+  const hi1 = Math.max(...first.map((c) => c.high));
+  const hi2 = Math.max(...second.map((c) => c.high));
+  const lo1 = Math.min(...first.map((c) => c.low));
+  const lo2 = Math.min(...second.map((c) => c.low));
+  if (hi2 > hi1 && lo2 > lo1) return { trend: "up" };
+  if (lo2 < lo1 && hi2 < hi1) return { trend: "down" };
+  return { trend: "chop" };
+}
+function analyzeTF(candles, label) {
+  if (!candles || candles.length < 60) return null;
+  const closes = candles.map((c) => c.close);
+  const bands = bollinger(closes, 20, 2);
+  const rsiV = rsi(closes, 14);
+  const hist = macdHist(closes);
+  const adxV = adx(candles, 14);
+  const ema9 = ema(closes, 9);
+  const ema21 = ema(closes, 21);
+  const ema50 = ema(closes, 50);
+  const idx = candles.length - 1;
+  const last = candles[idx];
+  const mid = bands.middle[idx], up = bands.upper[idx], lo = bands.lower[idx], w = bands.width[idx];
+  const widths = bands.width.filter((v) => v != null);
+  const recentW = widths.slice(-20);
+  const sortedW = [...widths.slice(-60)].sort((a, b) => a - b);
+  const sqThresh = sortedW[Math.floor(sortedW.length * 0.25)] || w;
+  const squeeze = (w != null && w <= sqThresh) || (recentW.length >= 15 && w <= Math.min(...recentW) * 1.05);
+  const pos = clamp(((last.close - lo) / Math.max(up - lo, 1e-12)) * 100, 0, 100);
+  const e9 = ema9[idx], e21 = ema21[idx], e50 = ema50[idx];
+  const emaBull = e9 > e21 && (e50 == null || e21 > e50 * 0.998);
+  const emaBear = e9 < e21 && (e50 == null || e21 < e50 * 1.002);
+  const vol = volumeAnalysis(candles);
+  const rev = detectReversal(candles);
+  const ms = marketStructure(candles);
+  const macdNow = hist[idx];
+  const macdPrev = hist[idx - 1];
+  const macdUp = macdNow != null && macdPrev != null && macdNow > macdPrev;
+  const macdDown = macdNow != null && macdPrev != null && macdNow < macdPrev;
+  const touchLo = last.low <= lo * 1.003 || last.close <= lo * 1.005;
+  const touchUp = last.high >= up * 0.997 || last.close >= up * 0.995;
+  let biasScore = 0;
+  if (emaBull) biasScore += 25;
+  if (emaBear) biasScore -= 25;
+  if (ms.trend === "up") biasScore += 20;
+  if (ms.trend === "down") biasScore -= 20;
+  if (last.close > mid) biasScore += 10;
+  if (last.close < mid) biasScore -= 10;
+  if (macdNow > 0) biasScore += 8;
+  if (macdNow < 0) biasScore -= 8;
+  if (macdUp) biasScore += 7;
+  if (macdDown) biasScore -= 7;
+  if (rsiV[idx] > 55) biasScore += 5;
+  if (rsiV[idx] < 45) biasScore -= 5;
+  if (vol.pressure > 12) biasScore += 8;
+  if (vol.pressure < -12) biasScore -= 8;
+  biasScore = clamp(biasScore, -100, 100);
+  const bias = biasScore >= 18 ? "bullish" : biasScore <= -18 ? "bearish" : "neutral";
+  const structure = squeeze ? "SQUEEZE" : pos <= 12 ? "NEAR LOWER" : pos >= 88 ? "NEAR UPPER" : "RANGE";
+  return {
+    label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
+    emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown,
+    meanLong: touchLo && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 35,
+    meanShort: touchUp && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 65,
+    adx: adxV,
+  };
+}
+function tfTrend(tf) {
+  if (!tf) return "neutral";
+  const bull = (tf.emaBull && (tf.ms.trend === "up" || tf.bias === "bullish")) || (tf.bias === "bullish" && tf.biasScore >= 25 && tf.ms.trend !== "down");
+  const bear = (tf.emaBear && (tf.ms.trend === "down" || tf.bias === "bearish")) || (tf.bias === "bearish" && tf.biasScore <= -25 && tf.ms.trend !== "up");
+  if (bull && !bear) return "bullish";
+  if (bear && !bull) return "bearish";
+  return "neutral";
+}
+function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
+  if (!h1 || !m15 || !m5) return null;
+  const t1 = tfTrend(h1), t15 = tfTrend(m15), t4 = tfTrend(h4);
+  const h1Bull = t1 === "bullish", h1Bear = t1 === "bearish";
+  const m15Bull = t15 === "bullish", m15Bear = t15 === "bearish";
+  const adxMax = Math.max(h1.adx != null ? h1.adx : 0, m15.adx != null ? m15.adx : 0);
+  let action = null, path = null;
+  if (h1Bull && m15Bull && t4 !== "bearish") { action = "LONG"; path = "TREND"; }
+  else if (h1Bear && m15Bear && t4 !== "bullish") { action = "SHORT"; path = "TREND"; }
+  else if (m5.meanLong && !h1Bear && t4 !== "bearish") { action = "LONG"; path = "MEAN_REV"; }
+  else if (m5.meanShort && !h1Bull && t4 !== "bullish") { action = "SHORT"; path = "MEAN_REV"; }
+  else if (m5.squeeze && m5.volume.spike && Math.abs(m5.volume.pressure) >= 14) {
+    if (m5.volume.pressure >= 14 && m5.macdUp && t1 !== "bearish" && t15 !== "bearish" && t4 !== "bearish") { action = "LONG"; path = "SQUEEZE"; }
+    else if (m5.volume.pressure <= -14 && m5.macdDown && t1 !== "bullish" && t15 !== "bullish" && t4 !== "bullish") { action = "SHORT"; path = "SQUEEZE"; }
+  }
+  if (!action) return null;
+  if (action === "LONG" && (t15 === "bearish" || t1 === "bearish")) return null;
+  if (action === "SHORT" && (t15 === "bullish" || t1 === "bullish")) return null;
+  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -35) return null;
+  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 35) return null;
+  if (action === "LONG" && m5.volume.pressure < -20) return null;
+  if (action === "SHORT" && m5.volume.pressure > 20) return null;
+  if (path === "TREND" && adxMax < 18 && !m5.volume.spike) return null;
+  if (path === "SQUEEZE" && adxMax > 35) return null;
+  let btcAdj = 0;
+  if (btcBias && Math.abs(btcBias.score) >= 25) {
+    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 3 : -4;
+    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 3 : -4;
+  }
+  let conf = 52;
+  const d = action === "LONG" ? 1 : -1;
+  conf += d * h1.biasScore * 0.2;
+  if (action === "LONG" && h1.emaBull) conf += 8;
+  if (action === "SHORT" && h1.emaBear) conf += 8;
+  if (action === "LONG" && h1.ms.trend === "up") conf += 7;
+  if (action === "SHORT" && h1.ms.trend === "down") conf += 7;
+  conf += d * m15.biasScore * 0.12;
+  if (action === "LONG" && m15Bull) conf += 6;
+  if (action === "SHORT" && m15Bear) conf += 6;
+  conf += d * m5.biasScore * 0.08;
+  if (path === "MEAN_REV") conf += 12;
+  if (path === "SQUEEZE") conf += 8;
+  if (action === "LONG" && m5.macdUp) conf += 5;
+  if (action === "SHORT" && m5.macdDown) conf += 5;
+  if (action === "LONG" && m5.reversal.bias === "bullish") conf += 6 * m5.reversal.quality;
+  if (action === "SHORT" && m5.reversal.bias === "bearish") conf += 6 * m5.reversal.quality;
+  if (action === "LONG" && m5.volume.pressure > 10) conf += 6;
+  if (action === "SHORT" && m5.volume.pressure < -10) conf += 6;
+  if (m5.volume.spike) conf += 3;
+  if (action === "LONG" && m5.rsi < 40) conf += 3;
+  if (action === "LONG" && m5.rsi > 72) conf -= 10;
+  if (action === "SHORT" && m5.rsi > 60) conf += 3;
+  if (action === "SHORT" && m5.rsi < 28) conf -= 10;
+  if (action === "LONG" && funding < -0.0003) conf += 3;
+  if (action === "SHORT" && funding > 0.0003) conf += 3;
+  if (adxMax >= 25 && path === "TREND") conf += 5;
+  else if (adxMax < 16 && path === "TREND") conf -= 8;
+  conf += btcAdj;
+  conf = clamp(Math.round(conf), 0, 99);
+  if (path === "TREND" && !(h1Bull || h1Bear)) conf = Math.min(conf, 74);
+  if (conf < 75) return null;
+  if (path === "TREND" && t1 === t15 && t4 === t1 && t4 !== "neutral") conf = Math.min(99, conf + 5);
+  return { action, probability: conf, setup: path, h1, m15, m5, h4, adx: adxMax, trends: { h1: t1, m15: t15, h4: t4 } };
+}
+function buildLevels(candles, signal, mark) {
+  const atrV = atr(candles) || mark * 0.005;
+  const recent = candles.slice(-16);
+  const swingLow = Math.min(...recent.map((c) => c.low));
+  const swingHigh = Math.max(...recent.map((c) => c.high));
+  const tick = Math.max(mark * 0.00008, 1e-12);
+  const m5 = signal.m5;
+  let entry, sl, tp1, tp2;
+  if (signal.action === "LONG") {
+    entry = Math.min(mark, Math.min(swingLow + atrV * 0.2, m5.lower + atrV * 0.15));
+    if (mark < entry) entry = mark;
+    entry = Math.min(entry, mark * 1.001);
+    sl = Math.min(swingLow - tick - atrV * 0.45, entry - atrV * 1.1);
+    tp1 = m5.middle > entry ? m5.middle : entry + atrV * 1.5;
+    tp2 = Math.max(m5.upper * 0.997, entry + atrV * 2.8);
+  } else {
+    entry = Math.max(mark, Math.max(swingHigh - atrV * 0.2, m5.upper - atrV * 0.15));
+    if (mark > entry) entry = mark;
+    entry = Math.max(entry, mark * 0.999);
+    sl = Math.max(swingHigh + tick + atrV * 0.45, entry + atrV * 1.1);
+    tp1 = m5.middle < entry ? m5.middle : entry - atrV * 1.5;
+    tp2 = Math.min(m5.lower * 1.003, entry - atrV * 2.8);
+  }
+  const risk = Math.abs(entry - sl);
+  const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
+  return { entry, sl, tp1, tp2, rr };
+}
+function formatTelegramMessage(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
+  const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
+  return (
+    `${tag} · <b>${s.base}</b> ${arrow}\n\n` +
+    `📊 Probability: <b>${s.probability}%</b>\n` +
+    `🧩 Setup: <b>${s.setup}</b>\n` +
+    `🎯 Entry: <code>${formatPrice(s.entry)}</code>\n` +
+    `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
+    `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
+    `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}\n\n` +
+    `1H ${s.trends ? s.trends.h1 : s.h1.bias} · 15M ${s.trends ? s.trends.m15 : s.m15.bias} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
+    `Vol ${s.m5.volume.side} · RSI ${Number(s.m5.rsi).toFixed(0)}\n\n` +
+    `<i>Strict Core v2.4 · Score not guarantee · Risk max 0.75% · NFA</i>`
+  );
+}
+function formatSquareCoinBlock(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const grade = isSniper ? "SNIPER" : "VALID";
+  const side = s.action === "LONG" ? "LONG" : "SHORT";
+  const mark = s.action === "LONG" ? "🟢" : "🔴";
+  return (
+    `${grade}  ·  ${s.base}  ${mark} ${side}\n` +
+    `Score ${s.probability}%  ·  ${s.setup}  ·  R:R 1:${s.rr.toFixed(1)}\n` +
+    `Entry  ${formatPrice(s.entry)}\n` +
+    `SL     ${formatPrice(s.sl)}\n` +
+    `TP1    ${formatPrice(s.tp1)}   ·   TP2  ${formatPrice(s.tp2)}\n` +
+    `Context  1H ${s.h1.structure}  ·  15M ${s.m15.bias}  ·  Vol ${s.m5.volume.side}`
+  );
+}
+function formatSquareBatchMessage(coins) {
+  const now = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "medium", timeStyle: "short" });
+  const lines = [
+    "STRICT CORE  ·  Futures Scan",
+    `WIB ${now}`,
+    "",
+    "Setup terpilih (struktur ketat, bukan sinyal acak):",
+    "",
+  ];
+  coins.forEach((s, i) => {
+    if (i > 0) lines.push("────────────────");
+    lines.push(formatSquareCoinBlock(s));
+    lines.push("");
+  });
+  lines.push("Risk max 0.75% per ide");
+  lines.push("Edukasi saja — bukan saran finansial");
+  lines.push("#Crypto #Futures #Trading");
+  return lines.join("\n").trim();
+}
+function buildSquareCardSvg(coins) {
+  // Portrait mobile 720×1520 — readable on phone without zoom
+  const W = 720;
+  const H = 1520;
+  const rows = coins.slice(0, 3);
+  const pad = 28;
+  const headerH = 130;
+  const footerH = 56;
+  const gap = 16;
+  const usable = H - headerH - footerH - gap * (rows.length + 1);
+  const rowH = Math.floor(usable / Math.max(rows.length, 1));
+
+  const esc = (x) =>
+    String(x ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  let cards = "";
+  rows.forEach((s, i) => {
+    const y = headerH + gap + i * (rowH + gap);
+    const isLong = s.action === "LONG";
+    const accent = isLong ? "#059669" : "#e11d48";
+    const soft = isLong ? "#ecfdf5" : "#fff1f2";
+    const grade = s.probability >= MIN_PROB_SNIPER ? "SNIPER" : "VALID";
+    const side = isLong ? "LONG" : "SHORT";
+    const trendLine = s.trends
+      ? `1H ${esc(s.trends.h1)}  ·  15M ${esc(s.trends.m15)}  ·  4H ${esc(s.trends.h4)}`
+      : `1H ${esc(s.h1.structure)}  ·  15M ${esc(s.m15.bias)}`;
+
+    cards += `
+    <rect x="${pad}" y="${y}" width="${W - pad * 2}" height="${rowH}" rx="20" fill="${soft}" stroke="${accent}" stroke-width="3"/>
+    <rect x="${pad}" y="${y}" width="12" height="${rowH}" rx="6" fill="${accent}"/>
+    <text x="${pad + 28}" y="${y + 42}" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#0f172a">${esc(s.base)}</text>
+    <text x="${W - pad - 24}" y="${y + 42}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="${accent}">${isLong ? "▲" : "▼"} ${side}</text>
+    <text x="${pad + 28}" y="${y + 78}" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="${accent}">${grade}  ·  ${s.probability}%</text>
+    <text x="${pad + 28}" y="${y + 120}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">Entry   ${esc(formatPrice(s.entry))}</text>
+    <text x="${pad + 28}" y="${y + 152}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">SL        ${esc(formatPrice(s.sl))}</text>
+    <text x="${pad + 28}" y="${y + 184}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
+    <text x="${pad + 28}" y="${y + 216}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
+    <text x="${pad + 28}" y="${y + 252}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(s.setup)}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}</text>
+    <text x="${pad + 28}" y="${y + 284}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
+  });
+
+  const now = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#ffffff"/>
+  <rect x="0" y="0" width="${W}" height="${headerH}" fill="#0f172a"/>
+  <text x="${pad}" y="48" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">STRICT CORE</text>
+  <text x="${pad}" y="84" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#94a3b8">Futures scan  ·  1H+15M lock  ·  4H gate</text>
+  <text x="${pad}" y="110" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">${esc(now)} WIB</text>
+  <text x="${W - pad}" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600" fill="#38bdf8">Top ${rows.length}</text>
+  ${cards}
+  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Risk max 0.75%  ·  Educational only  ·  NFA</text>
+</svg>`;
+}
+
+function renderSquareCardPng(coins) {
+  const dir = "/tmp/square-card";
+  fs.mkdirSync(dir, { recursive: true });
+  const svgPath = path.join(dir, "card.svg");
+  const pngPath = path.join(dir, "card.png");
+  fs.writeFileSync(svgPath, buildSquareCardSvg(coins), "utf8");
+  try {
+    execFileSync("rsvg-convert", ["-w", "720", "-h", "1520", svgPath, "-o", pngPath], { stdio: "pipe" });
+  } catch (e) {
+    console.warn("rsvg-convert failed, Square will post text only:", e.message);
+    return null;
+  }
+  if (!fs.existsSync(pngPath)) return null;
+  return pngPath;
+}
+async function squareApi(endpoint, apiKey, body, useV2 = true) {
+  const base = useV2
+    ? "https://www.binance.com/bapi/composite/v2/public/pgc/openApi"
+    : "https://www.binance.com/bapi/composite/v1/public/pgc/openApi";
+  const res = await fetch(`${base}${endpoint}`, {
+    method: "POST",
+    headers: {
+      "X-Square-OpenAPI-Key": apiKey,
+      "Content-Type": "application/json",
+      clienttype: "binanceSkill",
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (String(json.code) !== "000000") {
+    throw new Error(`Square API ${endpoint} [${json.code}]: ${json.message || res.status}`);
+  }
+  return json.data;
+}
+async function uploadSquareImage(apiKey, pngPath) {
+  const imageName = path.basename(pngPath);
+  const { presignedUrl, fileTicket } = await squareApi("/image/presignedUrl", apiKey, { imageName }, true);
+  const buf = fs.readFileSync(pngPath);
+  const put = await fetch(presignedUrl, { method: "PUT", headers: { "Content-Type": "image/png" }, body: buf });
+  if (!put.ok) throw new Error(`S3 upload failed: ${put.status}`);
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const st = await squareApi("/image/imageStatus", apiKey, { fileTicket }, true);
+    if (st.status === 1 && st.imageUrl) return st.imageUrl;
+    if (st.status === 2) throw new Error(`Image process failed: ${st.failedReason || "unknown"}`);
+    console.log(`  Square image processing... (${i + 1}/10)`);
+  }
+  throw new Error("Square image poll timeout");
+}
+async function sendBinanceSquare(signals) {
+  if (!BINANCE_SQUARE_KEY) {
+    console.log("Binance Square: skip (no BINANCE_SQUARE_OPENAPI_KEY)");
+    return;
+  }
+  const ranked = [...signals]
+    .filter((s) => s.probability >= MIN_PROB_VALID)
+    .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
+  const batch = ranked.slice(0, SQUARE_POST_COUNT);
+  if (!batch.length) {
+    console.log("Binance Square: no Valid signals this run");
+    return;
+  }
+  console.log(
+    `Binance Square 1 post · ${batch.length} coin(s) → ` +
+      batch.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")
+  );
+  const text = formatSquareBatchMessage(batch);
+  const body = { contentType: 1, bodyTextOnly: text };
+  try {
+    const pngPath = renderSquareCardPng(batch);
+    if (pngPath) {
+      console.log("Square: uploading professional card image...");
+      const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
+      body.imageList = [imageUrl];
+      console.log("Square: image ready");
+    }
+  } catch (e) {
+    console.warn("Square image skip (text-only fallback):", e.message);
+  }
+  try {
+    const res = await fetch("https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add", {
+      method: "POST",
+      headers: {
+        "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
+        "Content-Type": "application/json",
+        clienttype: "binanceSkill",
+      },
+      body: JSON.stringify(body),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || String(payload.code) !== "000000") {
+      console.error("Binance Square failed:", res.status, payload.code, payload.message || JSON.stringify(payload));
+    } else {
+      const id = payload.data?.id;
+      console.log(
+        `Binance Square sent (${batch.length} coins` +
+          (body.imageList ? " + image" : "") +
+          `)` +
+          (id ? ` → https://www.binance.com/square/post/${id}` : "")
+      );
+    }
+  } catch (e) {
+    console.error("Binance Square error:", e.message);
+  }
+}
+async function sendTelegram(signals) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.log("Telegram: skip (no secrets)");
+    return;
+  }
+  if (!signals.length) return;
+  for (const s of signals) {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: formatTelegramMessage(s),
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) console.error("Telegram failed:", res.status, JSON.stringify(body));
+    else console.log(`Telegram sent: ${s.base} ${s.action} ${s.probability}%`);
+  }
+}
+async function sendDiscord(signals) {
+  if (!DISCORD_WEBHOOK) {
+    console.log("Discord: skip (no secret)");
+    return;
+  }
+  if (!signals.length) {
+    console.log("No high-quality signals");
+    return;
+  }
+  for (let i = 0; i < signals.length; i++) {
+    const s = signals[i];
+    if (i > 0) await new Promise((r) => setTimeout(r, 400));
+    const isSniper = s.probability >= MIN_PROB_SNIPER;
+    const color = s.action === "LONG" ? 0x35ef9a : 0xff5c7a;
+    const embed = {
+      title: `${isSniper ? "🎯 SNIPER" : "✅ VALID"} · ${s.base} ${s.action}`,
+      color,
+      fields: [
+        { name: "Probability", value: `**${s.probability}%**`, inline: true },
+        { name: "Setup", value: s.setup, inline: true },
+        { name: "R:R", value: `1:${s.rr.toFixed(1)}`, inline: true },
+        { name: "Entry", value: `$${formatPrice(s.entry)}`, inline: true },
+        { name: "SL", value: `$${formatPrice(s.sl)}`, inline: true },
+        { name: "TP1 / TP2", value: `$${formatPrice(s.tp1)} / $${formatPrice(s.tp2)}`, inline: true },
+        { name: "1H", value: `${s.h1.structure} (${s.h1.bias})`, inline: true },
+        { name: "15M", value: s.m15.bias, inline: true },
+        { name: "5M / Vol", value: `${s.m5.structure} / ${s.m5.volume.side}`, inline: true },
+      ],
+      footer: { text: "Strict Core v2.4 · Score not guarantee · NFA" },
+      timestamp: new Date().toISOString(),
+    };
+    const res = await fetch(DISCORD_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "Strict Core", embeds: [embed] }),
+    });
+    if (!res.ok) console.error("Discord failed:", res.status, await res.text());
+    else console.log(`Discord sent: ${s.base} ${s.action} ${s.probability}%`);
+  }
+}
+async function fetchOkxCandles(instId, bar, limit = 100) {
+  const url = `${OKX}/api/v5/market/candles?instId=${encodeURIComponent(instId)}&bar=${bar}&limit=${limit}`;
+  const data = await getJson(url);
+  const list = data?.data || [];
+  const candles = list
+    .map((r) => ({
+      open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5], confirm: String(r[8]),
+    }))
+    .reverse();
+  if (candles.length && candles[candles.length - 1].confirm === "0") candles.pop();
+  return candles;
+}
+async function fetchFunding(instId) {
+  try {
+    const data = await getJson(`${OKX}/api/v5/public/funding-rate?instId=${encodeURIComponent(instId)}`);
+    return +(data?.data?.[0]?.fundingRate || 0);
+  } catch {
+    return 0;
+  }
+}
+async function main() {
+  console.log("=== Strict Core v2.4.5 | 1H+15M lock · 4H gate ===");
+  console.log(new Date().toISOString());
+  console.log(
+    "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
+    "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
+    "| Square:", BINANCE_SQUARE_KEY ? "YES" : "NO"
+  );
+  let btcBias = { bias: "neutral", score: 0 };
+  try {
+    const btcCandles = await fetchOkxCandles("BTC-USDT-SWAP", "1H", 100);
+    const btcTF = analyzeTF(btcCandles, "BTC1H");
+    if (btcTF) {
+      btcBias = { bias: btcTF.bias, score: btcTF.biasScore, adx: btcTF.adx };
+      console.log(`BTC soft bias: ${btcBias.bias} (score ${btcBias.score}, ADX ${btcBias.adx != null ? btcBias.adx.toFixed(1) : "n/a"})`);
+    }
+  } catch (e) {
+    console.warn("BTC bias skip:", e.message);
+  }
+  const tickersRes = await getJson(`${OKX}/api/v5/market/tickers?instType=SWAP`);
+  const tickers = (tickersRes?.data || []).filter((t) => t.instId.endsWith("-USDT-SWAP"));
+  const candidates = tickers
+    .map((t) => {
+      const last = +t.last || 0;
+      const open = +t.open24h || last;
+      const baseVol = +t.volCcy24h || 0;
+      const turnover = baseVol * last;
+      const chg = open ? ((last - open) / open) * 100 : 0;
+      if (turnover < 2_000_000 || Math.abs(chg) > 28) return null;
+      const base = t.instId.replace("-USDT-SWAP", "");
+      if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
+      return {
+        instId: t.instId,
+        base,
+        volume: turnover,
+        change: chg,
+        score: Math.log10(Math.max(turnover, 1)) * 0.65 + Math.min(Math.abs(chg) / 10, 1) * 0.35,
+        mark: last,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, CANDIDATE_LIMIT);
+  console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
+  const signals = [];
+  for (const c of candidates) {
+    try {
+      const [h1c, m15c, m5c, h4c, funding] = await Promise.all([
+        fetchOkxCandles(c.instId, "1H", 100),
+        fetchOkxCandles(c.instId, "15m", 100),
+        fetchOkxCandles(c.instId, "5m", 100),
+        fetchOkxCandles(c.instId, "4H", 100),
+        fetchFunding(c.instId),
+      ]);
+      const h1 = analyzeTF(h1c, "1H");
+      const m15 = analyzeTF(m15c, "15M");
+      const m5 = analyzeTF(m5c, "5M");
+      const h4 = analyzeTF(h4c, "4H");
+      const scored = scoreSignal(h1, m15, m5, h4, funding, btcBias);
+      if (!scored || scored.probability < MIN_PROB_VALID) continue;
+      const levels = buildLevels(m5c, scored, c.mark);
+      if (levels.rr < MIN_RR) continue;
+      signals.push({
+        base: c.base,
+        action: scored.action,
+        probability: scored.probability,
+        setup: scored.setup,
+        entry: levels.entry,
+        sl: levels.sl,
+        tp1: levels.tp1,
+        tp2: levels.tp2,
+        rr: levels.rr,
+        h1: scored.h1,
+        m15: scored.m15,
+        m5: scored.m5,
+        h4: scored.h4,
+        trends: scored.trends,
+      });
+    } catch (e) {
+      console.warn(`Skip ${c.base}:`, e.message);
+    }
+  }
+  signals.sort((a, b) => b.probability - a.probability);
+  console.log(`Strict signals: ${signals.length}`);
+  signals.forEach((s) => console.log(`  ${s.base} ${s.action} ${s.probability}% ${s.setup} R:R 1:${s.rr.toFixed(1)}`));
+  await sendDiscord(signals);
+  await sendTelegram(signals);
+  await sendBinanceSquare(signals);
+  console.log("Done.");
+}
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
