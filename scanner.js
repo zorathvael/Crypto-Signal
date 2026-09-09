@@ -1,7 +1,7 @@
 
 /**
- * Strict Core Scanner v2.4.7
- * v2.4.7 slope-lock + anti-chase BB · 1H+15M+4H · Square card
+ * Strict Core Scanner v2.4.9
+ * v2.4.9 anti-chase · tradeable RR · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
 
@@ -16,8 +16,8 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 2.0;
-const CANDIDATE_LIMIT = 36;
+const MIN_RR = 1.6;
+const CANDIDATE_LIMIT = 48;
 const SQUARE_POST_COUNT = 3;
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.7" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.4.9" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -263,8 +263,8 @@ function tfTrend(tf) {
   if (tf.bias === "bullish" && tf.biasScore >= 22) votes += 1;
   if (tf.bias === "bearish" && tf.biasScore <= -22) votes -= 1;
   if (tf.slope12 != null) {
-    if (tf.slope12 > 0.2) votes += 1;
-    if (tf.slope12 < -0.2) votes -= 1;
+    if (tf.slope12 > 0.12) votes += 1;
+    if (tf.slope12 < -0.12) votes -= 1;
   }
   // Price vs EMA21 as structural anchor
   if (tf.close != null && tf.ema21 != null) {
@@ -283,20 +283,22 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   const t4 = tfTrend(h4);
   const adxMax = Math.max(h1.adx != null ? h1.adx : 0, m15.adx != null ? m15.adx : 0);
 
-  // --- HARD slope lock (price must move the same way as the signal) ---
-  const h1Up = (h1.slope12 ?? 0) > 0.15;
-  const h1Down = (h1.slope12 ?? 0) < -0.15;
-  const m15Up = (m15.slope6 ?? 0) > 0.1;
-  const m15Down = (m15.slope6 ?? 0) < -0.1;
+  // --- HARD slope lock (block only when slope fights the signal) ---
+  const h1Up = (h1.slope12 ?? 0) > 0.08;
+  const h1Down = (h1.slope12 ?? 0) < -0.08;
+  const m15Up = (m15.slope6 ?? 0) > 0.05;
+  const m15Down = (m15.slope6 ?? 0) < -0.05;
+  const h1StrongUp = (h1.slope12 ?? 0) > 0.9;
+  const h1StrongDown = (h1.slope12 ?? 0) < -0.9;
 
   let action = null;
   let path = null;
 
-  // TREND: 1H + 15M same direction + slope confirms + 4H not opposing
-  if (t1 === "bullish" && t15 === "bullish" && t4 !== "bearish" && h1Up && !h1Down) {
+  // TREND: 1H + 15M same direction + 4H not opposing + slope not fighting
+  if (t1 === "bullish" && t15 === "bullish" && t4 !== "bearish" && !h1Down) {
     action = "LONG";
     path = "TREND";
-  } else if (t1 === "bearish" && t15 === "bearish" && t4 !== "bullish" && h1Down && !h1Up) {
+  } else if (t1 === "bearish" && t15 === "bearish" && t4 !== "bullish" && !h1Up) {
     action = "SHORT";
     path = "TREND";
   }
@@ -353,19 +355,23 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
 
   // --- Anti-chase Bollinger (all coins) ---
-  // LONG forbidden near upper BB; SHORT forbidden near lower BB
+  // Hard block only at extreme chase; soft penalty before that
   const pos5 = m5.position != null ? m5.position : 50;
   const pos15 = m15.position != null ? m15.position : 50;
-  if (action === "LONG" && (pos5 >= 85 || pos15 >= 88)) return null;
-  if (action === "SHORT" && (pos5 <= 15 || pos15 <= 12)) return null;
-  // Soft penalty zone (extended but not hard-blocked)
+  // Extreme chase = liquidity grab zone (USELESS-like)
+  if (action === "LONG" && (pos5 >= 92 || (pos5 >= 88 && (m5.rsi ?? 50) > 70))) return null;
+  if (action === "SHORT" && (pos5 <= 8 || (pos5 <= 12 && (m5.rsi ?? 50) < 30))) return null;
+  if (action === "LONG" && pos15 >= 94) return null;
+  if (action === "SHORT" && pos15 <= 6) return null;
   let chasePen = 0;
-  if (action === "LONG" && (pos5 >= 75 || pos15 >= 78)) chasePen -= 8;
-  if (action === "SHORT" && (pos5 <= 25 || pos15 <= 22)) chasePen -= 8;
-  // Prefer mean-rev only when truly at band extreme with room to bounce
+  if (action === "LONG" && (pos5 >= 80 || pos15 >= 82)) chasePen -= 10;
+  else if (action === "LONG" && (pos5 >= 70 || pos15 >= 72)) chasePen -= 5;
+  if (action === "SHORT" && (pos5 <= 20 || pos15 <= 18)) chasePen -= 10;
+  else if (action === "SHORT" && (pos5 <= 30 || pos15 <= 28)) chasePen -= 5;
+  // MEAN_REV must be at the band (true reversion)
   if (path === "MEAN_REV") {
-    if (action === "LONG" && pos5 > 40) return null;   // mean-long must be near lower
-    if (action === "SHORT" && pos5 < 60) return null;  // mean-short must be near upper
+    if (action === "LONG" && pos5 > 35) return null;
+    if (action === "SHORT" && pos5 < 65) return null;
   }
 
   // --- Final anti-invert gates (absolute) ---
@@ -373,15 +379,16 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   if (action === "SHORT" && (t1 === "bullish" || t15 === "bullish")) return null;
   if (action === "LONG" && h1Down && path === "TREND") return null;
   if (action === "SHORT" && h1Up && path === "TREND") return null;
-  if (action === "LONG" && m15Down && path === "TREND") return null;
-  if (action === "SHORT" && m15Up && path === "TREND") return null;
-  if (action === "LONG" && (h1.slope12 ?? 0) < -1.0) return null; // strong dump → no long
-  if (action === "SHORT" && (h1.slope12 ?? 0) > 1.0) return null; // strong pump → no short
-  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -30) return null;
-  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 30) return null;
-  if (action === "LONG" && m5.volume.pressure < -22) return null;
-  if (action === "SHORT" && m5.volume.pressure > 22) return null;
-  if (path === "TREND" && adxMax < 16 && !m5.volume.spike) return null;
+  // 15m mild opposite is ok if 1H locked; only block strong 15m fight
+  if (action === "LONG" && m15Down && (m15.slope6 ?? 0) < -0.55 && path === "TREND") return null;
+  if (action === "SHORT" && m15Up && (m15.slope6 ?? 0) > 0.55 && path === "TREND") return null;
+  if (action === "LONG" && h1StrongDown) return null; // strong dump → no long
+  if (action === "SHORT" && h1StrongUp) return null; // strong pump → no short
+  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -40) return null;
+  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 40) return null;
+  if (action === "LONG" && m5.volume.pressure < -28) return null;
+  if (action === "SHORT" && m5.volume.pressure > 28) return null;
+  if (path === "TREND" && adxMax < 14 && !m5.volume.spike) return null;
   if (path === "SQUEEZE" && adxMax > 38) return null;
 
   let btcAdj = 0;
@@ -461,35 +468,37 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
 function buildLevels(candles, signal, mark) {
   const atrV = atr(candles) || mark * 0.005;
-  const recent = candles.slice(-16);
+  const recent = candles.slice(-12);
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
   const tick = Math.max(mark * 0.00008, 1e-12);
   const m5 = signal.m5;
   let entry, sl, tp1, tp2;
-  // Entry = market price (mark). Levels must match action side strictly.
+  entry = mark;
   if (signal.action === "LONG") {
-    entry = mark;
-    // SL always below entry
-    sl = Math.min(swingLow - tick - atrV * 0.35, entry - atrV * 1.05);
-    if (!(sl < entry)) sl = entry - atrV * 1.2;
-    tp1 = Math.max(m5.middle || 0, entry + atrV * 1.4);
-    if (!(tp1 > entry)) tp1 = entry + atrV * 1.5;
-    tp2 = Math.max(m5.upper || 0, entry + atrV * 2.6);
-    if (!(tp2 > tp1)) tp2 = tp1 + atrV * 1.2;
+    // Tighter SL: prefer structure but cap distance at 1.6 ATR (keeps RR tradeable)
+    const slStruct = swingLow - tick - atrV * 0.2;
+    const slCap = entry - atrV * 1.6;
+    sl = Math.max(slStruct, slCap); // closer to entry
+    if (!(sl < entry * 0.999)) sl = entry - atrV * 1.15;
+    tp1 = entry + atrV * 1.6;
+    if (m5.middle != null && m5.middle > entry) tp1 = Math.max(tp1, m5.middle);
+    tp2 = entry + atrV * 2.8;
+    if (m5.upper != null && m5.upper > tp1) tp2 = Math.max(tp2, m5.upper);
+    if (!(tp2 > tp1)) tp2 = tp1 + atrV;
   } else {
-    entry = mark;
-    // SL always above entry
-    sl = Math.max(swingHigh + tick + atrV * 0.35, entry + atrV * 1.05);
-    if (!(sl > entry)) sl = entry + atrV * 1.2;
-    tp1 = Math.min(m5.middle || entry, entry - atrV * 1.4);
-    if (!(tp1 < entry)) tp1 = entry - atrV * 1.5;
-    tp2 = Math.min(m5.lower || entry, entry - atrV * 2.6);
-    if (!(tp2 < tp1)) tp2 = tp1 - atrV * 1.2;
+    const slStruct = swingHigh + tick + atrV * 0.2;
+    const slCap = entry + atrV * 1.6;
+    sl = Math.min(slStruct, slCap); // closer to entry
+    if (!(sl > entry * 1.001)) sl = entry + atrV * 1.15;
+    tp1 = entry - atrV * 1.6;
+    if (m5.middle != null && m5.middle < entry) tp1 = Math.min(tp1, m5.middle);
+    tp2 = entry - atrV * 2.8;
+    if (m5.lower != null && m5.lower < tp1) tp2 = Math.min(tp2, m5.lower);
+    if (!(tp2 < tp1)) tp2 = tp1 - atrV;
   }
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
-  // Reject inverted level geometry
   if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2)) return { entry, sl, tp1, tp2, rr: 0 };
   if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2)) return { entry, sl, tp1, tp2, rr: 0 };
   return { entry, sl, tp1, tp2, rr };
@@ -801,7 +810,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.4.7 | slope-lock + anti-chase BB ===");
+  console.log("=== Strict Core v2.4.9 | anti-chase · tradeable RR · live signals ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
