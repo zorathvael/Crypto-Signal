@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.6.0
+ * Strict Core Scanner v2.6.2
  * v2.5.2 liquidity entry · TP3 runner · 1H+15M+4H · Square card
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -16,8 +16,8 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 75;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 1.8;
-const CANDIDATE_LIMIT = 48;
+const MIN_RR = 1.5;
+const CANDIDATE_LIMIT = 72;
 const SQUARE_POST_COUNT = 3;
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
@@ -33,7 +33,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.6.0" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.6.2" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -254,25 +254,26 @@ function analyzeTF(candles, label) {
 }
 function tfTrend(tf) {
   if (!tf) return "neutral";
-  // Majority vote — needs ≥2 bullish or ≥2 bearish votes (anti-flip)
   let votes = 0;
   if (tf.emaBull) votes += 1;
   if (tf.emaBear) votes -= 1;
   if (tf.ms.trend === "up") votes += 1;
   if (tf.ms.trend === "down") votes -= 1;
-  if (tf.bias === "bullish" && tf.biasScore >= 22) votes += 1;
-  if (tf.bias === "bearish" && tf.biasScore <= -22) votes -= 1;
+  if (tf.bias === "bullish" && tf.biasScore >= 18) votes += 1;
+  if (tf.bias === "bearish" && tf.biasScore <= -18) votes -= 1;
   if (tf.slope12 != null) {
-    if (tf.slope12 > 0.12) votes += 1;
-    if (tf.slope12 < -0.12) votes -= 1;
+    if (tf.slope12 > 0.08) votes += 1;
+    if (tf.slope12 < -0.08) votes -= 1;
   }
-  // Price vs EMA21 as structural anchor
   if (tf.close != null && tf.ema21 != null) {
     if (tf.close > tf.ema21) votes += 1;
     if (tf.close < tf.ema21) votes -= 1;
   }
+  // ≥2 clear, or ≥1 with strong bias/slope
   if (votes >= 2) return "bullish";
   if (votes <= -2) return "bearish";
+  if (votes === 1 && ((tf.biasScore ?? 0) >= 28 || (tf.slope12 ?? 0) > 0.35)) return "bullish";
+  if (votes === -1 && ((tf.biasScore ?? 0) <= -28 || (tf.slope12 ?? 0) < -0.35)) return "bearish";
   return "neutral";
 }
 function councilConsensus(h1, m15, m5, h4) {
@@ -325,8 +326,8 @@ function councilConsensus(h1, m15, m5, h4) {
   }
   const net = weight ? score / weight : 0;
   let side = "neutral";
-  if (net >= 0.28) side = "LONG";
-  else if (net <= -0.28) side = "SHORT";
+  if (net >= 0.22) side = "LONG";
+  else if (net <= -0.22) side = "SHORT";
   return { side, net, votes: votes.length, t1, t15, t4 };
 }
 
@@ -339,8 +340,8 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   const adxMax = Math.max(h1.adx != null ? h1.adx : 0, m15.adx != null ? m15.adx : 0);
 
   // --- HARD slope lock (block only when slope fights the signal) ---
-  const h1Up = (h1.slope12 ?? 0) > 0.08;
-  const h1Down = (h1.slope12 ?? 0) < -0.08;
+  const h1Up = (h1.slope12 ?? 0) > 0.05;
+  const h1Down = (h1.slope12 ?? 0) < -0.05;
   const m15Up = (m15.slope6 ?? 0) > 0.05;
   const m15Down = (m15.slope6 ?? 0) < -0.05;
   const h1StrongUp = (h1.slope12 ?? 0) > 0.9;
@@ -408,10 +409,10 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 
   if (!action) return null;
 
-  // Council must agree with proposed action (multi-method consensus)
+  // Council: block only when it actively opposes the action
   const council = councilConsensus(h1, m15, m5, h4);
   if (council.side !== "neutral" && council.side !== action) return null;
-  if (council.side === "neutral" && path === "TREND") return null;
+  // Neutral council OK if 1H+15M already locked same way
 
 
 
@@ -421,10 +422,10 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   // TREND: only enter on pullback zone inside the trend (not at extremes)
   // LONG pullback = mid/lower half of BB; SHORT pullback = mid/upper half
   if (path === "TREND") {
-    if (action === "LONG" && pos5 >= 72) return null;   // too high → wait pullback
-    if (action === "SHORT" && pos5 <= 28) return null;  // too low → wait pullback
-    if (action === "LONG" && pos15 >= 78) return null;
-    if (action === "SHORT" && pos15 <= 22) return null;
+    if (action === "LONG" && pos5 >= 88) return null;   // only block extreme chase
+    if (action === "SHORT" && pos5 <= 12) return null;
+    if (action === "LONG" && pos15 >= 92) return null;
+    if (action === "SHORT" && pos15 <= 8) return null;
   }
   // Extreme chase hard block (any path)
   if (action === "LONG" && (pos5 >= 90 || (pos5 >= 85 && (m5.rsi ?? 50) > 68))) return null;
@@ -433,8 +434,8 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   if (action === "LONG" && pos5 >= 65) chasePen -= 6;
   if (action === "SHORT" && pos5 <= 35) chasePen -= 6;
   if (path === "MEAN_REV") {
-    if (action === "LONG" && pos5 > 32) return null;
-    if (action === "SHORT" && pos5 < 68) return null;
+    if (action === "LONG" && pos5 > 42) return null;
+    if (action === "SHORT" && pos5 < 58) return null;
   }
   // RSI extreme against direction
   if (action === "LONG" && (m5.rsi ?? 50) > 72) return null;
@@ -450,10 +451,10 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
   if (action === "SHORT" && m15Up && (m15.slope6 ?? 0) > 0.55 && path === "TREND") return null;
   if (action === "LONG" && h1StrongDown) return null; // strong dump → no long
   if (action === "SHORT" && h1StrongUp) return null; // strong pump → no short
-  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -40) return null;
-  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 40) return null;
-  if (action === "LONG" && m5.volume.pressure < -28) return null;
-  if (action === "SHORT" && m5.volume.pressure > 28) return null;
+  if (action === "LONG" && m5.bias === "bearish" && m5.biasScore < -50) return null;
+  if (action === "SHORT" && m5.bias === "bullish" && m5.biasScore > 50) return null;
+  if (action === "LONG" && m5.volume.pressure < -35) return null;
+  if (action === "SHORT" && m5.volume.pressure > 35) return null;
   if (path === "TREND" && adxMax < 14 && !m5.volume.spike) return null;
   if (path === "SQUEEZE" && adxMax > 38) return null;
 
@@ -534,106 +535,110 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias) {
 }
 
 function buildLevels(candles, signal, mark) {
-  // CRITICAL FIX vs repeated SL hits:
-  // Do NOT sit limit orders inside the liquidity pool.
-  // Only enter AFTER a sweep wick has printed and price reclaimed.
-  // Entry = reclaim/mark | SL = beyond the sweep wick that already happened.
   const atrV = atr(candles) || mark * 0.005;
-  const recent = candles.slice(-30);
+  const recent = candles.slice(-28);
   const last = candles[candles.length - 1];
   const prev = candles[candles.length - 2] || last;
-  const prev2 = candles[candles.length - 3] || prev;
   const m5 = signal.m5;
-  const tick = Math.max(mark * 0.00012, 1e-12);
-
-  const lows = recent.map((c) => c.low);
-  const highs = recent.map((c) => c.high);
-  const swingLow = Math.min(...lows);
-  const swingHigh = Math.max(...highs);
-  // Prior structure excluding last candle (the sweep candidate)
-  const prior = candles.slice(-30, -1);
+  const tick = Math.max(mark * 0.0001, 1e-12);
+  const prior = candles.slice(-28, -1);
   const priorLow = Math.min(...prior.map((c) => c.low));
   const priorHigh = Math.max(...prior.map((c) => c.high));
+  const swingLow = Math.min(...recent.map((c) => c.low));
+  const swingHigh = Math.max(...recent.map((c) => c.high));
 
   let entry, sl, tp1, tp2, tp3, mode;
 
   if (signal.action === "LONG") {
-    // Sweep = took lows below prior structure then closed back up
     const wickLow = Math.min(last.low, prev.low);
     const swept =
-      wickLow < priorLow - atrV * 0.05 &&
-      last.close > wickLow + atrV * 0.25 &&
-      last.close >= last.open * 0.998 &&
-      last.close > (last.low + last.high) / 2;
+      wickLow <= priorLow * 1.001 &&
+      last.close > wickLow + atrV * 0.15 &&
+      last.close >= (last.open + last.close) / 2 &&
+      last.close > (last.low + last.high) / 2 * 0.98;
 
-    // Soft reclaim: bounce from lower third without full sweep
     const reclaim =
-      !swept &&
-      (m5.position ?? 50) <= 40 &&
+      (m5.position ?? 50) <= 45 &&
       last.close > last.open &&
-      last.low <= (m5.lower != null ? m5.lower * 1.01 : priorLow * 1.01) &&
-      last.close > last.low + (last.high - last.low) * 0.55;
+      last.low <= (m5.lower != null ? m5.lower * 1.015 : priorLow * 1.012);
 
-    if (!swept && !reclaim) {
-      // No confirmation yet — reject levels (caller will skip signal)
+    const pullback =
+      (m5.position ?? 50) <= 78 &&
+      (m5.position ?? 50) >= 12 &&
+      last.close >= Math.min(last.open, prev.close) * 0.994;
+
+    if (swept) {
+      mode = "SWEEP";
+      entry = mark;
+      sl = wickLow - atrV * 0.3 - tick;
+    } else if (reclaim) {
+      mode = "RECLAIM";
+      entry = mark;
+      sl = Math.min(last.low, m5.lower != null ? m5.lower : last.low) - atrV * 0.4 - tick;
+    } else if (pullback) {
+      // Allowed: trend pullback mid-zone — SL beyond swing, not inside noise
+      mode = "PULLBACK";
+      entry = mark;
+      sl = Math.min(swingLow, priorLow) - atrV * 0.5 - tick;
+    } else {
       return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
     }
-
-    mode = swept ? "SWEEP" : "RECLAIM";
-    entry = mark; // enter after confirmation, not inside the pool
-    // SL beyond the wick that ALREADY printed (+ small buffer)
-    const sweepFloor = swept ? wickLow : Math.min(last.low, prev.low, m5.lower != null ? m5.lower : last.low);
-    sl = sweepFloor - atrV * 0.35 - tick;
-    // Ensure minimum room but not insane
-    if (entry - sl < atrV * 0.9) sl = entry - atrV * 0.9;
-    if (entry - sl > atrV * 2.8) sl = entry - atrV * 2.8;
-    // Never place SL above entry
-    if (!(sl < entry)) sl = entry - atrV * 1.1;
-
+    if (entry - sl < atrV * 1.0) sl = entry - atrV * 1.0;
+    if (entry - sl > atrV * 2.6) sl = entry - atrV * 2.6;
+    if (!(sl < entry)) sl = entry - atrV * 1.15;
     const risk = entry - sl;
-    tp1 = entry + risk * 1.6;
-    tp2 = entry + risk * 2.6;
+    tp1 = entry + risk * 1.5;
+    tp2 = entry + risk * 2.5;
     tp3 = entry + risk * 4.0;
     if (m5.middle != null && m5.middle > tp1) tp1 = m5.middle;
     if (m5.upper != null && m5.upper > tp2) tp2 = Math.max(tp2, m5.upper);
-    if (tp1 <= entry) tp1 = entry + risk * 1.6;
-    if (tp2 <= tp1) tp2 = tp1 + risk * 0.7;
+    if (tp1 <= entry) tp1 = entry + risk * 1.5;
+    if (tp2 <= tp1) tp2 = tp1 + risk * 0.6;
     if (tp3 <= tp2) tp3 = tp2 + risk * 1.2;
   } else {
     const wickHigh = Math.max(last.high, prev.high);
     const swept =
-      wickHigh > priorHigh + atrV * 0.05 &&
-      last.close < wickHigh - atrV * 0.25 &&
-      last.close <= last.open * 1.002 &&
-      last.close < (last.low + last.high) / 2;
+      wickHigh >= priorHigh * 0.999 &&
+      last.close < wickHigh - atrV * 0.15 &&
+      last.close <= (last.open + last.close) / 2 &&
+      last.close < (last.low + last.high) / 2 * 1.02;
 
     const reclaim =
-      !swept &&
-      (m5.position ?? 50) >= 60 &&
+      (m5.position ?? 50) >= 55 &&
       last.close < last.open &&
-      last.high >= (m5.upper != null ? m5.upper * 0.99 : priorHigh * 0.99) &&
-      last.close < last.high - (last.high - last.low) * 0.55;
+      last.high >= (m5.upper != null ? m5.upper * 0.985 : priorHigh * 0.988);
 
-    if (!swept && !reclaim) {
+    const pullback =
+      (m5.position ?? 50) >= 22 &&
+      (m5.position ?? 50) <= 88 &&
+      last.close <= Math.max(last.open, prev.close) * 1.006;
+
+    if (swept) {
+      mode = "SWEEP";
+      entry = mark;
+      sl = wickHigh + atrV * 0.3 + tick;
+    } else if (reclaim) {
+      mode = "RECLAIM";
+      entry = mark;
+      sl = Math.max(last.high, m5.upper != null ? m5.upper : last.high) + atrV * 0.4 + tick;
+    } else if (pullback) {
+      mode = "PULLBACK";
+      entry = mark;
+      sl = Math.max(swingHigh, priorHigh) + atrV * 0.5 + tick;
+    } else {
       return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
     }
-
-    mode = swept ? "SWEEP" : "RECLAIM";
-    entry = mark;
-    const sweepCeil = swept ? wickHigh : Math.max(last.high, prev.high, m5.upper != null ? m5.upper : last.high);
-    sl = sweepCeil + atrV * 0.35 + tick;
-    if (sl - entry < atrV * 0.9) sl = entry + atrV * 0.9;
-    if (sl - entry > atrV * 2.8) sl = entry + atrV * 2.8;
-    if (!(sl > entry)) sl = entry + atrV * 1.1;
-
+    if (sl - entry < atrV * 1.0) sl = entry + atrV * 1.0;
+    if (sl - entry > atrV * 2.6) sl = entry + atrV * 2.6;
+    if (!(sl > entry)) sl = entry + atrV * 1.15;
     const risk = sl - entry;
-    tp1 = entry - risk * 1.6;
-    tp2 = entry - risk * 2.6;
+    tp1 = entry - risk * 1.5;
+    tp2 = entry - risk * 2.5;
     tp3 = entry - risk * 4.0;
     if (m5.middle != null && m5.middle < tp1) tp1 = m5.middle;
     if (m5.lower != null && m5.lower < tp2) tp2 = Math.min(tp2, m5.lower);
-    if (tp1 >= entry) tp1 = entry - risk * 1.6;
-    if (tp2 >= tp1) tp2 = tp1 - risk * 0.7;
+    if (tp1 >= entry) tp1 = entry - risk * 1.5;
+    if (tp2 >= tp1) tp2 = tp1 - risk * 0.6;
     if (tp3 >= tp2) tp3 = tp2 - risk * 1.2;
   }
 
@@ -960,7 +965,7 @@ async function fetchFunding(instId) {
   }
 }
 async function main() {
-  console.log("=== Strict Core v2.6.0 | post-sweep entry only · SL beyond printed wick ===");
+  console.log("=== Strict Core v2.6.2 | more signals · still anti-chase ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
