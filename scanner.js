@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.9.0
+ * Strict Core Scanner v2.9.1
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -9,6 +9,7 @@
  * + Volume Spike / Momentum Confirmation
  * + Hard Liquidity Filter
  * + Soft Overtrade Guard
+ * + Zone Entry (Entry = struktur, SL di luar zona)
  * + Optimized Discord / Telegram / Binance Square messages
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -41,7 +42,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.0" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.1" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -612,20 +613,20 @@ function buildLevels(candles, signal, mark, regime = null) {
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
 
-  // === Adaptive SL/TP multipliers by Volatility Regime (Clodds-inspired) ===
-  // low vol → tighter SL, normal TP; high vol → wider SL, slightly wider TP
-  let slMinMult = 1.0, slMaxMult = 2.6, slDefault = 1.15;
+  // Adaptive buffers by Volatility Regime
+  // Zone model: Entry = structural level; SL = slightly beyond structure
+  let slBuf = 0.35; // ATR buffer beyond zone for SL
+  let slMinMult = 0.7, slMaxMult = 2.2, slDefault = 0.95;
   let tp1R = 1.5, tp2R = 2.5, tp3R = 4.0;
   const reg = regime && regime.regime ? regime.regime : "normal";
   if (reg === "low") {
-    slMinMult = 0.85; slMaxMult = 2.2; slDefault = 1.0;
+    slBuf = 0.28; slMinMult = 0.6; slMaxMult = 1.9; slDefault = 0.85;
     tp1R = 1.4; tp2R = 2.3; tp3R = 3.6;
   } else if (reg === "high") {
-    slMinMult = 1.2; slMaxMult = 3.1; slDefault = 1.35;
+    slBuf = 0.45; slMinMult = 0.9; slMaxMult = 2.6; slDefault = 1.15;
     tp1R = 1.6; tp2R = 2.7; tp3R = 4.2;
   } else if (reg === "extreme") {
-    // should rarely reach here (scoreSignal already blocks extreme)
-    slMinMult = 1.4; slMaxMult = 3.4; slDefault = 1.5;
+    slBuf = 0.55; slMinMult = 1.1; slMaxMult = 3.0; slDefault = 1.3;
     tp1R = 1.7; tp2R = 2.8; tp3R = 4.0;
   }
 
@@ -637,7 +638,7 @@ function buildLevels(candles, signal, mark, regime = null) {
       wickLow <= priorLow * 1.001 &&
       last.close > wickLow + atrV * 0.15 &&
       last.close >= (last.open + last.close) / 2 &&
-      last.close > (last.low + last.high) / 2 * 0.98;
+      last.close > ((last.low + last.high) / 2) * 0.98;
 
     const reclaim =
       (m5.position ?? 50) <= 45 &&
@@ -649,25 +650,39 @@ function buildLevels(candles, signal, mark, regime = null) {
       (m5.position ?? 50) >= 12 &&
       last.close >= Math.min(last.open, prev.close) * 0.994;
 
+    // === ZONE ENTRY (Opsi A) ===
+    // Entry = structural support zone (old SL area)
+    // SL   = slightly below that zone
     if (swept) {
       mode = "SWEEP";
-      entry = mark;
-      sl = wickLow - atrV * 0.3 - tick;
+      entry = wickLow; // zona sweep = entry
+      sl = entry - atrV * slBuf - tick;
     } else if (reclaim) {
       mode = "RECLAIM";
-      entry = mark;
-      sl = Math.min(last.low, m5.lower != null ? m5.lower : last.low) - atrV * 0.4 - tick;
+      entry = Math.min(last.low, m5.lower != null ? m5.lower : last.low);
+      sl = entry - atrV * slBuf - tick;
     } else if (pullback) {
-      // Allowed: trend pullback mid-zone — SL beyond swing, not inside noise
       mode = "PULLBACK";
-      entry = mark;
-      sl = Math.min(swingLow, priorLow) - atrV * 0.5 - tick;
+      entry = Math.min(swingLow, priorLow);
+      sl = entry - atrV * slBuf - tick;
     } else {
       return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
     }
+
+    // Jika harga pasar sudah jauh di atas zona (> 1.8 ATR), entry kurang relevan → WAIT
+    if (mark > entry + atrV * 1.8) {
+      return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
+    }
+    // Jika harga sudah di bawah entry (zona rusak), jangan force
+    if (mark < sl) {
+      return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
+    }
+
+    // Clamp SL distance
     if (entry - sl < atrV * slMinMult) sl = entry - atrV * slMinMult;
     if (entry - sl > atrV * slMaxMult) sl = entry - atrV * slMaxMult;
     if (!(sl < entry)) sl = entry - atrV * slDefault;
+
     const risk = entry - sl;
     tp1 = entry + risk * tp1R;
     tp2 = entry + risk * tp2R;
@@ -683,7 +698,7 @@ function buildLevels(candles, signal, mark, regime = null) {
       wickHigh >= priorHigh * 0.999 &&
       last.close < wickHigh - atrV * 0.15 &&
       last.close <= (last.open + last.close) / 2 &&
-      last.close < (last.low + last.high) / 2 * 1.02;
+      last.close < ((last.low + last.high) / 2) * 1.02;
 
     const reclaim =
       (m5.position ?? 50) >= 55 &&
@@ -695,24 +710,36 @@ function buildLevels(candles, signal, mark, regime = null) {
       (m5.position ?? 50) <= 88 &&
       last.close <= Math.max(last.open, prev.close) * 1.006;
 
+    // === ZONE ENTRY (Opsi A) SHORT ===
     if (swept) {
       mode = "SWEEP";
-      entry = mark;
-      sl = wickHigh + atrV * 0.3 + tick;
+      entry = wickHigh; // zona sweep = entry
+      sl = entry + atrV * slBuf + tick;
     } else if (reclaim) {
       mode = "RECLAIM";
-      entry = mark;
-      sl = Math.max(last.high, m5.upper != null ? m5.upper : last.high) + atrV * 0.4 + tick;
+      entry = Math.max(last.high, m5.upper != null ? m5.upper : last.high);
+      sl = entry + atrV * slBuf + tick;
     } else if (pullback) {
       mode = "PULLBACK";
-      entry = mark;
-      sl = Math.max(swingHigh, priorHigh) + atrV * 0.5 + tick;
+      entry = Math.max(swingHigh, priorHigh);
+      sl = entry + atrV * slBuf + tick;
     } else {
       return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
     }
+
+    // Harga sudah jauh di bawah zona → WAIT
+    if (mark < entry - atrV * 1.8) {
+      return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
+    }
+    // Harga sudah di atas SL (zona rusak)
+    if (mark > sl) {
+      return { entry: mark, sl: mark, tp1: mark, tp2: mark, tp3: mark, rr: 0, mode: "WAIT", mark };
+    }
+
     if (sl - entry < atrV * slMinMult) sl = entry + atrV * slMinMult;
     if (sl - entry > atrV * slMaxMult) sl = entry + atrV * slMaxMult;
     if (!(sl > entry)) sl = entry + atrV * slDefault;
+
     const risk = sl - entry;
     tp1 = entry - risk * tp1R;
     tp2 = entry - risk * tp2R;
@@ -734,7 +761,6 @@ function buildLevels(candles, signal, mark, regime = null) {
   const rrCore = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
   return { entry, sl, tp1, tp2, tp3, rr: rrCore, mode, mark };
 }
-
 
 function formatTelegramMessage(s) {
   const isSniper = s.probability >= MIN_PROB_SNIPER;
@@ -1258,7 +1284,7 @@ function isPersistent(base, action, lastMap, maxAgeMin = 75) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.9.0 | Regime + OBQ + Adaptive SL/TP + VolConfirm ===");
+  console.log("=== Strict Core v2.9.1 | Zone Entry + Regime + OBQ + Adaptive SL/TP ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
