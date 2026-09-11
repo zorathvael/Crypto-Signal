@@ -802,14 +802,6 @@ function formatSquareCoinBlock(s) {
 }
 
 function formatSquareBatchMessage(coins) {
-  const headers = [
-    "Pagi, ini beberapa pair yang lagi saya cek di chart.",
-    "Update singkat dari pantauan futures hari ini.",
-    "Baru selesai scan — ada beberapa setup yang cukup rapi.",
-    "Sharing catatan level, silakan dicermati sendiri ya.",
-    "Ini ide yang sedang saya pantau, bukan ajakan entry.",
-    "Setelah cek struktur & order book, ini yang menarik perhatian.",
-  ];
   const footers = [
     "Risk kecil saja. Jangan FOMO — invalid levelnya jelas di atas.",
     "Selalu pakai SL. Ini edukasi chart, bukan saran keuangan.",
@@ -817,8 +809,22 @@ function formatSquareBatchMessage(coins) {
     "Kalau belum yakin, skip saja. Masih banyak setup lain nanti.",
     "Catatan pribadi untuk referensi. NFA.",
   ];
-  const hi = headers[Math.floor(Date.now() / 900000) % headers.length];
   const fo = footers[Math.floor(Date.now() / 900000) % footers.length];
+
+  // Header: Hasil scanner (hari, tanggal, bulan, tahun, jam) + tagar
+  const hari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const bulan = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  ];
+  const now = new Date();
+  // WIB = UTC+7
+  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const h = String(wib.getUTCHours()).padStart(2, "0");
+  const m = String(wib.getUTCMinutes()).padStart(2, "0");
+  const hi =
+    `Hasil scanner (${hari[wib.getUTCDay()]}, ${wib.getUTCDate()} ${bulan[wib.getUTCMonth()]} ${wib.getUTCFullYear()}, ${h}:${m})` +
+    `\n#CPIWatch`;
 
   const lines = [hi, ""];
   coins.forEach((s, i) => {
