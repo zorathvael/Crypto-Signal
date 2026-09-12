@@ -33,6 +33,23 @@
       "tp3": 0.18737998996575556,
       "rr": 2.6,
       "regime": "normal"
+    },
+    {
+      "id": "BSB_LONG_1789234437979",
+      "ts": 1789234437979,
+      "base": "BSB",
+      "instId": "BSB-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.10213,
+      "sl": 0.10049463974497248,
+      "tp1": 0.10583499999999997,
+      "tp2": 0.1079814901583748,
+      "tp3": 0.10899851307111556,
+      "rr": 3.5781046655535524,
+      "regime": "high"
     }
   ],
   "closed": [
