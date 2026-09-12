@@ -1,6 +1,59 @@
 {
   "open": [
     {
+      "id": "ETH_LONG_1789227211769",
+      "ts": 1789227211769,
+      "base": "ETH",
+      "instId": "ETH-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 2535.57,
+      "sl": 2533.3975675149936,
+      "tp1": 2540.1634999999997,
+      "tp2": 2542.9848775004416,
+      "tp3": 2543.825243443025,
+      "rr": 3.4131682119544062,
+      "regime": "low"
+    },
+    {
+      "id": "SOL_LONG_1789227211769",
+      "ts": 1789227211769,
+      "base": "SOL",
+      "instId": "SOL-USDT-SWAP",
+      "action": "LONG",
+      "setup": "SQUEEZE",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 101.86,
+      "sl": 101.62501977512844,
+      "tp1": 102.21247033730734,
+      "tp2": 102.42395253969175,
+      "tp3": 102.75292485451195,
+      "rr": 2.400000000000012,
+      "regime": "low"
+    },
+    {
+      "id": "BNB_LONG_1789227211769",
+      "ts": 1789227211769,
+      "base": "BNB",
+      "instId": "BNB-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 735.4,
+      "sl": 733.7599442316703,
+      "tp1": 737.8600836524945,
+      "tp2": 739.3361338439913,
+      "tp3": 741.632211919653,
+      "rr": 2.4000000000000137,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "WLFI_LONG_1789218326337",
       "ts": 1789218326337,
       "base": "WLFI",
@@ -15,10 +68,12 @@
       "tp2": 0.05755159883945679,
       "tp3": 0.05779387337698374,
       "rr": 4.762855474318243,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.71,
+      "exit": 0.05713800000000001,
+      "closedAt": 1789225200000
+    },
     {
       "id": "UNI_LONG_1789218326337",
       "ts": 1789218326337,
@@ -252,21 +307,21 @@
     }
   ],
   "stats": {
-    "total": 3,
-    "wins": 2,
+    "total": 4,
+    "wins": 3,
     "losses": 1,
     "expired": 0,
-    "sumR": 2.1,
+    "sumR": 4.8100000000000005,
     "bySetup": {
       "TREND": {
-        "n": 3,
-        "wins": 2,
+        "n": 4,
+        "wins": 3,
         "losses": 1,
-        "sumR": 2.1
+        "sumR": 4.8100000000000005
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 66.7,
-    "avgR": 0.7
+    "winrate": 75,
+    "avgR": 1.2
   }
 }
