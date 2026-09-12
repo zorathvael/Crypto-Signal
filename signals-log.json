@@ -16,6 +16,23 @@
       "tp3": 0.18737998996575556,
       "rr": 2.6,
       "regime": "normal"
+    },
+    {
+      "id": "LINK_SHORT_1789249918753",
+      "ts": 1789249918753,
+      "base": "LINK",
+      "instId": "LINK-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 11.5,
+      "sl": 11.536498937564307,
+      "tp1": 11.44525159365354,
+      "tp2": 11.412402549845662,
+      "tp3": 11.361304037255634,
+      "rr": 2.4000000000000195,
+      "regime": "low"
     }
   ],
   "closed": [
