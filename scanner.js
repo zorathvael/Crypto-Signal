@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.9.4
+ * Strict Core Scanner v2.9.5
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -26,8 +26,8 @@ const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
-const MIN_PROB_VALID = 75;
-const MIN_PROB_SNIPER = 82;
+const MIN_PROB_VALID = 80;
+const MIN_PROB_SNIPER = 85;
 const MIN_RR = 1.5;
 const CANDIDATE_LIMIT = 40;
 const SQUARE_POST_COUNT = 3;
@@ -45,7 +45,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.4" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.5" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -628,18 +628,15 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   // Mild penalty only on TREND path without volume support (don't kill MEAN_REV)
   if (path === "TREND" && !volConfirm && !hasSpike) conf -= 4;
 
-  // === SUPERTREND soft confirm (tolak ukur tambahan) ===
-  // 15M + 1H ST searah signal → boost; lawan di 15M → penalty ringan
-  const st15 = m15.stDir || 0;
+  // === SUPERTREND soft confirm (boost only; hard align for TREND is above) ===
+  const st15b = m15.stDir || 0;
   const st1 = h1.stDir || 0;
   if (action === "LONG") {
-    if (st15 === 1) conf += 4;
+    if (st15b === 1) conf += 4;
     if (st1 === 1) conf += 3;
-    if (st15 === -1) conf -= 5;
   } else if (action === "SHORT") {
-    if (st15 === -1) conf += 4;
+    if (st15b === -1) conf += 4;
     if (st1 === -1) conf += 3;
-    if (st15 === 1) conf -= 5;
   }
 
   // Volatility Regime soft adjustment
@@ -650,9 +647,17 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
 
   conf = clamp(Math.round(conf), 0, 99);
 
-  // Dynamic threshold: stricter in high volatility
+  // === Quality gates (trader discipline) ===
+  // TREND harus sejalan Supertrend 15M — kurangi false breakout
+  const st15 = m15.stDir || 0;
+  if (path === "TREND") {
+    if (action === "LONG" && st15 !== 1) return null;
+    if (action === "SHORT" && st15 !== -1) return null;
+  }
+  // High vol: hanya setup sangat kuat
   let minConf = MIN_PROB_VALID;
-  if (regime && regime.regime === "high") minConf = 80;
+  if (regime && regime.regime === "high") minConf = Math.max(minConf, 85);
+  if (regime && regime.regime === "low" && path === "TREND" && !volConfirm) minConf = Math.max(minConf, 82);
   if (conf < minConf) return null;
 
   return {
@@ -686,28 +691,29 @@ function buildLevels(candles, signal, mark, regime = null) {
   const swingHigh = Math.max(...recent.map((c) => c.high));
 
   // Adaptive by regime
-  let slBuf = 0.35;
-  let slMinMult = 0.7, slMaxMult = 2.2, slDefault = 0.95;
-  let mktSlMin = 1.0, mktSlMax = 2.6, mktSlDef = 1.15; // market-entry SL width
-  let tp1R = 1.5, tp2R = 2.5, tp3R = 4.0;
+  // Wider SL buffers — prioritas hindari noise stop-out (modal minim)
+  let slBuf = 0.5;
+  let slMinMult = 0.95, slMaxMult = 2.6, slDefault = 1.2;
+  let mktSlMin = 1.25, mktSlMax = 3.0, mktSlDef = 1.4;
+  let tp1R = 1.6, tp2R = 2.6, tp3R = 4.0;
   const reg = regime && regime.regime ? regime.regime : "normal";
   if (reg === "low") {
-    slBuf = 0.28; slMinMult = 0.6; slMaxMult = 1.9; slDefault = 0.85;
-    mktSlMin = 0.85; mktSlMax = 2.2; mktSlDef = 1.0;
-    tp1R = 1.4; tp2R = 2.3; tp3R = 3.6;
+    slBuf = 0.42; slMinMult = 0.85; slMaxMult = 2.3; slDefault = 1.05;
+    mktSlMin = 1.1; mktSlMax = 2.6; mktSlDef = 1.25;
+    tp1R = 1.5; tp2R = 2.4; tp3R = 3.8;
   } else if (reg === "high") {
-    slBuf = 0.45; slMinMult = 0.9; slMaxMult = 2.6; slDefault = 1.15;
-    mktSlMin = 1.2; mktSlMax = 3.1; mktSlDef = 1.35;
-    tp1R = 1.6; tp2R = 2.7; tp3R = 4.2;
+    slBuf = 0.65; slMinMult = 1.2; slMaxMult = 3.2; slDefault = 1.5;
+    mktSlMin = 1.5; mktSlMax = 3.5; mktSlDef = 1.7;
+    tp1R = 1.7; tp2R = 2.8; tp3R = 4.2;
   } else if (reg === "extreme") {
-    slBuf = 0.55; slMinMult = 1.1; slMaxMult = 3.0; slDefault = 1.3;
-    mktSlMin = 1.4; mktSlMax = 3.4; mktSlDef = 1.5;
-    tp1R = 1.7; tp2R = 2.8; tp3R = 4.0;
+    slBuf = 0.8; slMinMult = 1.4; slMaxMult = 3.6; slDefault = 1.7;
+    mktSlMin = 1.7; mktSlMax = 3.8; mktSlDef = 1.9;
+    tp1R = 1.8; tp2R = 2.9; tp3R = 4.0;
   }
 
-  // Hybrid thresholds (in ATR units from structural zone)
-  const NEAR_ATR = 0.85;   // within this → pure zone entry
-  const FAR_ATR = 2.8;     // beyond this → WAIT (too late)
+  // Hybrid: prefer ZONE; MKT only if still reasonably close
+  const NEAR_ATR = 1.0;
+  const FAR_ATR = 2.2;
   // between NEAR and FAR → market entry + SL beyond structure
 
   let entry, sl, tp1, tp2, tp3, mode;
@@ -1526,7 +1532,7 @@ async function evaluateOpenOutcomes(log) {
       } else {
         stillOpen.push(sig);
       }
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 250));
     } catch (e) {
       console.warn(`Outcome eval skip ${sig.base}:`, e.message);
       stillOpen.push(sig);
@@ -1593,7 +1599,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.9.4 | Outcome Tracker + Supertrend + Hybrid ===");
+  console.log("=== Strict Core v2.9.5 | Quality Gate — ST align + wider SL + less noise ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1661,6 +1667,10 @@ async function main() {
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
       if (levels.rr < MIN_RR) continue;
+      // Hybrid MKT = entry lebih buruk → wajib SNIPER
+      if (levels.mode && String(levels.mode).includes("_MKT") && scored.probability < MIN_PROB_SNIPER) continue;
+      // High regime: jangan ambil jika R:R tipis
+      if (scored.regime && scored.regime.regime === "high" && levels.rr < 2.0) continue;
 
       let riskPct = suggestRisk(regime, scored.probability);
 
@@ -1688,7 +1698,7 @@ async function main() {
         volConfirm: !!scored.volConfirm,
         persistent: false,
       });
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 400));
     } catch (e) {
       console.warn(`Skip ${c.base}:`, e.message);
     }
