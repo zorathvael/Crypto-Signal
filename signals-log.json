@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "PONS_SHORT_1789185844930",
-      "ts": 1789185844930,
-      "base": "PONS",
-      "instId": "PONS-USDT-SWAP",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 0.5945,
-      "sl": 0.6112650635484338,
-      "tp1": 0.567675898322506,
-      "tp2": 0.5492343284192288,
-      "tp3": 0.5240867330965782,
-      "rr": 2.700000000000003,
-      "regime": "high"
-    },
-    {
       "id": "ARB_SHORT_1789185844930",
       "ts": 1789185844930,
       "base": "ARB",
@@ -33,9 +16,64 @@
       "tp3": 0.13676013512952143,
       "rr": 2.4999999999999885,
       "regime": "normal"
+    },
+    {
+      "id": "BTC_SHORT_1789193213150",
+      "ts": 1789193213150,
+      "base": "BTC",
+      "instId": "BTC-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 77185,
+      "sl": 77233.53315738919,
+      "tp1": 77117.05357965514,
+      "tp2": 77073.37373800487,
+      "tp3": 77010.28063339891,
+      "rr": 2.29999999999991,
+      "regime": "low"
+    },
+    {
+      "id": "SKHY_LONG_1789193213150",
+      "ts": 1789193213150,
+      "base": "SKHY",
+      "instId": "SKHY-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 191.09,
+      "sl": 190.98054343608985,
+      "tp1": 191.24323918947422,
+      "tp2": 191.3563635395282,
+      "tp3": 191.48404363007657,
+      "rr": 2.4335090561295023,
+      "regime": "low"
     }
   ],
   "closed": [
+    {
+      "id": "PONS_SHORT_1789185844930",
+      "ts": 1789185844930,
+      "base": "PONS",
+      "instId": "PONS-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.5945,
+      "sl": 0.6112650635484338,
+      "tp1": 0.567675898322506,
+      "tp2": 0.5492343284192288,
+      "tp3": 0.5240867330965782,
+      "rr": 2.700000000000003,
+      "regime": "high",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 0.6112650635484338,
+      "closedAt": 1789192500000
+    },
     {
       "id": "RAY_LONG_1789180304858",
       "ts": 1789180304858,
@@ -59,17 +97,17 @@
     }
   ],
   "stats": {
-    "total": 1,
+    "total": 2,
     "wins": 0,
-    "losses": 1,
+    "losses": 2,
     "expired": 0,
-    "sumR": -1,
+    "sumR": -2,
     "bySetup": {
       "TREND": {
-        "n": 1,
+        "n": 2,
         "wins": 0,
-        "losses": 1,
-        "sumR": -1
+        "losses": 2,
+        "sumR": -2
       }
     },
     "winrate": 0,
