@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "ETH_LONG_1789227211769",
-      "ts": 1789227211769,
-      "base": "ETH",
-      "instId": "ETH-USDT-SWAP",
-      "action": "LONG",
-      "setup": "TREND",
-      "mode": "PULLBACK_ZONE",
-      "probability": 99,
-      "entry": 2535.57,
-      "sl": 2533.3975675149936,
-      "tp1": 2540.1634999999997,
-      "tp2": 2542.9848775004416,
-      "tp3": 2543.825243443025,
-      "rr": 3.4131682119544062,
-      "regime": "low"
-    },
-    {
       "id": "SOL_LONG_1789227211769",
       "ts": 1789227211769,
       "base": "SOL",
@@ -53,6 +36,27 @@
     }
   ],
   "closed": [
+    {
+      "id": "ETH_LONG_1789227211769",
+      "ts": 1789227211769,
+      "base": "ETH",
+      "instId": "ETH-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 2535.57,
+      "sl": 2533.3975675149936,
+      "tp1": 2540.1634999999997,
+      "tp2": 2542.9848775004416,
+      "tp3": 2543.825243443025,
+      "rr": 3.4131682119544062,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 2533.3975675149936,
+      "closedAt": 1789227900000
+    },
     {
       "id": "WLFI_LONG_1789218326337",
       "ts": 1789218326337,
@@ -307,21 +311,21 @@
     }
   ],
   "stats": {
-    "total": 4,
+    "total": 5,
     "wins": 3,
-    "losses": 1,
+    "losses": 2,
     "expired": 0,
-    "sumR": 4.8100000000000005,
+    "sumR": 3.8100000000000005,
     "bySetup": {
       "TREND": {
-        "n": 4,
+        "n": 5,
         "wins": 3,
-        "losses": 1,
-        "sumR": 4.8100000000000005
+        "losses": 2,
+        "sumR": 3.8100000000000005
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 75,
-    "avgR": 1.2
+    "winrate": 60,
+    "avgR": 0.76
   }
 }
