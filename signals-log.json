@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "UNI_LONG_1789218326337",
-      "ts": 1789218326337,
-      "base": "UNI",
-      "instId": "UNI-USDT-SWAP",
-      "action": "LONG",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 6.351,
-      "sl": 6.294833583774006,
-      "tp1": 6.440866265961591,
-      "tp2": 6.4970326821875855,
-      "tp3": 6.575665664903977,
-      "rr": 2.6000000000000063,
-      "regime": "normal"
-    },
-    {
       "id": "WLFI_LONG_1789218326337",
       "ts": 1789218326337,
       "base": "WLFI",
@@ -36,6 +19,27 @@
     }
   ],
   "closed": [
+    {
+      "id": "UNI_LONG_1789218326337",
+      "ts": 1789218326337,
+      "base": "UNI",
+      "instId": "UNI-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 6.351,
+      "sl": 6.294833583774006,
+      "tp1": 6.440866265961591,
+      "tp2": 6.4970326821875855,
+      "tp3": 6.575665664903977,
+      "rr": 2.6000000000000063,
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.6,
+      "exit": 6.440866265961591,
+      "closedAt": 1789221600000
+    },
     {
       "id": "ETH_LONG_1789210490938",
       "ts": 1789210490938,
@@ -248,21 +252,21 @@
     }
   ],
   "stats": {
-    "total": 2,
-    "wins": 1,
+    "total": 3,
+    "wins": 2,
     "losses": 1,
     "expired": 0,
-    "sumR": 0.5,
+    "sumR": 2.1,
     "bySetup": {
       "TREND": {
-        "n": 2,
-        "wins": 1,
+        "n": 3,
+        "wins": 2,
         "losses": 1,
-        "sumR": 0.5
+        "sumR": 2.1
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 50,
-    "avgR": 0.25
+    "winrate": 66.7,
+    "avgR": 0.7
   }
 }
