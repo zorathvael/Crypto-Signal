@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "ARB_SHORT_1789185844930",
       "ts": 1789185844930,
@@ -15,10 +16,12 @@
       "tp2": 0.1385413344559509,
       "tp3": 0.13676013512952143,
       "rr": 2.4999999999999885,
-      "regime": "normal"
-    }
-  ],
-  "closed": [
+      "regime": "normal",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 0.14269746621761964,
+      "closedAt": 1789195500000
+    },
     {
       "id": "BTC_SHORT_1789193213150",
       "ts": 1789193213150,
@@ -105,17 +108,17 @@
     }
   ],
   "stats": {
-    "total": 4,
+    "total": 5,
     "wins": 0,
-    "losses": 4,
+    "losses": 5,
     "expired": 0,
-    "sumR": -4,
+    "sumR": -5,
     "bySetup": {
       "TREND": {
-        "n": 4,
+        "n": 5,
         "wins": 0,
-        "losses": 4,
-        "sumR": -4
+        "losses": 5,
+        "sumR": -5
       }
     },
     "winrate": 0,
