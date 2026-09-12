@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "FIL_LONG_1789206556855",
-      "ts": 1789206556855,
-      "base": "FIL",
-      "instId": "FIL-USDT-SWAP",
-      "action": "LONG",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 0.8096,
-      "sl": 0.806201801675342,
-      "tp1": 0.814697297486987,
-      "tp2": 0.8177556759791793,
-      "tp3": 0.8225131536337006,
-      "rr": 2.4000000000000066,
-      "regime": "low"
-    },
-    {
       "id": "ETH_LONG_1789210490938",
       "ts": 1789210490938,
       "base": "ETH",
@@ -36,6 +19,27 @@
     }
   ],
   "closed": [
+    {
+      "id": "FIL_LONG_1789206556855",
+      "ts": 1789206556855,
+      "base": "FIL",
+      "instId": "FIL-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.8096,
+      "sl": 0.806201801675342,
+      "tp1": 0.814697297486987,
+      "tp2": 0.8177556759791793,
+      "tp3": 0.8225131536337006,
+      "rr": 2.4000000000000066,
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.5,
+      "exit": 0.814697297486987,
+      "closedAt": 1789213500000
+    },
     {
       "id": "MU_SHORT_1789200724466",
       "ts": 1789200724466,
