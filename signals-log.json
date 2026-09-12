@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "CP_LONG_1789200724466",
-      "ts": 1789200724466,
-      "base": "CP",
-      "instId": "CP-USDT-SWAP",
-      "action": "LONG",
-      "setup": "TREND",
-      "mode": "RECLAIM_ZONE",
-      "probability": 99,
-      "entry": 0.01493123483455936,
-      "sl": 0.014724565711853986,
-      "tp1": 0.015282572343158498,
-      "tp2": 0.01550990837813441,
-      "tp3": 0.015799245149921936,
-      "rr": 2.7999999999999985,
-      "regime": "high"
-    },
-    {
       "id": "MU_SHORT_1789200724466",
       "ts": 1789200724466,
       "base": "MU",
@@ -36,6 +19,27 @@
     }
   ],
   "closed": [
+    {
+      "id": "CP_LONG_1789200724466",
+      "ts": 1789200724466,
+      "base": "CP",
+      "instId": "CP-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "RECLAIM_ZONE",
+      "probability": 99,
+      "entry": 0.01493123483455936,
+      "sl": 0.014724565711853986,
+      "tp1": 0.015282572343158498,
+      "tp2": 0.01550990837813441,
+      "tp3": 0.015799245149921936,
+      "rr": 2.7999999999999985,
+      "regime": "high",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 0.014724565711853986,
+      "closedAt": 1789202700000
+    },
     {
       "id": "ARB_SHORT_1789185844930",
       "ts": 1789185844930,
@@ -143,17 +147,17 @@
     }
   ],
   "stats": {
-    "total": 5,
+    "total": 6,
     "wins": 0,
-    "losses": 5,
+    "losses": 6,
     "expired": 0,
-    "sumR": -5,
+    "sumR": -6,
     "bySetup": {
       "TREND": {
-        "n": 5,
+        "n": 6,
         "wins": 0,
-        "losses": 5,
-        "sumR": -5
+        "losses": 6,
+        "sumR": -6
       }
     },
     "winrate": 0,
