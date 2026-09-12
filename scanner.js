@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.9.2
+ * Strict Core Scanner v2.9.3
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -10,6 +10,8 @@
  * + Hard Liquidity Filter
  * + Soft Overtrade Guard
  * + Hybrid Entry (dekat zona → ZONE; agak jauh → MARKET + SL struktur)
+ * + Supertrend (tolak ukur tambahan 1H/15M)
+ * + BTC bias lebih ringan
  * + Optimized Discord / Telegram / Binance Square messages
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -42,7 +44,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.2" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.3" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -193,6 +195,54 @@ function marketStructure(candles) {
   if (lo2 < lo1 && hi2 < hi1) return { trend: "down" };
   return { trend: "chop" };
 }
+
+/** Supertrend (ATR-based) — direction: 1 = bullish, -1 = bearish */
+function supertrend(candles, period = 10, mult = 3) {
+  if (!candles || candles.length < period + 2) return { dir: 0, line: null };
+  const n = candles.length;
+  const tr = Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    if (i === 0) tr[i] = candles[i].high - candles[i].low;
+    else {
+      const pc = candles[i - 1].close;
+      tr[i] = Math.max(
+        candles[i].high - candles[i].low,
+        Math.abs(candles[i].high - pc),
+        Math.abs(candles[i].low - pc)
+      );
+    }
+  }
+  let atrV = mean(tr.slice(0, period));
+  const atrArr = Array(n).fill(null);
+  atrArr[period - 1] = atrV;
+  for (let i = period; i < n; i++) {
+    atrV = (atrV * (period - 1) + tr[i]) / period;
+    atrArr[i] = atrV;
+  }
+  let finalUpper = null, finalLower = null, dir = 1;
+  let line = null;
+  for (let i = period - 1; i < n; i++) {
+    const hl2 = (candles[i].high + candles[i].low) / 2;
+    const basicUpper = hl2 + mult * atrArr[i];
+    const basicLower = hl2 - mult * atrArr[i];
+    if (finalUpper == null) {
+      finalUpper = basicUpper;
+      finalLower = basicLower;
+      dir = candles[i].close >= finalLower ? 1 : -1;
+    } else {
+      finalUpper = basicUpper < finalUpper || candles[i - 1].close > finalUpper ? basicUpper : finalUpper;
+      finalLower = basicLower > finalLower || candles[i - 1].close < finalLower ? basicLower : finalLower;
+      if (dir === 1) {
+        dir = candles[i].close < finalLower ? -1 : 1;
+      } else {
+        dir = candles[i].close > finalUpper ? 1 : -1;
+      }
+    }
+    line = dir === 1 ? finalLower : finalUpper;
+  }
+  return { dir, line };
+}
+
 function analyzeTF(candles, label) {
   if (!candles || candles.length < 60) return null;
   const closes = candles.map((c) => c.close);
@@ -250,6 +300,7 @@ function analyzeTF(candles, label) {
   };
   const slope6 = slope(6);
   const slope12 = slope(12);
+  const st = supertrend(candles, 10, 3);
   return {
     label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
     emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown,
@@ -259,6 +310,8 @@ function analyzeTF(candles, label) {
     slope6, slope12,
     close: last.close,
     ema21: e21,
+    stDir: st.dir,
+    stLine: st.line,
   };
 }
 function tfTrend(tf) {
@@ -278,6 +331,9 @@ function tfTrend(tf) {
     if (tf.close > tf.ema21) votes += 1;
     if (tf.close < tf.ema21) votes -= 1;
   }
+  // Supertrend vote (soft, 1 vote)
+  if (tf.stDir === 1) votes += 1;
+  if (tf.stDir === -1) votes -= 1;
   // ≥2 clear, or ≥1 with strong bias/slope
   if (votes >= 2) return "bullish";
   if (votes <= -2) return "bearish";
@@ -476,10 +532,11 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   if (path === "TREND" && adxMax < 14 && !m5.volume.spike) return null;
   if (path === "SQUEEZE" && adxMax > 38) return null;
 
+  // BTC soft bias — ringan saja (konteks pasar, bukan hard force)
   let btcAdj = 0;
-  if (btcBias && Math.abs(btcBias.score) >= 25) {
-    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 3 : -6;
-    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 3 : -6;
+  if (btcBias && Math.abs(btcBias.score) >= 35) {
+    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 2 : -2;
+    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 2 : -2;
   }
 
   let conf = 50;
@@ -569,6 +626,20 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   if (volConfirm) conf += 5;
   // Mild penalty only on TREND path without volume support (don't kill MEAN_REV)
   if (path === "TREND" && !volConfirm && !hasSpike) conf -= 4;
+
+  // === SUPERTREND soft confirm (tolak ukur tambahan) ===
+  // 15M + 1H ST searah signal → boost; lawan di 15M → penalty ringan
+  const st15 = m15.stDir || 0;
+  const st1 = h1.stDir || 0;
+  if (action === "LONG") {
+    if (st15 === 1) conf += 4;
+    if (st1 === 1) conf += 3;
+    if (st15 === -1) conf -= 5;
+  } else if (action === "SHORT") {
+    if (st15 === -1) conf += 4;
+    if (st1 === -1) conf += 3;
+    if (st15 === 1) conf -= 5;
+  }
 
   // Volatility Regime soft adjustment
   if (regime) {
@@ -876,8 +947,7 @@ function formatSquareBatchMessage(coins) {
   const h = String(wib.getUTCHours()).padStart(2, "0");
   const m = String(wib.getUTCMinutes()).padStart(2, "0");
   const hi =
-    `Hasil scanner (${hari[wib.getUTCDay()]}, ${wib.getUTCDate()} ${bulan[wib.getUTCMonth()]} ${wib.getUTCFullYear()}, ${h}:${m})` +
-    `\n#CPIWatch`;
+    `Hasil scanner (${hari[wib.getUTCDay()]}, ${wib.getUTCDate()} ${bulan[wib.getUTCMonth()]} ${wib.getUTCFullYear()}, ${h}:${m})`;
 
   const lines = [hi, ""];
   coins.forEach((s, i) => {
@@ -888,6 +958,8 @@ function formatSquareBatchMessage(coins) {
   lines.push("Strict Core v2.9 · Regime + Adaptive SL/TP · Risk max 0.75% · NFA");
   lines.push("");
   lines.push(fo);
+  lines.push("");
+  lines.push("#CPIWatch");
   return lines.join("\n").trim();
 }
 
@@ -1311,7 +1383,7 @@ function isPersistent(base, action, lastMap, maxAgeMin = 75) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.9.2 | Hybrid Entry (Zone/MKT) + Regime + OBQ ===");
+  console.log("=== Strict Core v2.9.3 | Supertrend + Soft BTC + Hybrid Entry ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
