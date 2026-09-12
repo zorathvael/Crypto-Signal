@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "RAY_LONG_1789180304858",
+      "ts": 1789180304858,
+      "base": "RAY",
+      "instId": "RAY-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 1.6909,
+      "sl": 1.626937663805101,
+      "tp1": 1.7932397379118385,
+      "tp2": 1.8635983077262277,
+      "tp3": 1.9595418120185764,
+      "rr": 2.7000000000000006,
+      "regime": "high"
+    }
+  ],
   "closed": [],
   "stats": {
     "total": 0,
@@ -7,6 +25,8 @@
     "losses": 0,
     "expired": 0,
     "sumR": 0,
-    "bySetup": {}
+    "bySetup": {},
+    "winrate": null,
+    "avgR": null
   }
 }
