@@ -16,7 +16,9 @@
       "tp3": 0.13676013512952143,
       "rr": 2.4999999999999885,
       "regime": "normal"
-    },
+    }
+  ],
+  "closed": [
     {
       "id": "BTC_SHORT_1789193213150",
       "ts": 1789193213150,
@@ -32,7 +34,11 @@
       "tp2": 77073.37373800487,
       "tp3": 77010.28063339891,
       "rr": 2.29999999999991,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 77233.53315738919,
+      "closedAt": 1789194600000
     },
     {
       "id": "SKHY_LONG_1789193213150",
@@ -49,10 +55,12 @@
       "tp2": 191.3563635395282,
       "tp3": 191.48404363007657,
       "rr": 2.4335090561295023,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 190.98054343608985,
+      "closedAt": 1789193400000
+    },
     {
       "id": "PONS_SHORT_1789185844930",
       "ts": 1789185844930,
@@ -97,17 +105,17 @@
     }
   ],
   "stats": {
-    "total": 2,
+    "total": 4,
     "wins": 0,
-    "losses": 2,
+    "losses": 4,
     "expired": 0,
-    "sumR": -2,
+    "sumR": -4,
     "bySetup": {
       "TREND": {
-        "n": 2,
+        "n": 4,
         "wins": 0,
-        "losses": 2,
-        "sumR": -2
+        "losses": 4,
+        "sumR": -4
       }
     },
     "winrate": 0,
