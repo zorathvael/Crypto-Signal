@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "ETH_LONG_1789210490938",
-      "ts": 1789210490938,
-      "base": "ETH",
-      "instId": "ETH-USDT-SWAP",
-      "action": "LONG",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 2530.18,
-      "sl": 2525.142587214871,
-      "tp1": 2537.7361191776927,
-      "tp2": 2542.2697906843086,
-      "tp3": 2549.3221685834887,
-      "rr": 2.399999999999982,
-      "regime": "low"
-    },
-    {
       "id": "UNI_LONG_1789218326337",
       "ts": 1789218326337,
       "base": "UNI",
@@ -53,6 +36,27 @@
     }
   ],
   "closed": [
+    {
+      "id": "ETH_LONG_1789210490938",
+      "ts": 1789210490938,
+      "base": "ETH",
+      "instId": "ETH-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 2530.18,
+      "sl": 2525.142587214871,
+      "tp1": 2537.7361191776927,
+      "tp2": 2542.2697906843086,
+      "tp3": 2549.3221685834887,
+      "rr": 2.399999999999982,
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.5,
+      "exit": 2537.7361191776927,
+      "closedAt": 1789218000000
+    },
     {
       "id": "BNB_LONG_1789218326337",
       "ts": 1789218326337,
@@ -244,21 +248,21 @@
     }
   ],
   "stats": {
-    "total": 1,
-    "wins": 0,
+    "total": 2,
+    "wins": 1,
     "losses": 1,
     "expired": 0,
-    "sumR": -1,
+    "sumR": 0.5,
     "bySetup": {
       "TREND": {
-        "n": 1,
-        "wins": 0,
+        "n": 2,
+        "wins": 1,
         "losses": 1,
-        "sumR": -1
+        "sumR": 0.5
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 0,
-    "avgR": -1
+    "winrate": 50,
+    "avgR": 0.25
   }
 }
