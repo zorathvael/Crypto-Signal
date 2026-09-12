@@ -1,6 +1,25 @@
 {
   "open": [
     {
+      "id": "FIL_LONG_1789206556855",
+      "ts": 1789206556855,
+      "base": "FIL",
+      "instId": "FIL-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.8096,
+      "sl": 0.806201801675342,
+      "tp1": 0.814697297486987,
+      "tp2": 0.8177556759791793,
+      "tp3": 0.8225131536337006,
+      "rr": 2.4000000000000066,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "MU_SHORT_1789200724466",
       "ts": 1789200724466,
       "base": "MU",
@@ -15,10 +34,12 @@
       "tp2": 973.2946166893316,
       "tp3": 972.5739764247752,
       "rr": 2.4000000000000883,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.5,
+      "exit": 973.7578854308323,
+      "closedAt": 1789205400000
+    },
     {
       "id": "CP_LONG_1789200724466",
       "ts": 1789200724466,
@@ -147,20 +168,14 @@
     }
   ],
   "stats": {
-    "total": 6,
+    "total": 0,
     "wins": 0,
-    "losses": 6,
+    "losses": 0,
     "expired": 0,
-    "sumR": -6,
-    "bySetup": {
-      "TREND": {
-        "n": 6,
-        "wins": 0,
-        "losses": 6,
-        "sumR": -6
-      }
-    },
-    "winrate": 0,
-    "avgR": -1
+    "sumR": 0,
+    "bySetup": {},
+    "afterTs": 1789207200000,
+    "winrate": null,
+    "avgR": null
   }
 }
