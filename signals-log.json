@@ -35,23 +35,6 @@
       "regime": "normal"
     },
     {
-      "id": "BNB_LONG_1789218326337",
-      "ts": 1789218326337,
-      "base": "BNB",
-      "instId": "BNB-USDT-SWAP",
-      "action": "LONG",
-      "setup": "TREND",
-      "mode": "PULLBACK_ZONE",
-      "probability": 99,
-      "entry": 735.2,
-      "sl": 734.5994177084399,
-      "tp1": 736.1008734373403,
-      "tp2": 736.6413974997445,
-      "tp3": 737.4822127079286,
-      "rr": 2.400000000000076,
-      "regime": "low"
-    },
-    {
       "id": "WLFI_LONG_1789218326337",
       "ts": 1789218326337,
       "base": "WLFI",
@@ -70,6 +53,27 @@
     }
   ],
   "closed": [
+    {
+      "id": "BNB_LONG_1789218326337",
+      "ts": 1789218326337,
+      "base": "BNB",
+      "instId": "BNB-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 735.2,
+      "sl": 734.5994177084399,
+      "tp1": 736.1008734373403,
+      "tp2": 736.6413974997445,
+      "tp3": 737.4822127079286,
+      "rr": 2.400000000000076,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 734.5994177084399,
+      "closedAt": 1789218900000
+    },
     {
       "id": "FIL_LONG_1789206556855",
       "ts": 1789206556855,
@@ -240,14 +244,21 @@
     }
   ],
   "stats": {
-    "total": 0,
+    "total": 1,
     "wins": 0,
-    "losses": 0,
+    "losses": 1,
     "expired": 0,
-    "sumR": 0,
-    "bySetup": {},
+    "sumR": -1,
+    "bySetup": {
+      "TREND": {
+        "n": 1,
+        "wins": 0,
+        "losses": 1,
+        "sumR": -1
+      }
+    },
     "afterTs": 1789207200000,
-    "winrate": null,
-    "avgR": null
+    "winrate": 0,
+    "avgR": -1
   }
 }
