@@ -1,6 +1,42 @@
 {
   "open": [
     {
+      "id": "PONS_SHORT_1789185844930",
+      "ts": 1789185844930,
+      "base": "PONS",
+      "instId": "PONS-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.5945,
+      "sl": 0.6112650635484338,
+      "tp1": 0.567675898322506,
+      "tp2": 0.5492343284192288,
+      "tp3": 0.5240867330965782,
+      "rr": 2.700000000000003,
+      "regime": "high"
+    },
+    {
+      "id": "ARB_SHORT_1789185844930",
+      "ts": 1789185844930,
+      "base": "ARB",
+      "instId": "ARB-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.14151,
+      "sl": 0.14269746621761964,
+      "tp1": 0.13972880067357052,
+      "tp2": 0.1385413344559509,
+      "tp3": 0.13676013512952143,
+      "rr": 2.4999999999999885,
+      "regime": "normal"
+    }
+  ],
+  "closed": [
+    {
       "id": "RAY_LONG_1789180304858",
       "ts": 1789180304858,
       "base": "RAY",
@@ -15,18 +51,28 @@
       "tp2": 1.8635983077262277,
       "tp3": 1.9595418120185764,
       "rr": 2.7000000000000006,
-      "regime": "high"
+      "regime": "high",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 1.626937663805101,
+      "closedAt": 1789182600000
     }
   ],
-  "closed": [],
   "stats": {
-    "total": 0,
+    "total": 1,
     "wins": 0,
-    "losses": 0,
+    "losses": 1,
     "expired": 0,
-    "sumR": 0,
-    "bySetup": {},
-    "winrate": null,
-    "avgR": null
+    "sumR": -1,
+    "bySetup": {
+      "TREND": {
+        "n": 1,
+        "wins": 0,
+        "losses": 1,
+        "sumR": -1
+      }
+    },
+    "winrate": 0,
+    "avgR": -1
   }
 }
