@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.9.5
+ * Strict Core Scanner v2.10.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -13,6 +13,7 @@
  * + Supertrend (tolak ukur tambahan 1H/15M)
  * + BTC bias lebih ringan
  * + Outcome Tracker (signals-log.json — TP/SL live)
+ * + Block A: Score (bukan claim Prob%), EV filter, OB fail=NO-TRADE, outcome window
  * + Optimized Discord / Telegram / Binance Square messages
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -31,6 +32,12 @@ const MIN_PROB_SNIPER = 85;
 const MIN_RR = 1.5;
 const CANDIDATE_LIMIT = 40;
 const SQUARE_POST_COUNT = 3;
+// Block A — execution cost (taker-ish round trip estimate OKX futures)
+const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
+const SLIPPAGE_RT = 0.0004;     // 0.04% round-turn conservative
+const EV_MIN_R = 0.05;          // minimum expected R after costs
+// Stats only count closed trades after this (Block A baseline) — ISO ms
+const OUTCOME_STATS_AFTER_TS = Date.parse("2026-09-12T10:00:00Z") || 0;
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -45,7 +52,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.5" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.10.0" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -677,6 +684,29 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   };
 }
 
+
+/** Block A: rough EV in R units after fees+slippage */
+function estimateEV(rr, entry) {
+  if (!rr || rr <= 0 || !entry) return -1;
+  // costs as fraction of price → convert to R using stop distance proxy from rr
+  // Assume risk 1R ≈ move to SL; cost notional / risk ≈ costPct / (riskPct of price)
+  // Simpler: cost drag in R ≈ (fee+slip)*entry / (entry * 0.01) if 1% stop typical
+  // Use fixed: round-turn cost ≈ 0.14% price; if stop ~0.8% price, cost ≈ 0.175R
+  const costPct = FEE_RATE_RT + SLIPPAGE_RT;
+  // Approximate risk distance from rr and tp2 relationship: risk ≈ move/rr for tp2
+  // EV ≈ p_win * rr_avg - p_loss * 1 - cost_R; without calibrated p use rr as gross
+  // Gross edge proxy: (rr - 1) / 2 as crude long-run if 50% — too optimistic
+  // Trader rule: require rr large enough that 1R win still beats costs
+  // cost in R if stop is ~0.6%-1.2% of price: costR = costPct / stopPct
+  const stopPctAssumed = 0.009; // 0.9% stop assumption for cost→R
+  const costR = costPct / stopPctAssumed;
+  const ev = rr - 1.0 - costR; // need better than 1:1 after costs (conservative gate)
+  // Actually for R:R 1:2.5, "rr" field is tp2/risk so gross if always hit tp2
+  // Gate: netR = rr - costR must exceed 1.15 (prefer >1R net after costs on TP2 path)
+  const netRr = rr - costR;
+  return { ev: +netRr.toFixed(3), costR: +costR.toFixed(3), netRr: +netRr.toFixed(3) };
+}
+
 function buildLevels(candles, signal, mark, regime = null) {
   const atrV = atr(candles) || mark * 0.005;
   const recent = candles.slice(-28);
@@ -883,17 +913,19 @@ function formatTelegramMessage(s) {
 
   return (
     `${tag} · <b>${s.base}</b> ${arrow}${persist}${volOk}\n\n` +
-    `📊 Probability: <b>${s.probability}%</b>${regimeTxt}\n` +
+    `📊 Score: <b>${s.probability}</b>${regimeTxt}\n` +
     `🧩 Setup: <b>${s.setup}</b>\n` +
     `🎯 Entry: <code>${formatPrice(s.entry)}</code>${s.mode ? " · " + s.mode : ""}\n` +
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
     `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
     `🚀 TP3: <code>${formatPrice(s.tp3)}</code>\n` +
-    `📈 R:R 1:${s.rr.toFixed(1)}${riskTxt}\n\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}${riskTxt}` +
+    (s.ev && s.ev.netRr != null ? `\n📐 Net R (after cost): ~${s.ev.netRr}` : "") +
+    `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.9 · Regime + Adaptive SL/TP · Risk max 0.75% · NFA</i>`
+    `<i>Strict Core v2.10 · Score+EV · Risk max 0.75% · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -916,14 +948,16 @@ function formatSquareCoinBlock(s) {
   return (
     `${tag} · ${s.base} ${arrow}${persist}\n` +
     `\n` +
-    `📊 Probability: ${s.probability}%\n` +
+    `📊 Score: ${s.probability}\n` +
     `🧩 Setup: ${s.setup}\n` +
     `🎯 Entry: ${formatPrice(s.entry)}${mode}\n` +
     `🛑 SL: ${formatPrice(s.sl)}\n` +
     `🎯 TP1: ${formatPrice(s.tp1)}\n` +
     `🎯 TP2: ${formatPrice(s.tp2)}\n` +
     `🚀 TP3: ${formatPrice(s.tp3 || s.tp2)}\n` +
-    `📈 R:R 1:${s.rr.toFixed(1)}${risk}\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}${risk}` +
+    (s.ev && s.ev.netRr != null ? `\nNet R~${s.ev.netRr}` : "") +
+    `\n` +
     `\n` +
     `${tf}\n` +
     `Vol ${vol} · RSI ${rsi}` +
@@ -962,7 +996,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Strict Core v2.9 · Regime + Adaptive SL/TP · Risk max 0.75% · NFA");
+  lines.push("Strict Core v2.10 · Score+EV · Risk max 0.75% · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -1187,7 +1221,7 @@ async function sendDiscord(signals) {
       title: `${isSniper ? "🎯 SNIPER" : "✅ VALID"} · ${s.base} ${s.action}${persistTag}`,
       color,
       fields: [
-        { name: "Probability", value: `**${s.probability}%**`, inline: true },
+        { name: "Score", value: `**${s.probability}**`, inline: true },
         { name: "Setup", value: s.setup, inline: true },
         { name: "R:R", value: `1:${s.rr.toFixed(1)}`, inline: true },
         { name: "Entry", value: `$${formatPrice(s.entry)}`, inline: true },
@@ -1198,7 +1232,7 @@ async function sendDiscord(signals) {
         { name: "Book", value: s.book ? `${s.book.side} (${s.book.imbalance}) · ${s.book.quality || "—"}` : "—", inline: true },
         { name: "1H / 15M / 5M", value: `${s.trends?.h1 || s.h1?.bias || "—"} / ${s.trends?.m15 || s.m15?.bias || "—"} / ${s.m5?.volume?.side || "—"}`, inline: true },
       ],
-      footer: { text: "Strict Core v2.9 · Regime + Adaptive SL/TP · NFA" },
+      footer: { text: "Strict Core v2.10 · Score+EV · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -1249,7 +1283,7 @@ async function fetchOrderBook(instId, sz = 20) {
 
 function analyzeOrderBook(book) {
   if (!book || !book.bids || !book.bids.length || !book.asks || !book.asks.length) {
-    return { imbalance: 0, side: "FLAT", bidVol: 0, askVol: 0, spread: 0, mid: null };
+    return { imbalance: 0, side: "FLAT", bidVol: 0, askVol: 0, spread: null, mid: null, missing: true };
   }
   const depthBid = book.bids.slice(0, 15);
   const depthAsk = book.asks.slice(0, 15);
@@ -1311,8 +1345,9 @@ function getVolatilityRegime(candles, atrPeriod = 14) {
  * Combines imbalance + spread + depth dominance
  */
 function orderbookQuality(book) {
-  if (!book || book.side === undefined) {
-    return { score: 50, quality: "unknown", ...(book || {}) };
+  // Block A: missing book → NO-TRADE quality (bukan score 50 netral)
+  if (!book || book.side === undefined || book.missing) {
+    return { score: 0, quality: "poor", missing: true, imbalance: 0, side: "FLAT", spread: null };
   }
 
   let score = 50;
@@ -1392,6 +1427,7 @@ function isPersistent(base, action, lastMap, maxAgeMin = 75) {
 // ========== OUTCOME TRACKER ==========
 const OUTCOME_FILE = path.join(__dirname, "signals-log.json");
 const OUTCOME_MAX_AGE_H = 18; // expire open signals after 18h
+const OUTCOME_BAR = "15m"; // covers ~25h with limit 100
 const OUTCOME_MAX_CLOSED = 200; // keep last N closed records
 
 function loadOutcomeLog() {
@@ -1417,9 +1453,10 @@ function saveOutcomeLog(log) {
   }
 }
 
-function recomputeStats(closed) {
-  const stats = { total: 0, wins: 0, losses: 0, expired: 0, sumR: 0, bySetup: {} };
+function recomputeStats(closed, afterTs = 0) {
+  const stats = { total: 0, wins: 0, losses: 0, expired: 0, sumR: 0, bySetup: {}, afterTs: afterTs || 0 };
   for (const c of closed) {
+    if (afterTs && (c.ts || 0) < afterTs) continue;
     stats.total++;
     const setup = c.setup || "NA";
     if (!stats.bySetup[setup]) stats.bySetup[setup] = { n: 0, wins: 0, losses: 0, sumR: 0 };
@@ -1520,7 +1557,7 @@ async function evaluateOpenOutcomes(log) {
     }
     const instId = sig.instId || `${sig.base}-USDT-SWAP`;
     try {
-      const candles = await fetchOkxCandles(instId, "5m", 100);
+      const candles = await fetchOkxCandles(instId, OUTCOME_BAR, 100);
       // ensure ts on candles if missing
       const norm = (candles || []).map((c) => ({
         ...c,
@@ -1541,7 +1578,7 @@ async function evaluateOpenOutcomes(log) {
 
   log.open = stillOpen;
   log.closed = [...newlyClosed, ...log.closed].slice(0, OUTCOME_MAX_CLOSED);
-  log.stats = recomputeStats(log.closed);
+  log.stats = recomputeStats(log.closed, OUTCOME_STATS_AFTER_TS);
   return { log, newlyClosed };
 }
 
@@ -1587,7 +1624,7 @@ function printOutcomeSummary(log, newlyClosed) {
   }
   const st = log.stats || {};
   console.log(
-    `Outcome stats: closed=${st.total || 0} wins=${st.wins || 0} losses=${st.losses || 0} expired=${st.expired || 0}` +
+    `Outcome stats (since Block A baseline): closed=${st.total || 0} wins=${st.wins || 0} losses=${st.losses || 0} expired=${st.expired || 0}` +
       (st.winrate != null ? ` winrate=${st.winrate}%` : "") +
       (st.avgR != null ? ` avgR=${st.avgR}` : "") +
       ` | open=${(log.open || []).length}`
@@ -1599,7 +1636,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.9.5 | Quality Gate — ST align + wider SL + less noise ===");
+  console.log("=== Strict Core v2.10.0 | Block A — Score + EV + OB NO-TRADE + Outcome ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1672,6 +1709,10 @@ async function main() {
       // High regime: jangan ambil jika R:R tipis
       if (scored.regime && scored.regime.regime === "high" && levels.rr < 2.0) continue;
 
+      // Block A — EV after fees/slippage; skip if not positive enough
+      const evInfo = estimateEV(levels.rr, levels.entry);
+      if (!evInfo || evInfo.netRr < 1.15) continue;
+
       let riskPct = suggestRisk(regime, scored.probability);
 
       signals.push({
@@ -1697,6 +1738,8 @@ async function main() {
         riskPct,
         volConfirm: !!scored.volConfirm,
         persistent: false,
+        score: scored.probability,
+        ev: estimateEV(levels.rr, levels.entry),
       });
       await new Promise((r) => setTimeout(r, 400));
     } catch (e) {
@@ -1753,7 +1796,7 @@ async function main() {
     outcomeLog = evaluated.log;
     printOutcomeSummary(outcomeLog, evaluated.newlyClosed);
     outcomeLog = registerNewSignals(outcomeLog, signals);
-    outcomeLog.stats = recomputeStats(outcomeLog.closed);
+    outcomeLog.stats = recomputeStats(outcomeLog.closed, OUTCOME_STATS_AFTER_TS);
     saveOutcomeLog(outcomeLog);
   } catch (e) {
     console.warn("Outcome tracker error:", e.message);
