@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.9.3
+ * Strict Core Scanner v2.9.4
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -12,6 +12,7 @@
  * + Hybrid Entry (dekat zona → ZONE; agak jauh → MARKET + SL struktur)
  * + Supertrend (tolak ukur tambahan 1H/15M)
  * + BTC bias lebih ringan
+ * + Outcome Tracker (signals-log.json — TP/SL live)
  * + Optimized Discord / Telegram / Binance Square messages
  * Note: levels on OKX SWAP — treat as zone if trading another venue
  */
@@ -44,7 +45,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.3" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.9.4" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -1209,6 +1210,7 @@ async function fetchOkxCandles(instId, bar, limit = 100) {
   const list = data?.data || [];
   const candles = list
     .map((r) => ({
+      ts: +r[0],
       open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5], confirm: String(r[8]),
     }))
     .reverse();
@@ -1380,10 +1382,218 @@ function isPersistent(base, action, lastMap, maxAgeMin = 75) {
   return ageMin <= maxAgeMin;
 }
 
+
+// ========== OUTCOME TRACKER ==========
+const OUTCOME_FILE = path.join(__dirname, "signals-log.json");
+const OUTCOME_MAX_AGE_H = 18; // expire open signals after 18h
+const OUTCOME_MAX_CLOSED = 200; // keep last N closed records
+
+function loadOutcomeLog() {
+  try {
+    if (!fs.existsSync(OUTCOME_FILE)) return { open: [], closed: [], stats: {} };
+    const raw = JSON.parse(fs.readFileSync(OUTCOME_FILE, "utf8"));
+    return {
+      open: Array.isArray(raw.open) ? raw.open : [],
+      closed: Array.isArray(raw.closed) ? raw.closed : [],
+      stats: raw.stats && typeof raw.stats === "object" ? raw.stats : {},
+    };
+  } catch (e) {
+    console.warn("Outcome log load fail:", e.message);
+    return { open: [], closed: [], stats: {} };
+  }
+}
+
+function saveOutcomeLog(log) {
+  try {
+    fs.writeFileSync(OUTCOME_FILE, JSON.stringify(log, null, 2));
+  } catch (e) {
+    console.warn("Outcome log save fail:", e.message);
+  }
+}
+
+function recomputeStats(closed) {
+  const stats = { total: 0, wins: 0, losses: 0, expired: 0, sumR: 0, bySetup: {} };
+  for (const c of closed) {
+    stats.total++;
+    const setup = c.setup || "NA";
+    if (!stats.bySetup[setup]) stats.bySetup[setup] = { n: 0, wins: 0, losses: 0, sumR: 0 };
+    stats.bySetup[setup].n++;
+    if (c.outcome === "LOSS_SL") {
+      stats.losses++;
+      stats.bySetup[setup].losses++;
+      stats.sumR += c.rMultiple != null ? c.rMultiple : -1;
+      stats.bySetup[setup].sumR += c.rMultiple != null ? c.rMultiple : -1;
+    } else if (c.outcome && String(c.outcome).startsWith("WIN")) {
+      stats.wins++;
+      stats.bySetup[setup].wins++;
+      stats.sumR += c.rMultiple != null ? c.rMultiple : 0;
+      stats.bySetup[setup].sumR += c.rMultiple != null ? c.rMultiple : 0;
+    } else if (c.outcome === "EXPIRED") {
+      stats.expired++;
+    }
+  }
+  stats.winrate = stats.wins + stats.losses > 0
+    ? +((100 * stats.wins) / (stats.wins + stats.losses)).toFixed(1)
+    : null;
+  stats.avgR = stats.wins + stats.losses > 0
+    ? +(stats.sumR / (stats.wins + stats.losses)).toFixed(2)
+    : null;
+  return stats;
+}
+
+/** Walk candles after signal time; conservative: SL priority if same candle touches both */
+function resolveOutcome(sig, candles) {
+  if (!candles || !candles.length) return null;
+  const isLong = sig.action === "LONG";
+  const entry = +sig.entry;
+  const sl = +sig.sl;
+  const tps = [+sig.tp1, +sig.tp2, +sig.tp3].filter((x) => Number.isFinite(x));
+  const risk = Math.abs(entry - sl) || 1e-12;
+  const t0 = sig.ts || 0;
+
+  for (const c of candles) {
+    const ct = c.ts || c.time || 0;
+    // OKX candle ts often in ms
+    if (ct && t0 && ct < t0 - 60000) continue;
+
+    const hi = +c.high;
+    const lo = +c.low;
+    if (!Number.isFinite(hi) || !Number.isFinite(lo)) continue;
+
+    if (isLong) {
+      const hitSl = lo <= sl;
+      const hitTpIdx = tps.findIndex((tp) => hi >= tp);
+      if (hitSl && hitTpIdx >= 0) {
+        // same candle ambiguity → count SL (conservative)
+        return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+      }
+      if (hitSl) return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+      if (hitTpIdx >= 0) {
+        const tp = tps[hitTpIdx];
+        const r = (tp - entry) / risk;
+        return {
+          outcome: hitTpIdx === 0 ? "WIN_TP1" : hitTpIdx === 1 ? "WIN_TP2" : "WIN_TP3",
+          rMultiple: +r.toFixed(2),
+          exit: tp,
+          closedAt: ct || Date.now(),
+        };
+      }
+    } else {
+      const hitSl = hi >= sl;
+      const hitTpIdx = tps.findIndex((tp) => lo <= tp);
+      if (hitSl && hitTpIdx >= 0) {
+        return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+      }
+      if (hitSl) return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+      if (hitTpIdx >= 0) {
+        const tp = tps[hitTpIdx];
+        const r = (entry - tp) / risk;
+        return {
+          outcome: hitTpIdx === 0 ? "WIN_TP1" : hitTpIdx === 1 ? "WIN_TP2" : "WIN_TP3",
+          rMultiple: +r.toFixed(2),
+          exit: tp,
+          closedAt: ct || Date.now(),
+        };
+      }
+    }
+  }
+  return null;
+}
+
+async function evaluateOpenOutcomes(log) {
+  const stillOpen = [];
+  const newlyClosed = [];
+  const now = Date.now();
+
+  for (const sig of log.open) {
+    const ageH = (now - (sig.ts || now)) / 3600000;
+    if (ageH >= OUTCOME_MAX_AGE_H) {
+      const closed = { ...sig, outcome: "EXPIRED", rMultiple: 0, closedAt: now };
+      newlyClosed.push(closed);
+      continue;
+    }
+    const instId = sig.instId || `${sig.base}-USDT-SWAP`;
+    try {
+      const candles = await fetchOkxCandles(instId, "5m", 100);
+      // ensure ts on candles if missing
+      const norm = (candles || []).map((c) => ({
+        ...c,
+        ts: c.ts || c.time || 0,
+      }));
+      const resolved = resolveOutcome(sig, norm);
+      if (resolved) {
+        newlyClosed.push({ ...sig, ...resolved });
+      } else {
+        stillOpen.push(sig);
+      }
+      await new Promise((r) => setTimeout(r, 120));
+    } catch (e) {
+      console.warn(`Outcome eval skip ${sig.base}:`, e.message);
+      stillOpen.push(sig);
+    }
+  }
+
+  log.open = stillOpen;
+  log.closed = [...newlyClosed, ...log.closed].slice(0, OUTCOME_MAX_CLOSED);
+  log.stats = recomputeStats(log.closed);
+  return { log, newlyClosed };
+}
+
+function registerNewSignals(log, signals) {
+  const now = Date.now();
+  for (const s of signals) {
+    const id = `${s.base}_${s.action}_${now}`;
+    // avoid duplicate open same base+action within 2h
+    const dup = log.open.some(
+      (o) => o.base === s.base && o.action === s.action && now - (o.ts || 0) < 2 * 3600000
+    );
+    if (dup) continue;
+    log.open.push({
+      id,
+      ts: now,
+      base: s.base,
+      instId: s.instId || `${s.base}-USDT-SWAP`,
+      action: s.action,
+      setup: s.setup,
+      mode: s.mode,
+      probability: s.probability,
+      entry: s.entry,
+      sl: s.sl,
+      tp1: s.tp1,
+      tp2: s.tp2,
+      tp3: s.tp3,
+      rr: s.rr,
+      regime: s.regime ? s.regime.regime : null,
+    });
+  }
+  return log;
+}
+
+function printOutcomeSummary(log, newlyClosed) {
+  if (newlyClosed.length) {
+    console.log(`Outcome closed this run: ${newlyClosed.length}`);
+    for (const c of newlyClosed) {
+      console.log(
+        `  ${c.base} ${c.action} → ${c.outcome}` +
+          (c.rMultiple != null ? ` R=${c.rMultiple}` : "")
+      );
+    }
+  }
+  const st = log.stats || {};
+  console.log(
+    `Outcome stats: closed=${st.total || 0} wins=${st.wins || 0} losses=${st.losses || 0} expired=${st.expired || 0}` +
+      (st.winrate != null ? ` winrate=${st.winrate}%` : "") +
+      (st.avgR != null ? ` avgR=${st.avgR}` : "") +
+      ` | open=${(log.open || []).length}`
+  );
+}
+
+// ========== END OUTCOME TRACKER ==========
+
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.9.3 | Supertrend + Soft BTC + Hybrid Entry ===");
+  console.log("=== Strict Core v2.9.4 | Outcome Tracker + Supertrend + Hybrid ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1456,6 +1666,7 @@ async function main() {
 
       signals.push({
         base: c.base,
+        instId: c.instId,
         action: scored.action,
         probability: scored.probability,
         setup: scored.setup,
@@ -1524,6 +1735,19 @@ async function main() {
         (s.persistent ? " 🔁" : "")
     )
   );
+
+  // === Outcome tracker: evaluate old opens, register new signals ===
+  let outcomeLog = loadOutcomeLog();
+  try {
+    const evaluated = await evaluateOpenOutcomes(outcomeLog);
+    outcomeLog = evaluated.log;
+    printOutcomeSummary(outcomeLog, evaluated.newlyClosed);
+    outcomeLog = registerNewSignals(outcomeLog, signals);
+    outcomeLog.stats = recomputeStats(outcomeLog.closed);
+    saveOutcomeLog(outcomeLog);
+  } catch (e) {
+    console.warn("Outcome tracker error:", e.message);
+  }
 
   await sendDiscord(signals);
   await sendTelegram(signals);
