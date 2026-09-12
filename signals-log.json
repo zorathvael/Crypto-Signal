@@ -16,6 +16,23 @@
       "tp3": 102.75292485451195,
       "rr": 2.400000000000012,
       "regime": "low"
+    },
+    {
+      "id": "RAVE_SHORT_1789233331531",
+      "ts": 1789233331531,
+      "base": "RAVE",
+      "instId": "RAVE-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 0.2006,
+      "sl": 0.2039050025085611,
+      "tp1": 0.19531199598630222,
+      "tp2": 0.1920069934777411,
+      "tp3": 0.18737998996575556,
+      "rr": 2.6,
+      "regime": "normal"
     }
   ],
   "closed": [
