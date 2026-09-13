@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.10.0
+ * Strict Core Scanner v2.10.1
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -52,7 +52,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.10.0" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.10.1" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -925,7 +925,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.10 · Score+EV · Risk max 0.75% · NFA</i>`
+    `<i>Strict Core v2.10.1 · ZONE-only · Score+EV · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -996,7 +996,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Strict Core v2.10 · Score+EV · Risk max 0.75% · NFA");
+  lines.push("Strict Core v2.10.1 · ZONE-only · Score+EV · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -1232,7 +1232,7 @@ async function sendDiscord(signals) {
         { name: "Book", value: s.book ? `${s.book.side} (${s.book.imbalance}) · ${s.book.quality || "—"}` : "—", inline: true },
         { name: "1H / 15M / 5M", value: `${s.trends?.h1 || s.h1?.bias || "—"} / ${s.trends?.m15 || s.m15?.bias || "—"} / ${s.m5?.volume?.side || "—"}`, inline: true },
       ],
-      footer: { text: "Strict Core v2.10 · Score+EV · NFA" },
+      footer: { text: "Strict Core v2.10.1 · ZONE-only · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -1636,7 +1636,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.10.0 | Block A — Score + EV + OB NO-TRADE + Outcome ===");
+  console.log("=== Strict Core v2.10.1 | B: ZONE-only + skip BTC neutral ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1680,7 +1680,13 @@ async function main() {
     .slice(0, CANDIDATE_LIMIT);
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
   const signals = [];
+  // Opsi B: market chop — BTC neutral → tidak ambil signal baru (outcome tetap dievaluasi nanti)
+  const btcNeutral = !btcBias || btcBias.bias === "neutral" || Math.abs(btcBias.score || 0) < 20;
+  if (btcNeutral) {
+    console.log("BTC bias neutral/weak — skip new signals (chop filter)");
+  }
   for (const c of candidates) {
+    if (btcNeutral) continue;
     try {
       const [h1c, m15c, m5c, h4c, funding, rawBook] = await Promise.all([
         fetchOkxCandles(c.instId, "1H", 100),
@@ -1704,8 +1710,8 @@ async function main() {
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
       if (levels.rr < MIN_RR) continue;
-      // Hybrid MKT = entry lebih buruk → wajib SNIPER
-      if (levels.mode && String(levels.mode).includes("_MKT") && scored.probability < MIN_PROB_SNIPER) continue;
+      // Opsi B: hanya ZONE entry — matikan market entry hybrid
+      if (!levels.mode || !String(levels.mode).includes("_ZONE")) continue;
       // High regime: jangan ambil jika R:R tipis
       if (scored.regime && scored.regime.regime === "high" && levels.rr < 2.0) continue;
 
