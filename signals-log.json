@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "WLFI_LONG_1789306187572",
       "ts": 1789306187572,
@@ -15,7 +16,11 @@
       "tp2": 0.05791863017891224,
       "tp3": 0.05811707714793919,
       "rr": 6.038672299055944,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 4.3,
+      "exit": 0.057630499999999994,
+      "closedAt": 1789309800000
     },
     {
       "id": "SOL_SHORT_1789308077899",
@@ -32,10 +37,12 @@
       "tp2": 99.3836630847774,
       "tp3": 99.2502146407904,
       "rr": 6.981005326356041,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 100.27120703665582,
+      "closedAt": 1789308900000
+    },
     {
       "id": "XRP_SHORT_1789308077899",
       "ts": 1789308077899,
@@ -752,17 +759,23 @@
     }
   ],
   "stats": {
-    "total": 26,
-    "wins": 14,
-    "losses": 12,
+    "total": 28,
+    "wins": 15,
+    "losses": 13,
     "expired": 0,
-    "sumR": 11.94,
+    "sumR": 15.239999999999995,
     "bySetup": {
       "TREND": {
-        "n": 25,
-        "wins": 14,
+        "n": 26,
+        "wins": 15,
         "losses": 11,
-        "sumR": 12.94
+        "sumR": 17.24
+      },
+      "MEAN_REV": {
+        "n": 1,
+        "wins": 0,
+        "losses": 1,
+        "sumR": -1
       },
       "SQUEEZE": {
         "n": 1,
@@ -772,7 +785,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 53.8,
-    "avgR": 0.46
+    "winrate": 53.6,
+    "avgR": 0.54
   }
 }
