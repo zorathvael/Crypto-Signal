@@ -67,6 +67,23 @@
       "tp3": 0.13766089792233194,
       "rr": 2.399999999999994,
       "regime": "low"
+    },
+    {
+      "id": "HYPE_SHORT_1789270177527",
+      "ts": 1789270177527,
+      "base": "HYPE",
+      "instId": "HYPE-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 79.292,
+      "sl": 79.58542138510872,
+      "tp1": 78.85186792233694,
+      "tp2": 78.58778867573909,
+      "tp3": 78.17699873658688,
+      "rr": 2.399999999999981,
+      "regime": "low"
     }
   ],
   "closed": [
