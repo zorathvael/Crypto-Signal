@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "SUI_SHORT_1789343718239",
+      "ts": 1789343718239,
+      "base": "SUI",
+      "instId": "SUI-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "RECLAIM_ZONE",
+      "probability": 99,
+      "entry": 0.7030312553479684,
+      "sl": 0.7051580427193735,
+      "tp1": 0.6998410742908607,
+      "tp2": 0.6979269656565961,
+      "tp3": 0.6949494633366289,
+      "rr": 2.3999999999999897,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "ETHFI_SHORT_1789326526091",
