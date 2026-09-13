@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "ETHFI_SHORT_1789326526091",
       "ts": 1789326526091,
@@ -15,10 +16,12 @@
       "tp2": 0.6398548533755862,
       "tp3": 0.6371285845822208,
       "rr": 2.9383084287891026,
-      "regime": "normal"
-    }
-  ],
-  "closed": [
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.61,
+      "exit": 0.6432649999999999,
+      "closedAt": 1789326900000
+    },
     {
       "id": "WLFI_LONG_1789306187572",
       "ts": 1789306187572,
@@ -777,17 +780,17 @@
     }
   ],
   "stats": {
-    "total": 28,
-    "wins": 15,
+    "total": 29,
+    "wins": 16,
     "losses": 13,
     "expired": 0,
-    "sumR": 15.239999999999995,
+    "sumR": 16.85,
     "bySetup": {
       "TREND": {
-        "n": 26,
-        "wins": 15,
+        "n": 27,
+        "wins": 16,
         "losses": 11,
-        "sumR": 17.24
+        "sumR": 18.85
       },
       "MEAN_REV": {
         "n": 1,
@@ -803,7 +806,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 53.6,
-    "avgR": 0.54
+    "winrate": 55.2,
+    "avgR": 0.58
   }
 }
