@@ -1,40 +1,6 @@
 {
   "open": [
     {
-      "id": "LINK_SHORT_1789249918753",
-      "ts": 1789249918753,
-      "base": "LINK",
-      "instId": "LINK-USDT-SWAP",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "SWEEP_MKT",
-      "probability": 99,
-      "entry": 11.5,
-      "sl": 11.536498937564307,
-      "tp1": 11.44525159365354,
-      "tp2": 11.412402549845662,
-      "tp3": 11.361304037255634,
-      "rr": 2.4000000000000195,
-      "regime": "low"
-    },
-    {
-      "id": "TRUMP_SHORT_1789268597877",
-      "ts": 1789268597877,
-      "base": "TRUMP",
-      "instId": "TRUMP-USDT-SWAP",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "SWEEP_MKT",
-      "probability": 99,
-      "entry": 1.985,
-      "sl": 1.9930440443103925,
-      "tp1": 1.9729339335344114,
-      "tp2": 1.9656942936550583,
-      "tp3": 1.954432631620509,
-      "rr": 2.4,
-      "regime": "low"
-    },
-    {
       "id": "WLD_SHORT_1789268597877",
       "ts": 1789268597877,
       "base": "WLD",
@@ -49,23 +15,6 @@
       "tp2": 0.3917440982448063,
       "tp3": 0.3882698222209433,
       "rr": 2.399999999999991,
-      "regime": "low"
-    },
-    {
-      "id": "ENA_SHORT_1789268597877",
-      "ts": 1789268597877,
-      "base": "ENA",
-      "instId": "ENA-USDT-SWAP",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "SWEEP_MKT",
-      "probability": 99,
-      "entry": 0.14119,
-      "sl": 0.14211871107307056,
-      "tp1": 0.13979693339039417,
-      "tp2": 0.1389610934246307,
-      "tp3": 0.13766089792233194,
-      "rr": 2.399999999999994,
       "regime": "low"
     },
     {
@@ -86,23 +35,6 @@
       "regime": "low"
     },
     {
-      "id": "HYPE_SHORT_1789277468934",
-      "ts": 1789277468934,
-      "base": "HYPE",
-      "instId": "HYPE-USDT-SWAP",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "SWEEP_ZONE",
-      "probability": 99,
-      "entry": 79.37,
-      "sl": 79.45935898248189,
-      "tp1": 79.1455,
-      "tp2": 78.91981570723686,
-      "tp3": 78.8125849282586,
-      "rr": 5.037929934513423,
-      "regime": "low"
-    },
-    {
       "id": "NEAR_SHORT_1789277468934",
       "ts": 1789277468934,
       "base": "NEAR",
@@ -118,6 +50,92 @@
       "tp3": 2.275004279033609,
       "rr": 2.400000000000005,
       "regime": "low"
+    }
+  ],
+  "closed": [
+    {
+      "id": "LINK_SHORT_1789249918753",
+      "ts": 1789249918753,
+      "base": "LINK",
+      "instId": "LINK-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 11.5,
+      "sl": 11.536498937564307,
+      "tp1": 11.44525159365354,
+      "tp2": 11.412402549845662,
+      "tp3": 11.361304037255634,
+      "rr": 2.4000000000000195,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 11.536498937564307,
+      "closedAt": 1789277400000
+    },
+    {
+      "id": "TRUMP_SHORT_1789268597877",
+      "ts": 1789268597877,
+      "base": "TRUMP",
+      "instId": "TRUMP-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 1.985,
+      "sl": 1.9930440443103925,
+      "tp1": 1.9729339335344114,
+      "tp2": 1.9656942936550583,
+      "tp3": 1.954432631620509,
+      "rr": 2.4,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 1.9930440443103925,
+      "closedAt": 1789277400000
+    },
+    {
+      "id": "ENA_SHORT_1789268597877",
+      "ts": 1789268597877,
+      "base": "ENA",
+      "instId": "ENA-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 0.14119,
+      "sl": 0.14211871107307056,
+      "tp1": 0.13979693339039417,
+      "tp2": 0.1389610934246307,
+      "tp3": 0.13766089792233194,
+      "rr": 2.399999999999994,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 0.14211871107307056,
+      "closedAt": 1789278300000
+    },
+    {
+      "id": "HYPE_SHORT_1789277468934",
+      "ts": 1789277468934,
+      "base": "HYPE",
+      "instId": "HYPE-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_ZONE",
+      "probability": 99,
+      "entry": 79.37,
+      "sl": 79.45935898248189,
+      "tp1": 79.1455,
+      "tp2": 78.91981570723686,
+      "tp3": 78.8125849282586,
+      "rr": 5.037929934513423,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 79.45935898248189,
+      "closedAt": 1789278300000
     },
     {
       "id": "AAVE_LONG_1789277468934",
@@ -134,10 +152,12 @@
       "tp2": 128.49327189528358,
       "tp3": 129.2476805008657,
       "rr": 2.3999999999999844,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.5,
+      "exit": 128.00829493455225,
+      "closedAt": 1789278300000
+    },
     {
       "id": "PEPE_LONG_1789275626550",
       "ts": 1789275626550,
@@ -602,17 +622,17 @@
     }
   ],
   "stats": {
-    "total": 14,
-    "wins": 8,
-    "losses": 6,
+    "total": 19,
+    "wins": 9,
+    "losses": 10,
     "expired": 0,
-    "sumR": 8.52,
+    "sumR": 6.02,
     "bySetup": {
       "TREND": {
-        "n": 13,
-        "wins": 8,
-        "losses": 5,
-        "sumR": 9.52
+        "n": 18,
+        "wins": 9,
+        "losses": 9,
+        "sumR": 7.02
       },
       "SQUEEZE": {
         "n": 1,
@@ -622,7 +642,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 57.1,
-    "avgR": 0.61
+    "winrate": 47.4,
+    "avgR": 0.32
   }
 }
