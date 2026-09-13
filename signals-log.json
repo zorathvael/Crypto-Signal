@@ -16,6 +16,40 @@
       "tp3": 0.05811707714793919,
       "rr": 6.038672299055944,
       "regime": "low"
+    },
+    {
+      "id": "SOL_SHORT_1789308077899",
+      "ts": 1789308077899,
+      "base": "SOL",
+      "instId": "SOL-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "MEAN_REV",
+      "mode": "SWEEP_ZONE",
+      "probability": 99,
+      "entry": 100.16,
+      "sl": 100.27120703665582,
+      "tp1": 99.7055,
+      "tp2": 99.3836630847774,
+      "tp3": 99.2502146407904,
+      "rr": 6.981005326356041,
+      "regime": "low"
+    },
+    {
+      "id": "XRP_SHORT_1789308077899",
+      "ts": 1789308077899,
+      "base": "XRP",
+      "instId": "XRP-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 1.3432,
+      "sl": 1.3450227301034203,
+      "tp1": 1.3387900000000001,
+      "tp2": 1.3336937660964199,
+      "tp3": 1.3315064899723155,
+      "rr": 5.215382072058555,
+      "regime": "low"
     }
   ],
   "closed": [
