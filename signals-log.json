@@ -86,6 +86,59 @@
       "regime": "low"
     },
     {
+      "id": "HYPE_SHORT_1789277468934",
+      "ts": 1789277468934,
+      "base": "HYPE",
+      "instId": "HYPE-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_ZONE",
+      "probability": 99,
+      "entry": 79.37,
+      "sl": 79.45935898248189,
+      "tp1": 79.1455,
+      "tp2": 78.91981570723686,
+      "tp3": 78.8125849282586,
+      "rr": 5.037929934513423,
+      "regime": "low"
+    },
+    {
+      "id": "NEAR_SHORT_1789277468934",
+      "ts": 1789277468934,
+      "base": "NEAR",
+      "instId": "NEAR-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 2.343,
+      "sl": 2.360893610780629,
+      "tp1": 2.316159583829056,
+      "tp2": 2.30005533412649,
+      "tp3": 2.275004279033609,
+      "rr": 2.400000000000005,
+      "regime": "low"
+    },
+    {
+      "id": "AAVE_LONG_1789277468934",
+      "ts": 1789277468934,
+      "base": "AAVE",
+      "instId": "AAVE-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 127.2,
+      "sl": 126.6611367102985,
+      "tp1": 128.00829493455225,
+      "tp2": 128.49327189528358,
+      "tp3": 129.2476805008657,
+      "rr": 2.3999999999999844,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "PEPE_LONG_1789275626550",
       "ts": 1789275626550,
       "base": "PEPE",
@@ -100,7 +153,11 @@
       "tp2": 0.000003459398181667894,
       "tp3": 0.0000034621846810051803,
       "rr": 3.3727411469219772,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.69,
+      "exit": 0.0000034484,
+      "closedAt": 1789275600000
     },
     {
       "id": "SNDK_SHORT_1789275626550",
@@ -117,7 +174,11 @@
       "tp2": 1623.7313356646048,
       "tp3": 1622.6140100762052,
       "rr": 2.5039529013569344,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.5,
+      "exit": 1624.5968460827125,
+      "closedAt": 1789275600000
     },
     {
       "id": "AAVE_LONG_1789275626550",
@@ -134,10 +195,12 @@
       "tp2": 127.62751708038296,
       "tp3": 127.75219862185384,
       "rr": 3.2903927550653687,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.65,
+      "exit": 127.22500000000002,
+      "closedAt": 1789275600000
+    },
     {
       "id": "ALLO_SHORT_1789264585844",
       "ts": 1789264585844,
@@ -539,17 +602,17 @@
     }
   ],
   "stats": {
-    "total": 11,
-    "wins": 5,
+    "total": 14,
+    "wins": 8,
     "losses": 6,
     "expired": 0,
-    "sumR": 3.6799999999999997,
+    "sumR": 8.52,
     "bySetup": {
       "TREND": {
-        "n": 10,
-        "wins": 5,
+        "n": 13,
+        "wins": 8,
         "losses": 5,
-        "sumR": 4.68
+        "sumR": 9.52
       },
       "SQUEEZE": {
         "n": 1,
@@ -559,7 +622,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 45.5,
-    "avgR": 0.33
+    "winrate": 57.1,
+    "avgR": 0.61
   }
 }
