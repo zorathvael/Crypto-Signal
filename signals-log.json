@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ETHFI_SHORT_1789326526091",
+      "ts": 1789326526091,
+      "base": "ETHFI",
+      "instId": "ETHFI-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.6474,
+      "sl": 0.6499678538544448,
+      "tp1": 0.6432649999999999,
+      "tp2": 0.6398548533755862,
+      "tp3": 0.6371285845822208,
+      "rr": 2.9383084287891026,
+      "regime": "normal"
+    }
+  ],
   "closed": [
     {
       "id": "WLFI_LONG_1789306187572",
