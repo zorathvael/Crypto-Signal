@@ -1,5 +1,57 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "SUI_SHORT_1789304391147",
+      "ts": 1789304391147,
+      "base": "SUI",
+      "instId": "SUI-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.7115,
+      "sl": 0.7125583750054374,
+      "tp1": 0.709912437491844,
+      "tp2": 0.7086735895118859,
+      "tp3": 0.707478174979338,
+      "rr": 2.670518930996626,
+      "regime": "low"
+    },
+    {
+      "id": "WLD_SHORT_1789304391147",
+      "ts": 1789304391147,
+      "base": "WLD",
+      "instId": "WLD-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.3915,
+      "sl": 0.3922620361608765,
+      "tp1": 0.39003999999999994,
+      "tp2": 0.38911177588913015,
+      "tp3": 0.3886042625886693,
+      "rr": 3.134003651641555,
+      "regime": "low"
+    },
+    {
+      "id": "ADA_SHORT_1789304391147",
+      "ts": 1789304391147,
+      "base": "ADA",
+      "instId": "ADA-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.2049,
+      "sl": 0.20522198433719244,
+      "tp1": 0.20439000000000002,
+      "tp2": 0.20389240578781503,
+      "tp3": 0.20367645951866872,
+      "rr": 3.1293267895287813,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "WLD_SHORT_1789268597877",
