@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.10.2
+ * Strict Core Scanner v2.11.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -52,7 +52,7 @@ function formatPrice(v) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.10.2" },
+    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.11.0" },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
@@ -190,18 +190,46 @@ function detectReversal(candles) {
   return { bias: "neutral", quality: 0, name: "None" };
 }
 function marketStructure(candles) {
-  if (candles.length < 30) return { trend: "chop" };
-  const leg = candles.slice(-20);
-  const mid = Math.floor(leg.length / 2);
-  const first = leg.slice(0, mid);
-  const second = leg.slice(mid);
-  const hi1 = Math.max(...first.map((c) => c.high));
-  const hi2 = Math.max(...second.map((c) => c.high));
-  const lo1 = Math.min(...first.map((c) => c.low));
-  const lo2 = Math.min(...second.map((c) => c.low));
-  if (hi2 > hi1 && lo2 > lo1) return { trend: "up" };
-  if (lo2 < lo1 && hi2 < hi1) return { trend: "down" };
-  return { trend: "chop" };
+  if (candles.length < 30) return { trend: "chop", hh: false, hl: false, lh: false, ll: false };
+  const swingsH = [];
+  const swingsL = [];
+  for (let i = 2; i < candles.length - 2; i++) {
+    const c = candles[i];
+    if (
+      c.high >= candles[i - 1].high && c.high >= candles[i - 2].high &&
+      c.high >= candles[i + 1].high && c.high >= candles[i + 2].high
+    ) swingsH.push(c.high);
+    if (
+      c.low <= candles[i - 1].low && c.low <= candles[i - 2].low &&
+      c.low <= candles[i + 1].low && c.low <= candles[i + 2].low
+    ) swingsL.push(c.low);
+  }
+  const h1s = swingsH.length >= 2 ? swingsH[swingsH.length - 2] : null;
+  const h2s = swingsH.length >= 1 ? swingsH[swingsH.length - 1] : null;
+  const l1s = swingsL.length >= 2 ? swingsL[swingsL.length - 2] : null;
+  const l2s = swingsL.length >= 1 ? swingsL[swingsL.length - 1] : null;
+  const hh = h1s != null && h2s != null && h2s > h1s;
+  const lh = h1s != null && h2s != null && h2s < h1s;
+  const hl = l1s != null && l2s != null && l2s > l1s;
+  const ll = l1s != null && l2s != null && l2s < l1s;
+  let trend = "chop";
+  if (hh && hl) trend = "up";
+  else if (lh && ll) trend = "down";
+  else if (hh && !ll) trend = "up";
+  else if (ll && !hh) trend = "down";
+  else {
+    const leg = candles.slice(-20);
+    const mid = Math.floor(leg.length / 2);
+    const first = leg.slice(0, mid);
+    const second = leg.slice(mid);
+    const hi1 = Math.max(...first.map((c) => c.high));
+    const hi2 = Math.max(...second.map((c) => c.high));
+    const lo1 = Math.min(...first.map((c) => c.low));
+    const lo2 = Math.min(...second.map((c) => c.low));
+    if (hi2 > hi1 && lo2 > lo1) trend = "up";
+    if (lo2 < lo1 && hi2 < hi1) trend = "down";
+  }
+  return { trend, hh: !!hh, hl: !!hl, lh: !!lh, ll: !!ll };
 }
 
 /** Supertrend (ATR-based) — direction: 1 = bullish, -1 = bearish */
@@ -278,8 +306,19 @@ function analyzeTF(candles, label) {
   const ms = marketStructure(candles);
   const macdNow = hist[idx];
   const macdPrev = hist[idx - 1];
+  const macdPrev2 = hist[idx - 2];
   const macdUp = macdNow != null && macdPrev != null && macdNow > macdPrev;
   const macdDown = macdNow != null && macdPrev != null && macdNow < macdPrev;
+  const macdCrossUp =
+    macdNow != null &&
+    macdPrev != null &&
+    ((macdPrev <= 0 && macdNow > 0) ||
+      (macdPrev2 != null && macdNow > macdPrev && macdPrev2 <= macdPrev && macdNow > 0));
+  const macdCrossDown =
+    macdNow != null &&
+    macdPrev != null &&
+    ((macdPrev >= 0 && macdNow < 0) ||
+      (macdPrev2 != null && macdNow < macdPrev && macdPrev2 >= macdPrev && macdNow < 0));
   const touchLo = last.low <= lo * 1.003 || last.close <= lo * 1.005;
   const touchUp = last.high >= up * 0.997 || last.close >= up * 0.995;
   let biasScore = 0;
@@ -311,7 +350,7 @@ function analyzeTF(candles, label) {
   const st = supertrend(candles, 10, 3);
   return {
     label, middle: mid, upper: up, lower: lo, width: w, position: pos, squeeze, bias, biasScore, structure,
-    emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown,
+    emaBull, emaBear, rsi: rsiV[idx], volume: vol, reversal: rev, ms, macdUp, macdDown, macdCrossUp, macdCrossDown, macdHist: macdNow,
     meanLong: touchLo && pos <= 18 && rev.bias === "bullish" && rev.quality >= 0.75 && rsiV[idx] < 38,
     meanShort: touchUp && pos >= 82 && rev.bias === "bearish" && rev.quality >= 0.75 && rsiV[idx] > 62,
     adx: adxV,
@@ -540,6 +579,42 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   if (path === "TREND" && adxMax < 14 && !m5.volume.spike) return null;
   if (path === "SQUEEZE" && adxMax > 38) return null;
 
+  // ========== DEEP CONFLUENCE: pilar independen harus saling menguatkan ==========
+  const pillars = [];
+  if (action === "LONG") {
+    if (t1 === "bullish" && t15 === "bullish") pillars.push("tf_align");
+    if (h1.stDir === 1 && m15.stDir === 1) pillars.push("st_align");
+    else if (m15.stDir === 1) pillars.push("st_15");
+    if (h1.emaBull || m15.emaBull) pillars.push("ema");
+    if (h1.ms && (h1.ms.trend === "up" || (h1.ms.hh && h1.ms.hl))) pillars.push("structure");
+    else if (m15.ms && m15.ms.trend === "up") pillars.push("structure_15");
+    if ((h1.slope12 ?? 0) > 0.05 && (m15.slope6 ?? 0) > -0.15) pillars.push("slope");
+    if ((m5.volume && m5.volume.pressure > 5) || (m15.volume && m15.volume.pressure > 8)) pillars.push("volume");
+    if (m15.macdUp || m15.macdCrossUp || (m15.macdHist != null && m15.macdHist > 0 && m5.macdUp)) pillars.push("macd");
+    if (book && book.side !== "ASK" && (book.imbalance == null || book.imbalance > -12)) pillars.push("book");
+    if ((m5.rsi ?? 50) >= 42 && (m5.rsi ?? 50) <= 68) pillars.push("rsi_ok");
+  } else {
+    if (t1 === "bearish" && t15 === "bearish") pillars.push("tf_align");
+    if (h1.stDir === -1 && m15.stDir === -1) pillars.push("st_align");
+    else if (m15.stDir === -1) pillars.push("st_15");
+    if (h1.emaBear || m15.emaBear) pillars.push("ema");
+    if (h1.ms && (h1.ms.trend === "down" || (h1.ms.lh && h1.ms.ll))) pillars.push("structure");
+    else if (m15.ms && m15.ms.trend === "down") pillars.push("structure_15");
+    if ((h1.slope12 ?? 0) < -0.05 && (m15.slope6 ?? 0) < 0.15) pillars.push("slope");
+    if ((m5.volume && m5.volume.pressure < -5) || (m15.volume && m15.volume.pressure < -8)) pillars.push("volume");
+    if (m15.macdDown || m15.macdCrossDown || (m15.macdHist != null && m15.macdHist < 0 && m5.macdDown)) pillars.push("macd");
+    if (book && book.side !== "BID" && (book.imbalance == null || book.imbalance < 12)) pillars.push("book");
+    if ((m5.rsi ?? 50) <= 58 && (m5.rsi ?? 50) >= 32) pillars.push("rsi_ok");
+  }
+  const needPillars = path === "TREND" ? 5 : 4;
+  if (pillars.length < needPillars) return null;
+  if (path === "TREND") {
+    if (!pillars.includes("tf_align")) return null;
+    if (!pillars.includes("st_align") && !pillars.includes("st_15")) return null;
+    if (!pillars.includes("structure") && !pillars.includes("structure_15") && !pillars.includes("ema")) return null;
+  }
+  const confluenceN = pillars.length;
+
   // BTC soft bias — ringan saja (konteks pasar, bukan hard force)
   let btcAdj = 0;
   if (btcBias && Math.abs(btcBias.score) >= 35) {
@@ -652,6 +727,8 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     if (regime.regime === "low") conf = Math.round(conf * 1.04);
   }
 
+  if (confluenceN >= 7) conf += 5;
+  else if (confluenceN >= 6) conf += 3;
   conf = clamp(Math.round(conf), 0, 99);
 
   // === Quality gates (trader discipline) ===
@@ -681,6 +758,8 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     book: obq,
     regime: regime || null,
     volConfirm,
+    confluence: confluenceN,
+    pillars,
   };
 }
 
@@ -925,7 +1004,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.10.2 · ZONE + soft-chop · NFA</i>`
+    `<i>Strict Core v2.11 · Deep Confluence · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -996,7 +1075,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Strict Core v2.10.2 · ZONE + soft-chop · NFA");
+  lines.push("Strict Core v2.11 · Deep Confluence · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -1232,7 +1311,7 @@ async function sendDiscord(signals) {
         { name: "Book", value: s.book ? `${s.book.side} (${s.book.imbalance}) · ${s.book.quality || "—"}` : "—", inline: true },
         { name: "1H / 15M / 5M", value: `${s.trends?.h1 || s.h1?.bias || "—"} / ${s.trends?.m15 || s.m15?.bias || "—"} / ${s.m5?.volume?.side || "—"}`, inline: true },
       ],
-      footer: { text: "Strict Core v2.10.2 · ZONE + soft-chop · NFA" },
+      footer: { text: "Strict Core v2.11 · Deep Confluence · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -1636,7 +1715,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.10.2 | ZONE-only + soft-chop (SNIPER in neutral) ===");
+  console.log("=== Strict Core v2.11.0 | Deep Confluence — pillars must agree ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1753,6 +1832,8 @@ async function main() {
         persistent: false,
         score: scored.probability,
         ev: estimateEV(levels.rr, levels.entry),
+        confluence: scored.confluence,
+        pillars: scored.pillars,
       });
       await new Promise((r) => setTimeout(r, 400));
     } catch (e) {
@@ -1798,7 +1879,7 @@ async function main() {
     console.log(
       `  ${s.base} ${s.action} ${s.probability}% ${s.setup} R:R 1:${s.rr.toFixed(1)}` +
         (s.regime ? ` [${s.regime.regime}]` : "") +
-        (s.persistent ? " 🔁" : "")
+        (s.confluence != null ? ` confN=${s.confluence}` : "") + (s.persistent ? " 🔁" : "")
     )
   );
 
