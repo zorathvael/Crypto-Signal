@@ -18,6 +18,59 @@
       "regime": "low"
     },
     {
+      "id": "TRUMP_SHORT_1789268597877",
+      "ts": 1789268597877,
+      "base": "TRUMP",
+      "instId": "TRUMP-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 1.985,
+      "sl": 1.9930440443103925,
+      "tp1": 1.9729339335344114,
+      "tp2": 1.9656942936550583,
+      "tp3": 1.954432631620509,
+      "rr": 2.4,
+      "regime": "low"
+    },
+    {
+      "id": "WLD_SHORT_1789268597877",
+      "ts": 1789268597877,
+      "base": "WLD",
+      "instId": "WLD-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.3977,
+      "sl": 0.4001816257313307,
+      "tp1": 0.39397756140300394,
+      "tp2": 0.3917440982448063,
+      "tp3": 0.3882698222209433,
+      "rr": 2.399999999999991,
+      "regime": "low"
+    },
+    {
+      "id": "ENA_SHORT_1789268597877",
+      "ts": 1789268597877,
+      "base": "ENA",
+      "instId": "ENA-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 0.14119,
+      "sl": 0.14211871107307056,
+      "tp1": 0.13979693339039417,
+      "tp2": 0.1389610934246307,
+      "tp3": 0.13766089792233194,
+      "rr": 2.399999999999994,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "ALLO_SHORT_1789264585844",
       "ts": 1789264585844,
       "base": "ALLO",
@@ -32,10 +85,12 @@
       "tp2": 0.2221202462487205,
       "tp3": 0.2207903898938075,
       "rr": 2.400000000000012,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 0.22534989739636643,
+      "closedAt": 1789265700000
+    },
     {
       "id": "RAVE_SHORT_1789233331531",
       "ts": 1789233331531,
@@ -416,17 +471,17 @@
     }
   ],
   "stats": {
-    "total": 10,
+    "total": 11,
     "wins": 5,
-    "losses": 5,
+    "losses": 6,
     "expired": 0,
-    "sumR": 4.68,
+    "sumR": 3.6799999999999997,
     "bySetup": {
       "TREND": {
-        "n": 9,
+        "n": 10,
         "wins": 5,
-        "losses": 4,
-        "sumR": 5.68
+        "losses": 5,
+        "sumR": 4.68
       },
       "SQUEEZE": {
         "n": 1,
@@ -436,7 +491,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 50,
-    "avgR": 0.47
+    "winrate": 45.5,
+    "avgR": 0.33
   }
 }
