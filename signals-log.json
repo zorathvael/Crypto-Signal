@@ -1,6 +1,42 @@
 {
   "open": [
     {
+      "id": "SOL_LONG_1789416330445",
+      "ts": 1789416330445,
+      "base": "SOL",
+      "instId": "SOL-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "RECLAIM_MKT",
+      "probability": 99,
+      "entry": 103.35,
+      "sl": 102.84698990493614,
+      "tp1": 104.10451514259577,
+      "tp2": 104.55722422815325,
+      "tp3": 105.26143836124265,
+      "rr": 2.399999999999989,
+      "regime": "low"
+    },
+    {
+      "id": "HYPE_LONG_1789416330445",
+      "ts": 1789416330445,
+      "base": "HYPE",
+      "instId": "HYPE-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 81.261,
+      "sl": 80.73691560766136,
+      "tp1": 82.04712658850795,
+      "tp2": 82.51880254161273,
+      "tp3": 83.25252069088681,
+      "rr": 2.400000000000011,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "ZEC_LONG_1789405617936",
       "ts": 1789405617936,
       "base": "ZEC",
@@ -15,10 +51,12 @@
       "tp2": 1172.171331540492,
       "tp3": 1189.1282023699875,
       "rr": 2.6000000000000076,
-      "regime": "normal"
-    }
-  ],
-  "closed": [
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.6,
+      "exit": 1160.0592809479951,
+      "closedAt": 1789408800000
+    },
     {
       "id": "KORU_SHORT_1789385627677",
       "ts": 1789385627677,
@@ -882,17 +920,17 @@
     }
   ],
   "stats": {
-    "total": 33,
-    "wins": 17,
+    "total": 34,
+    "wins": 18,
     "losses": 16,
     "expired": 0,
-    "sumR": 15.449999999999996,
+    "sumR": 17.05,
     "bySetup": {
       "TREND": {
-        "n": 31,
-        "wins": 17,
+        "n": 32,
+        "wins": 18,
         "losses": 14,
-        "sumR": 17.45
+        "sumR": 19.050000000000004
       },
       "MEAN_REV": {
         "n": 1,
@@ -908,7 +946,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 51.5,
-    "avgR": 0.47
+    "winrate": 52.9,
+    "avgR": 0.5
   }
 }
