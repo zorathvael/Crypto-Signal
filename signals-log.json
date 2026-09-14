@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ETH_LONG_1789381182828",
+      "ts": 1789381182828,
+      "base": "ETH",
+      "instId": "ETH-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 2516.72,
+      "sl": 2507.654452609977,
+      "tp1": 2530.318321085034,
+      "tp2": 2538.477313736055,
+      "tp3": 2551.1690800820866,
+      "rr": 2.40000000000002,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "SUI_SHORT_1789343718239",
