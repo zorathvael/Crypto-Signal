@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "KORU_SHORT_1789385627677",
       "ts": 1789385627677,
@@ -15,7 +16,11 @@
       "tp2": 19.72384376449355,
       "tp3": 19.499759637682388,
       "rr": 2.6000000000000045,
-      "regime": "normal"
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.6,
+      "exit": 19.883903855072955,
+      "closedAt": 1789386300000
     },
     {
       "id": "NEAR_LONG_1789385627677",
@@ -32,10 +37,12 @@
       "tp2": 2.4492260507940187,
       "tp3": 2.4756079137571962,
       "rr": 2.3999999999999955,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 2.3851558121691587,
+      "closedAt": 1789390800000
+    },
     {
       "id": "ETH_LONG_1789381182828",
       "ts": 1789381182828,
@@ -857,17 +864,17 @@
     }
   ],
   "stats": {
-    "total": 31,
-    "wins": 16,
-    "losses": 15,
+    "total": 33,
+    "wins": 17,
+    "losses": 16,
     "expired": 0,
-    "sumR": 14.85,
+    "sumR": 15.449999999999996,
     "bySetup": {
       "TREND": {
-        "n": 29,
-        "wins": 16,
-        "losses": 13,
-        "sumR": 16.85
+        "n": 31,
+        "wins": 17,
+        "losses": 14,
+        "sumR": 17.45
       },
       "MEAN_REV": {
         "n": 1,
@@ -883,7 +890,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 51.6,
-    "avgR": 0.48
+    "winrate": 51.5,
+    "avgR": 0.47
   }
 }
