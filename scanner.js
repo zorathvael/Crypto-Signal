@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.11.1
+ * Strict Core Scanner v2.12.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -27,8 +27,8 @@ const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
-const MIN_PROB_VALID = 80;
-const MIN_PROB_SNIPER = 85;
+const MIN_PROB_VALID = 76;
+const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
 const CANDIDATE_LIMIT = 28;
 const SQUARE_POST_COUNT = 3;
@@ -55,7 +55,7 @@ async function getJson(url, retries = 3) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "StrictCore/2.11.1" },
+        headers: { Accept: "application/json", "User-Agent": "StrictCore/2.12.0" },
       });
       if (res.status === 429) {
         const wait = 800 * (attempt + 1) + Math.floor(Math.random() * 400);
@@ -625,13 +625,11 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     if (book && book.side !== "BID" && (book.imbalance == null || book.imbalance < 12)) pillars.push("book");
     if ((m5.rsi ?? 50) <= 58 && (m5.rsi ?? 50) >= 32) pillars.push("rsi_ok");
   }
-  const needPillars = path === "TREND" ? 5 : 4;
+  // Selective rollback: confluence sebagai bukti, bukan tembok tinggi
+  const needPillars = path === "TREND" ? 3 : 3;
   if (pillars.length < needPillars) return null;
-  if (path === "TREND") {
-    if (!pillars.includes("tf_align")) return null;
-    if (!pillars.includes("st_align") && !pillars.includes("st_15")) return null;
-    if (!pillars.includes("structure") && !pillars.includes("structure_15") && !pillars.includes("ema")) return null;
-  }
+  // TREND wajib multi-TF sejalan; pilar lain menguatkan (bukan semua wajib)
+  if (path === "TREND" && !pillars.includes("tf_align")) return null;
   const confluenceN = pillars.length;
 
   // BTC soft bias — ringan saja (konteks pasar, bukan hard force)
@@ -750,17 +748,16 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   else if (confluenceN >= 6) conf += 3;
   conf = clamp(Math.round(conf), 0, 99);
 
-  // === Quality gates (trader discipline) ===
-  // TREND harus sejalan Supertrend 15M — kurangi false breakout
+  // === Quality gates (proteksi, bukan bunuh potensi) ===
   const st15 = m15.stDir || 0;
+  // Supertrend 15M lawan arah → penalty, bukan hard block
   if (path === "TREND") {
-    if (action === "LONG" && st15 !== 1) return null;
-    if (action === "SHORT" && st15 !== -1) return null;
+    if (action === "LONG" && st15 === -1) conf -= 8;
+    if (action === "SHORT" && st15 === 1) conf -= 8;
   }
-  // High vol: hanya setup sangat kuat
   let minConf = MIN_PROB_VALID;
-  if (regime && regime.regime === "high") minConf = Math.max(minConf, 85);
-  if (regime && regime.regime === "low" && path === "TREND" && !volConfirm) minConf = Math.max(minConf, 82);
+  if (regime && regime.regime === "high") minConf = Math.max(minConf, 80);
+  conf = clamp(Math.round(conf), 0, 99);
   if (conf < minConf) return null;
 
   return {
@@ -1023,7 +1020,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.11.1 · anti-429 · NFA</i>`
+    `<i>Strict Core v2.12 · potensi + proteksi · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -1094,7 +1091,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Strict Core v2.11.1 · anti-429 · NFA");
+  lines.push("Strict Core v2.12 · potensi + proteksi · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -1330,7 +1327,7 @@ async function sendDiscord(signals) {
         { name: "Book", value: s.book ? `${s.book.side} (${s.book.imbalance}) · ${s.book.quality || "—"}` : "—", inline: true },
         { name: "1H / 15M / 5M", value: `${s.trends?.h1 || s.h1?.bias || "—"} / ${s.trends?.m15 || s.m15?.bias || "—"} / ${s.m5?.volume?.side || "—"}`, inline: true },
       ],
-      footer: { text: "Strict Core v2.11.1 · anti-429 · NFA" },
+      footer: { text: "Strict Core v2.12 · potensi + proteksi · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -1734,7 +1731,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.11.1 | Deep Confluence + anti-429 ===");
+  console.log("=== Strict Core v2.12.0 | Selective rollback — potensi + proteksi ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1778,11 +1775,6 @@ async function main() {
     .slice(0, CANDIDATE_LIMIT);
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
   const signals = [];
-  // Soft-chop: BTC neutral/weak → signal baru hanya jika SNIPER-quality (bukan hard block)
-  const btcNeutral = !btcBias || btcBias.bias === "neutral" || Math.abs(btcBias.score || 0) < 20;
-  if (btcNeutral) {
-    console.log("BTC bias neutral/weak — soft-chop: only ZONE + SNIPER + confirm");
-  }
   for (const c of candidates) {
     try {
       // Anti-429: 2 gelombang request, bukan 6 paralel sekaligus
@@ -1811,22 +1803,16 @@ async function main() {
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
       if (levels.rr < MIN_RR) continue;
-      // ZONE-only — matikan market entry hybrid
-      if (!levels.mode || !String(levels.mode).includes("_ZONE")) continue;
-      // Soft-chop: saat BTC netral, wajib SNIPER + (volume confirm atau ST 15M sejajar)
-      if (btcNeutral) {
-        if (scored.probability < MIN_PROB_SNIPER) continue;
-        const stOk =
-          (scored.action === "LONG" && (scored.m15 && scored.m15.stDir === 1)) ||
-          (scored.action === "SHORT" && (scored.m15 && scored.m15.stDir === -1));
-        if (!scored.volConfirm && !stOk) continue;
-      }
-      // High regime: jangan ambil jika R:R tipis
-      if (scored.regime && scored.regime.regime === "high" && levels.rr < 2.0) continue;
+      // Prefer ZONE; MKT hanya jika score cukup kuat (hybrid wajar)
+      const modeStr = String(levels.mode || "");
+      if (!modeStr.includes("_ZONE") && !modeStr.includes("_MKT")) continue;
+      if (modeStr.includes("_MKT") && scored.probability < MIN_PROB_SNIPER) continue;
+      // High regime: R:R minimal sedikit lebih tinggi
+      if (scored.regime && scored.regime.regime === "high" && levels.rr < 1.6) continue;
 
-      // Block A — EV after fees/slippage; skip if not positive enough
+      // EV kasar: tolak hanya yang jelas tidak layak setelah biaya
       const evInfo = estimateEV(levels.rr, levels.entry);
-      if (!evInfo || evInfo.netRr < 1.15) continue;
+      if (!evInfo || evInfo.netRr < 1.0) continue;
 
       let riskPct = suggestRisk(regime, scored.probability);
 
