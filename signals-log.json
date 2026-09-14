@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ZEC_LONG_1789405617936",
+      "ts": 1789405617936,
+      "base": "ZEC",
+      "instId": "ZEC-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 1140.68,
+      "sl": 1128.5679494075032,
+      "tp1": 1160.0592809479951,
+      "tp2": 1172.171331540492,
+      "tp3": 1189.1282023699875,
+      "rr": 2.6000000000000076,
+      "regime": "normal"
+    }
+  ],
   "closed": [
     {
       "id": "KORU_SHORT_1789385627677",
