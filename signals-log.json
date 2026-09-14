@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "SUI_SHORT_1789343718239",
       "ts": 1789343718239,
@@ -15,10 +16,12 @@
       "tp2": 0.6979269656565961,
       "tp3": 0.6949494633366289,
       "rr": 2.3999999999999897,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 0.7051580427193735,
+      "closedAt": 1789344000000
+    },
     {
       "id": "ETHFI_SHORT_1789326526091",
       "ts": 1789326526091,
@@ -798,17 +801,17 @@
     }
   ],
   "stats": {
-    "total": 29,
+    "total": 30,
     "wins": 16,
-    "losses": 13,
+    "losses": 14,
     "expired": 0,
-    "sumR": 16.85,
+    "sumR": 15.850000000000001,
     "bySetup": {
       "TREND": {
-        "n": 27,
+        "n": 28,
         "wins": 16,
-        "losses": 11,
-        "sumR": 18.85
+        "losses": 12,
+        "sumR": 17.85
       },
       "MEAN_REV": {
         "n": 1,
@@ -824,7 +827,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 55.2,
-    "avgR": 0.58
+    "winrate": 53.3,
+    "avgR": 0.53
   }
 }
