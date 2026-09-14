@@ -1,6 +1,42 @@
 {
   "open": [
     {
+      "id": "KORU_SHORT_1789385627677",
+      "ts": 1789385627677,
+      "base": "KORU",
+      "instId": "KORU-USDT-SWAP",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 20.14,
+      "sl": 20.300060090579404,
+      "tp1": 19.883903855072955,
+      "tp2": 19.72384376449355,
+      "tp3": 19.499759637682388,
+      "rr": 2.6000000000000045,
+      "regime": "normal"
+    },
+    {
+      "id": "NEAR_LONG_1789385627677",
+      "ts": 1789385627677,
+      "base": "NEAR",
+      "instId": "NEAR-USDT-SWAP",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 2.404,
+      "sl": 2.3851558121691587,
+      "tp1": 2.4322662817462617,
+      "tp2": 2.4492260507940187,
+      "tp3": 2.4756079137571962,
+      "rr": 2.3999999999999955,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "ETH_LONG_1789381182828",
       "ts": 1789381182828,
       "base": "ETH",
@@ -15,10 +51,12 @@
       "tp2": 2538.477313736055,
       "tp3": 2551.1690800820866,
       "rr": 2.40000000000002,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1,
+      "exit": 2507.654452609977,
+      "closedAt": 1789383600000
+    },
     {
       "id": "SUI_SHORT_1789343718239",
       "ts": 1789343718239,
@@ -819,17 +857,17 @@
     }
   ],
   "stats": {
-    "total": 30,
+    "total": 31,
     "wins": 16,
-    "losses": 14,
+    "losses": 15,
     "expired": 0,
-    "sumR": 15.850000000000001,
+    "sumR": 14.85,
     "bySetup": {
       "TREND": {
-        "n": 28,
+        "n": 29,
         "wins": 16,
-        "losses": 12,
-        "sumR": 17.85
+        "losses": 13,
+        "sumR": 16.85
       },
       "MEAN_REV": {
         "n": 1,
@@ -845,7 +883,7 @@
       }
     },
     "afterTs": 1789207200000,
-    "winrate": 53.3,
-    "avgR": 0.53
+    "winrate": 51.6,
+    "avgR": 0.48
   }
 }
