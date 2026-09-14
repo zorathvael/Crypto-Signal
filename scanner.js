@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.11.0
+ * Strict Core Scanner v2.11.1
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -30,7 +30,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 80;
 const MIN_PROB_SNIPER = 85;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 40;
+const CANDIDATE_LIMIT = 28;
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate OKX futures)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
@@ -50,12 +50,31 @@ function formatPrice(v) {
   return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
-async function getJson(url) {
-  const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "StrictCore/2.11.0" },
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  return res.json();
+async function getJson(url, retries = 3) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": "StrictCore/2.11.1" },
+      });
+      if (res.status === 429) {
+        const wait = 800 * (attempt + 1) + Math.floor(Math.random() * 400);
+        await new Promise((r) => setTimeout(r, wait));
+        lastErr = new Error("API 429");
+        continue;
+      }
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      return res.json();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < retries && /429|fetch|network/i.test(String(e.message || e))) {
+        await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr || new Error("API 429");
 }
 
 function sma(values, period) {
@@ -1004,7 +1023,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Strict Core v2.11 · Deep Confluence · NFA</i>`
+    `<i>Strict Core v2.11.1 · anti-429 · NFA</i>`
   );
 }
 function formatSquareCoinBlock(s) {
@@ -1075,7 +1094,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Strict Core v2.11 · Deep Confluence · NFA");
+  lines.push("Strict Core v2.11.1 · anti-429 · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -1292,7 +1311,7 @@ async function sendDiscord(signals) {
   }
   for (let i = 0; i < signals.length; i++) {
     const s = signals[i];
-    if (i > 0) await new Promise((r) => setTimeout(r, 400));
+    if (i > 0) await new Promise((r) => setTimeout(r, 600));
     const isSniper = s.probability >= MIN_PROB_SNIPER;
     const color = s.action === "LONG" ? 0x35ef9a : 0xff5c7a;
     const persistTag = (s.persistent ? " · 🔁" : "") + (s.volConfirm ? " · 📈" : "");
@@ -1311,7 +1330,7 @@ async function sendDiscord(signals) {
         { name: "Book", value: s.book ? `${s.book.side} (${s.book.imbalance}) · ${s.book.quality || "—"}` : "—", inline: true },
         { name: "1H / 15M / 5M", value: `${s.trends?.h1 || s.h1?.bias || "—"} / ${s.trends?.m15 || s.m15?.bias || "—"} / ${s.m5?.volume?.side || "—"}`, inline: true },
       ],
-      footer: { text: "Strict Core v2.11 · Deep Confluence · NFA" },
+      footer: { text: "Strict Core v2.11.1 · anti-429 · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -1715,7 +1734,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.11.0 | Deep Confluence — pillars must agree ===");
+  console.log("=== Strict Core v2.11.1 | Deep Confluence + anti-429 ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1766,10 +1785,14 @@ async function main() {
   }
   for (const c of candidates) {
     try {
-      const [h1c, m15c, m5c, h4c, funding, rawBook] = await Promise.all([
+      // Anti-429: 2 gelombang request, bukan 6 paralel sekaligus
+      const [h1c, m15c, m5c] = await Promise.all([
         fetchOkxCandles(c.instId, "1H", 100),
         fetchOkxCandles(c.instId, "15m", 100),
         fetchOkxCandles(c.instId, "5m", 100),
+      ]);
+      await new Promise((r) => setTimeout(r, 120));
+      const [h4c, funding, rawBook] = await Promise.all([
         fetchOkxCandles(c.instId, "4H", 100),
         fetchFunding(c.instId),
         fetchOrderBook(c.instId, 20),
@@ -1835,7 +1858,7 @@ async function main() {
         confluence: scored.confluence,
         pillars: scored.pillars,
       });
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 600));
     } catch (e) {
       console.warn(`Skip ${c.base}:`, e.message);
     }
