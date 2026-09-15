@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.12.0
+ * Strict Core Scanner v2.13.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -15,14 +15,15 @@
  * + Outcome Tracker (signals-log.json — TP/SL live)
  * + Block A: Score (bukan claim Prob%), EV filter, OB fail=NO-TRADE, outcome window
  * + Optimized Discord / Telegram / Binance Square messages
- * Note: levels on OKX SWAP — treat as zone if trading another venue
+ * Note: market data from Bitget USDT-M futures (BTCUSDT)
  */
 
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
-const OKX = "https://www.okx.com";
+const BITGET = "https://api.bitget.com";
+const BG_PRODUCT = "USDT-FUTURES";
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -32,7 +33,7 @@ const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
 const CANDIDATE_LIMIT = 28;
 const SQUARE_POST_COUNT = 3;
-// Block A — execution cost (taker-ish round trip estimate OKX futures)
+// Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
 const SLIPPAGE_RT = 0.0004;     // 0.04% round-turn conservative
 const EV_MIN_R = 0.05;          // minimum expected R after costs
@@ -55,7 +56,7 @@ async function getJson(url, retries = 3) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "StrictCore/2.12.0" },
+        headers: { Accept: "application/json", "User-Agent": "StrictCore/2.13.0" },
       });
       if (res.status === 429) {
         const wait = 800 * (attempt + 1) + Math.floor(Math.random() * 400);
@@ -64,7 +65,12 @@ async function getJson(url, retries = 3) {
         continue;
       }
       if (!res.ok) throw new Error(`API ${res.status}`);
-      return res.json();
+      const body = await res.json();
+      // Bitget envelope: { code: "00000", data: ... }
+      if (body && body.code != null && String(body.code) !== "00000") {
+        throw new Error(`API ${body.code} ${body.msg || ""}`.trim());
+      }
+      return body;
     } catch (e) {
       lastErr = e;
       if (attempt < retries && /429|fetch|network/i.test(String(e.message || e))) {
@@ -1339,34 +1345,72 @@ async function sendDiscord(signals) {
     else console.log(`Discord sent: ${s.base} ${s.action} ${s.probability}%`);
   }
 }
+/** Bitget bar map: internal bar → API granularity */
+function bitgetGranularity(bar) {
+  const m = {
+    "1m": "1m",
+    "5m": "5m",
+    "15m": "15m",
+    "1H": "1H",
+    "4H": "4H",
+    "1D": "1D",
+  };
+  return m[bar] || bar;
+}
+
+/** Normalize symbol to Bitget USDT-M e.g. BTCUSDT */
+function toBitgetSymbol(sym) {
+  if (!sym) return sym;
+  let s = String(sym).toUpperCase().replace(/-USDT-SWAP$/i, "USDT").replace(/-SWAP$/i, "");
+  if (s.endsWith("-USDT")) s = s.replace("-USDT", "USDT");
+  if (!s.endsWith("USDT") && !/[0-9]/.test(s.slice(-1))) s = s + "USDT";
+  return s;
+}
+
 async function fetchOkxCandles(instId, bar, limit = 100) {
-  const url = `${OKX}/api/v5/market/candles?instId=${encodeURIComponent(instId)}&bar=${bar}&limit=${limit}`;
+  // Name kept for minimal churn — data from Bitget USDT-M
+  const symbol = toBitgetSymbol(instId);
+  const gran = bitgetGranularity(bar);
+  const url =
+    `${BITGET}/api/v2/mix/market/candles?symbol=${encodeURIComponent(symbol)}` +
+    `&productType=${BG_PRODUCT}&granularity=${encodeURIComponent(gran)}&limit=${limit}`;
   const data = await getJson(url);
-  const list = data?.data || [];
-  const candles = list
-    .map((r) => ({
-      ts: +r[0],
-      open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5], confirm: String(r[8]),
-    }))
-    .reverse();
-  if (candles.length && candles[candles.length - 1].confirm === "0") candles.pop();
+  let list = data?.data || [];
+  // Ensure chronological oldest → newest
+  if (list.length >= 2 && +list[0][0] > +list[list.length - 1][0]) list = list.slice().reverse();
+  const candles = list.map((r) => ({
+    ts: +r[0],
+    open: +r[1],
+    high: +r[2],
+    low: +r[3],
+    close: +r[4],
+    volume: +r[5],
+    confirm: "1",
+  }));
   return candles;
 }
+
 async function fetchFunding(instId) {
   try {
-    const data = await getJson(`${OKX}/api/v5/public/funding-rate?instId=${encodeURIComponent(instId)}`);
-    return +(data?.data?.[0]?.fundingRate || 0);
+    const symbol = toBitgetSymbol(instId);
+    const data = await getJson(
+      `${BITGET}/api/v2/mix/market/current-fund-rate?symbol=${encodeURIComponent(symbol)}&productType=${BG_PRODUCT}`
+    );
+    const row = Array.isArray(data?.data) ? data.data[0] : data?.data;
+    return +(row?.fundingRate ?? row?.fundRate ?? 0);
   } catch {
     return 0;
   }
 }
 
-async function fetchOrderBook(instId, sz = 20) {
+async function fetchOrderBook(instId, sz = 15) {
   try {
+    const symbol = toBitgetSymbol(instId);
+    const limit = sz >= 50 ? 50 : sz >= 15 ? 15 : 5;
     const data = await getJson(
-      `${OKX}/api/v5/market/books?instId=${encodeURIComponent(instId)}&sz=${sz}`
+      `${BITGET}/api/v2/mix/market/orderbook?symbol=${encodeURIComponent(symbol)}&productType=${BG_PRODUCT}&limit=${limit}`
     );
-    const row = (data && data.data && data.data[0]) || null;
+    const row = data?.data;
     if (!row) return null;
     const bids = (row.bids || []).map((x) => ({ price: +x[0], size: +x[1] }));
     const asks = (row.asks || []).map((x) => ({ price: +x[0], size: +x[1] }));
@@ -1591,7 +1635,7 @@ function resolveOutcome(sig, candles) {
 
   for (const c of candles) {
     const ct = c.ts || c.time || 0;
-    // OKX candle ts often in ms
+    // candle ts in ms
     if (ct && t0 && ct < t0 - 60000) continue;
 
     const hi = +c.high;
@@ -1650,7 +1694,7 @@ async function evaluateOpenOutcomes(log) {
       newlyClosed.push(closed);
       continue;
     }
-    const instId = sig.instId || `${sig.base}-USDT-SWAP`;
+    const instId = sig.instId || `${sig.base}USDT`;
     try {
       const candles = await fetchOkxCandles(instId, OUTCOME_BAR, 100);
       // ensure ts on candles if missing
@@ -1690,7 +1734,7 @@ function registerNewSignals(log, signals) {
       id,
       ts: now,
       base: s.base,
-      instId: s.instId || `${s.base}-USDT-SWAP`,
+      instId: s.instId || `${s.base}USDT`,
       action: s.action,
       setup: s.setup,
       mode: s.mode,
@@ -1731,7 +1775,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.12.0 | Selective rollback — potensi + proteksi ===");
+  console.log("=== Strict Core v2.13.0 | Bitget USDT-M data + selective filters ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1740,7 +1784,7 @@ async function main() {
   );
   let btcBias = { bias: "neutral", score: 0 };
   try {
-    const btcCandles = await fetchOkxCandles("BTC-USDT-SWAP", "1H", 100);
+    const btcCandles = await fetchOkxCandles("BTCUSDT", "1H", 100);
     const btcTF = analyzeTF(btcCandles, "BTC1H");
     if (btcTF) {
       btcBias = { bias: btcTF.bias, score: btcTF.biasScore, adx: btcTF.adx };
@@ -1749,24 +1793,32 @@ async function main() {
   } catch (e) {
     console.warn("BTC bias skip:", e.message);
   }
-  const tickersRes = await getJson(`${OKX}/api/v5/market/tickers?instType=SWAP`);
-  const tickers = (tickersRes?.data || []).filter((t) => t.instId.endsWith("-USDT-SWAP"));
+  const tickersRes = await getJson(
+    `${BITGET}/api/v2/mix/market/tickers?productType=${BG_PRODUCT}`
+  );
+  const tickers = tickersRes?.data || [];
   const candidates = tickers
     .map((t) => {
-      const last = +t.last || 0;
-      const open = +t.open24h || last;
-      const baseVol = +t.volCcy24h || 0;
-      const turnover = baseVol * last;
-      const chg = open ? ((last - open) / open) * 100 : 0;
-      if (turnover < 2_000_000 || Math.abs(chg) > 28) return null;
-      const base = t.instId.replace("-USDT-SWAP", "");
-      if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
+      const symbol = String(t.symbol || "");
+      if (!symbol.endsWith("USDT")) return null;
+      // skip dated delivery contracts e.g. BTCUSDT_231229
+      if (symbol.includes("_")) return null;
+      const last = +t.lastPr || +t.last || 0;
+      const open = +t.open24h || +t.openUtc || last;
+      const turnover = +t.usdtVolume || +t.quoteVolume || 0;
+      const chgRaw = t.change24h != null ? +t.change24h : open ? (last - open) / open : 0;
+      // Bitget change24h often fraction (0.01 = 1%)
+      const chg = Math.abs(chgRaw) < 1 && chgRaw !== 0 ? chgRaw * 100 : chgRaw * (Math.abs(chgRaw) <= 1 ? 100 : 1);
+      const chgPct = open && last ? ((last - open) / open) * 100 : chg;
+      if (turnover < 2_000_000 || Math.abs(chgPct) > 28) return null;
+      const base = symbol.replace(/USDT$/i, "");
+      if (!base || /^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
       return {
-        instId: t.instId,
+        instId: symbol,
         base,
         volume: turnover,
-        change: chg,
-        score: Math.log10(Math.max(turnover, 1)) * 0.65 + Math.min(Math.abs(chg) / 10, 1) * 0.35,
+        change: chgPct,
+        score: Math.log10(Math.max(turnover, 1)) * 0.65 + Math.min(Math.abs(chgPct) / 10, 1) * 0.35,
         mark: last,
       };
     })
