@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "KORU_SHORT_1789495452498",
-      "ts": 1789495452498,
-      "base": "KORU",
-      "instId": "KORUUSDT",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "RECLAIM_ZONE",
-      "probability": 99,
-      "entry": 18.648513423204626,
-      "sl": 18.77306055053639,
-      "tp1": 18.491026594215427,
-      "tp2": 18.392597326097178,
-      "tp3": 18.25479635073163,
-      "rr": 2.054773181767182,
-      "regime": "normal"
-    },
-    {
       "id": "SPCX_SHORT_1789497453701",
       "ts": 1789497453701,
       "base": "SPCX",
@@ -53,6 +36,28 @@
     }
   ],
   "closed": [
+    {
+      "id": "KORU_SHORT_1789495452498",
+      "ts": 1789495452498,
+      "base": "KORU",
+      "instId": "KORUUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "RECLAIM_ZONE",
+      "probability": 99,
+      "entry": 18.648513423204626,
+      "sl": 18.77306055053639,
+      "tp1": 18.491026594215427,
+      "tp2": 18.392597326097178,
+      "tp3": 18.25479635073163,
+      "rr": 2.054773181767182,
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.05,
+      "exit": 18.491026594215427,
+      "closedAt": 1789497900000,
+      "costR": 0.21
+    },
     {
       "id": "CRCL_SHORT_1789488128580",
       "ts": 1789488128580,
@@ -1155,19 +1160,19 @@
     }
   ],
   "stats": {
-    "total": 44,
-    "wins": 22,
+    "total": 45,
+    "wins": 23,
     "losses": 22,
     "expired": 0,
-    "sumR": 14.540000000000001,
+    "sumR": 15.589999999999996,
     "bySetup": {
       "TREND": {
-        "n": 42,
-        "wins": 22,
+        "n": 43,
+        "wins": 23,
         "losses": 20,
-        "sumR": 16.540000000000003,
-        "winrate": 52.4,
-        "avgR": 0.39
+        "sumR": 17.59,
+        "winrate": 53.5,
+        "avgR": 0.41
       },
       "MEAN_REV": {
         "n": 1,
@@ -1188,12 +1193,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 27,
-        "wins": 11,
+        "n": 28,
+        "wins": 12,
         "losses": 16,
-        "sumR": -1.279999999999998,
-        "winrate": 40.7,
-        "avgR": -0.05
+        "sumR": -0.22999999999999998,
+        "winrate": 42.9,
+        "avgR": -0.01
       },
       "LONG": {
         "n": 17,
@@ -1206,7 +1211,7 @@
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 50,
-    "avgR": 0.33
+    "winrate": 51.1,
+    "avgR": 0.35
   }
 }
