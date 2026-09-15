@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "SPCX_SHORT_1789497453701",
       "ts": 1789497453701,
@@ -15,7 +16,12 @@
       "tp2": 142.91072656327464,
       "tp3": 141.98365039185148,
       "rr": 1.9359141062914704,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 0.96,
+      "exit": 143.50670410204663,
+      "closedAt": 1789499700000,
+      "costR": 0.246
     },
     {
       "id": "SKHY_SHORT_1789497453701",
@@ -32,10 +38,13 @@
       "tp2": 171.73085527949294,
       "tp3": 170.6113541925305,
       "rr": 1.9486097028278428,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.25,
+      "exit": 174.63487897177254,
+      "closedAt": 1789500600000,
+      "costR": 0.247
+    },
     {
       "id": "KORU_SHORT_1789495452498",
       "ts": 1789495452498,
@@ -1160,19 +1169,19 @@
     }
   ],
   "stats": {
-    "total": 45,
-    "wins": 23,
-    "losses": 22,
+    "total": 47,
+    "wins": 24,
+    "losses": 23,
     "expired": 0,
-    "sumR": 15.589999999999996,
+    "sumR": 15.299999999999997,
     "bySetup": {
       "TREND": {
-        "n": 43,
-        "wins": 23,
-        "losses": 20,
-        "sumR": 17.59,
-        "winrate": 53.5,
-        "avgR": 0.41
+        "n": 45,
+        "wins": 24,
+        "losses": 21,
+        "sumR": 17.3,
+        "winrate": 53.3,
+        "avgR": 0.38
       },
       "MEAN_REV": {
         "n": 1,
@@ -1193,12 +1202,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 28,
-        "wins": 12,
-        "losses": 16,
-        "sumR": -0.22999999999999998,
-        "winrate": 42.9,
-        "avgR": -0.01
+        "n": 30,
+        "wins": 13,
+        "losses": 17,
+        "sumR": -0.52,
+        "winrate": 43.3,
+        "avgR": -0.02
       },
       "LONG": {
         "n": 17,
@@ -1212,6 +1221,6 @@
     "afterTs": 1789207200000,
     "feeAware": true,
     "winrate": 51.1,
-    "avgR": 0.35
+    "avgR": 0.33
   }
 }
