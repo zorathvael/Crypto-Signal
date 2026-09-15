@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "CRCL_SHORT_1789488128580",
+      "ts": 1789488128580,
+      "base": "CRCL",
+      "instId": "CRCLUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 89.72,
+      "sl": 90.96654534624896,
+      "tp1": 87.93527862773112,
+      "tp2": 86.81982777006307,
+      "tp3": 85.2581965693278,
+      "rr": 2.3265677728162597,
+      "regime": "normal"
+    }
+  ],
   "closed": [
     {
       "id": "SPCX_SHORT_1789444721083",
