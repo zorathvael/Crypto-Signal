@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "SPCX_SHORT_1789444721083",
       "ts": 1789444721083,
@@ -15,10 +16,13 @@
       "tp2": 148.44207644197118,
       "tp3": 148.22745436645437,
       "rr": 2.400000000000037,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "WIN_TP1",
+      "rMultiple": 0.14,
+      "exit": 148.580047776232,
+      "closedAt": 1789445700000,
+      "costR": 1.359
+    },
     {
       "id": "SOL_LONG_1789416330445",
       "ts": 1789416330445,
@@ -945,19 +949,19 @@
     }
   ],
   "stats": {
-    "total": 36,
-    "wins": 20,
+    "total": 37,
+    "wins": 21,
     "losses": 16,
     "expired": 0,
-    "sumR": 20.05,
+    "sumR": 20.19,
     "bySetup": {
       "TREND": {
-        "n": 34,
-        "wins": 20,
+        "n": 35,
+        "wins": 21,
         "losses": 14,
-        "sumR": 22.05,
-        "winrate": 58.8,
-        "avgR": 0.65
+        "sumR": 22.19,
+        "winrate": 60,
+        "avgR": 0.63
       },
       "MEAN_REV": {
         "n": 1,
@@ -977,6 +981,14 @@
       }
     },
     "byAction": {
+      "SHORT": {
+        "n": 20,
+        "wins": 10,
+        "losses": 10,
+        "sumR": 4.370000000000001,
+        "winrate": 50,
+        "avgR": 0.22
+      },
       "LONG": {
         "n": 17,
         "wins": 11,
@@ -984,19 +996,11 @@
         "sumR": 15.82,
         "winrate": 64.7,
         "avgR": 0.93
-      },
-      "SHORT": {
-        "n": 19,
-        "wins": 9,
-        "losses": 10,
-        "sumR": 4.23,
-        "winrate": 47.4,
-        "avgR": 0.22
       }
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 55.6,
-    "avgR": 0.56
+    "winrate": 56.8,
+    "avgR": 0.55
   }
 }
