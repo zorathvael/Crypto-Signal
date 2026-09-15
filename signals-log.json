@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "SPCX_SHORT_1789444721083",
+      "ts": 1789444721083,
+      "base": "SPCX",
+      "instId": "SPCXUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 148.81,
+      "sl": 148.963301482512,
+      "tp1": 148.580047776232,
+      "tp2": 148.44207644197118,
+      "tp3": 148.22745436645437,
+      "rr": 2.400000000000037,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "SOL_LONG_1789416330445",
