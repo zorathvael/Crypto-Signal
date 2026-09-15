@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.14.0
+ * Strict Core Scanner v2.15.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -638,11 +638,18 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   if (!strict && path === "TREND" && t1 !== "neutral" && t15 !== "neutral" && t1 !== t15) return null;
   const confluenceN = pillars.length;
 
-  // BTC soft bias — ringan saja (konteks pasar, bukan hard force)
+  // BTC soft bias — penalty jika lawan bias kuat (live protect), bukan hard block
   let btcAdj = 0;
-  if (btcBias && Math.abs(btcBias.score) >= 35) {
-    if (btcBias.bias === "bullish") btcAdj = action === "LONG" ? 2 : -2;
-    if (btcBias.bias === "bearish") btcAdj = action === "SHORT" ? 2 : -2;
+  if (btcBias && Math.abs(btcBias.score || 0) >= 30) {
+    const aligned =
+      (btcBias.bias === "bullish" && action === "LONG") ||
+      (btcBias.bias === "bearish" && action === "SHORT");
+    const against =
+      (btcBias.bias === "bullish" && action === "SHORT") ||
+      (btcBias.bias === "bearish" && action === "LONG");
+    const mag = Math.abs(btcBias.score);
+    if (aligned) btcAdj = mag >= 50 ? 4 : 2;
+    if (against) btcAdj = mag >= 50 ? -12 : mag >= 40 ? -8 : -5;
   }
 
   let conf = 50;
@@ -821,26 +828,26 @@ function buildLevels(candles, signal, mark, regime = null) {
   const swingLow = Math.min(...recent.map((c) => c.low));
   const swingHigh = Math.max(...recent.map((c) => c.high));
 
-  // Adaptive by regime
-  // Wider SL buffers — prioritas hindari noise stop-out (modal minim)
-  let slBuf = 0.5;
-  let slMinMult = 0.95, slMaxMult = 2.6, slDefault = 1.2;
-  let mktSlMin = 1.25, mktSlMax = 3.0, mktSlDef = 1.4;
+  // Adaptive by regime + live buffer (noise + fee space) — v2.15
+  let slBuf = 0.62;
+  let slMinMult = 1.05, slMaxMult = 2.8, slDefault = 1.35;
+  let mktSlMin = 1.35, mktSlMax = 3.2, mktSlDef = 1.55;
   let tp1R = 1.6, tp2R = 2.6, tp3R = 4.0;
   const reg = regime && regime.regime ? regime.regime : "normal";
   if (reg === "low") {
-    slBuf = 0.42; slMinMult = 0.85; slMaxMult = 2.3; slDefault = 1.05;
-    mktSlMin = 1.1; mktSlMax = 2.6; mktSlDef = 1.25;
+    slBuf = 0.55; slMinMult = 0.95; slMaxMult = 2.5; slDefault = 1.2;
+    mktSlMin = 1.2; mktSlMax = 2.8; mktSlDef = 1.35;
     tp1R = 1.5; tp2R = 2.4; tp3R = 3.8;
   } else if (reg === "high") {
-    slBuf = 0.65; slMinMult = 1.2; slMaxMult = 3.2; slDefault = 1.5;
-    mktSlMin = 1.5; mktSlMax = 3.5; mktSlDef = 1.7;
+    slBuf = 0.78; slMinMult = 1.35; slMaxMult = 3.4; slDefault = 1.65;
+    mktSlMin = 1.6; mktSlMax = 3.6; mktSlDef = 1.85;
     tp1R = 1.7; tp2R = 2.8; tp3R = 4.2;
   } else if (reg === "extreme") {
-    slBuf = 0.8; slMinMult = 1.4; slMaxMult = 3.6; slDefault = 1.7;
-    mktSlMin = 1.7; mktSlMax = 3.8; mktSlDef = 1.9;
+    slBuf = 0.95; slMinMult = 1.5; slMaxMult = 3.8; slDefault = 1.85;
+    mktSlMin = 1.8; mktSlMax = 4.0; mktSlDef = 2.0;
     tp1R = 1.8; tp2R = 2.9; tp3R = 4.0;
   }
+  const liveBuf = mark * 0.0008 + atrV * 0.12;
 
   // Hybrid: prefer ZONE; MKT only if still reasonably close
   const NEAR_ATR = 1.0;
@@ -985,6 +992,12 @@ function buildLevels(candles, signal, mark, regime = null) {
     if (tp1 >= entry) tp1 = entry - risk * tp1R;
     if (tp2 >= tp1) tp2 = tp1 - risk * 0.6;
     if (tp3 >= tp2) tp3 = tp2 - risk * 1.2;
+  }
+
+  // v2.15: dorong SL menjauh sedikit dari entry (live noise/fee)
+  if (Number.isFinite(liveBuf) && liveBuf > 0) {
+    if (signal.action === "LONG") sl = Math.min(sl, entry) - liveBuf;
+    else sl = Math.max(sl, entry) + liveBuf;
   }
 
   const risk = Math.abs(entry - sl);
@@ -1623,27 +1636,41 @@ function saveOutcomeLog(log) {
 }
 
 function recomputeStats(closed, afterTs = 0) {
-  const stats = { total: 0, wins: 0, losses: 0, expired: 0, sumR: 0, bySetup: {}, afterTs: afterTs || 0 };
+  const stats = {
+    total: 0, wins: 0, losses: 0, expired: 0, sumR: 0,
+    bySetup: {}, byAction: {}, afterTs: afterTs || 0, feeAware: true,
+  };
+  const bump = (bag, key) => {
+    if (!bag[key]) bag[key] = { n: 0, wins: 0, losses: 0, sumR: 0 };
+    return bag[key];
+  };
   for (const c of closed) {
     if (afterTs && (c.ts || 0) < afterTs) continue;
     stats.total++;
     const setup = c.setup || "NA";
-    if (!stats.bySetup[setup]) stats.bySetup[setup] = { n: 0, wins: 0, losses: 0, sumR: 0 };
-    stats.bySetup[setup].n++;
+    const act = c.action || "NA";
+    const sRow = bump(stats.bySetup, setup);
+    const aRow = bump(stats.byAction, act);
+    sRow.n++; aRow.n++;
+    const r = c.rMultiple != null ? c.rMultiple : (c.outcome === "LOSS_SL" ? -1 : 0);
     if (c.outcome === "LOSS_SL") {
-      stats.losses++;
-      stats.bySetup[setup].losses++;
-      stats.sumR += c.rMultiple != null ? c.rMultiple : -1;
-      stats.bySetup[setup].sumR += c.rMultiple != null ? c.rMultiple : -1;
+      stats.losses++; sRow.losses++; aRow.losses++;
+      stats.sumR += r; sRow.sumR += r; aRow.sumR += r;
     } else if (c.outcome && String(c.outcome).startsWith("WIN")) {
-      stats.wins++;
-      stats.bySetup[setup].wins++;
-      stats.sumR += c.rMultiple != null ? c.rMultiple : 0;
-      stats.bySetup[setup].sumR += c.rMultiple != null ? c.rMultiple : 0;
+      stats.wins++; sRow.wins++; aRow.wins++;
+      stats.sumR += r; sRow.sumR += r; aRow.sumR += r;
     } else if (c.outcome === "EXPIRED") {
       stats.expired++;
     }
   }
+  const finalize = (row) => {
+    const d = row.wins + row.losses;
+    row.winrate = d > 0 ? +((100 * row.wins) / d).toFixed(1) : null;
+    row.avgR = d > 0 ? +(row.sumR / d).toFixed(2) : null;
+  };
+  finalize(stats);
+  Object.values(stats.bySetup).forEach(finalize);
+  Object.values(stats.byAction).forEach(finalize);
   stats.winrate = stats.wins + stats.losses > 0
     ? +((100 * stats.wins) / (stats.wins + stats.losses)).toFixed(1)
     : null;
@@ -1662,6 +1689,9 @@ function resolveOutcome(sig, candles) {
   const tps = [+sig.tp1, +sig.tp2, +sig.tp3].filter((x) => Number.isFinite(x));
   const risk = Math.abs(entry - sl) || 1e-12;
   const t0 = sig.ts || 0;
+  // v2.15: fee+slip as R drag (round-turn)
+  const costR = entry > 0 ? ((FEE_RATE_RT + SLIPPAGE_RT) * entry) / risk : 0.15;
+  const netR = (gross) => +((gross) - costR).toFixed(2);
 
   for (const c of candles) {
     const ct = c.ts || c.time || 0;
@@ -1677,34 +1707,36 @@ function resolveOutcome(sig, candles) {
       const hitTpIdx = tps.findIndex((tp) => hi >= tp);
       if (hitSl && hitTpIdx >= 0) {
         // same candle ambiguity → count SL (conservative)
-        return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+        return { outcome: "LOSS_SL", rMultiple: netR(-1), exit: sl, closedAt: ct || Date.now(), costR: +costR.toFixed(3) };
       }
-      if (hitSl) return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+      if (hitSl) return { outcome: "LOSS_SL", rMultiple: netR(-1), exit: sl, closedAt: ct || Date.now(), costR: +costR.toFixed(3) };
       if (hitTpIdx >= 0) {
         const tp = tps[hitTpIdx];
         const r = (tp - entry) / risk;
         return {
           outcome: hitTpIdx === 0 ? "WIN_TP1" : hitTpIdx === 1 ? "WIN_TP2" : "WIN_TP3",
-          rMultiple: +r.toFixed(2),
+          rMultiple: netR(r),
           exit: tp,
           closedAt: ct || Date.now(),
+          costR: +costR.toFixed(3),
         };
       }
     } else {
       const hitSl = hi >= sl;
       const hitTpIdx = tps.findIndex((tp) => lo <= tp);
       if (hitSl && hitTpIdx >= 0) {
-        return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+        return { outcome: "LOSS_SL", rMultiple: netR(-1), exit: sl, closedAt: ct || Date.now(), costR: +costR.toFixed(3) };
       }
-      if (hitSl) return { outcome: "LOSS_SL", rMultiple: -1, exit: sl, closedAt: ct || Date.now() };
+      if (hitSl) return { outcome: "LOSS_SL", rMultiple: netR(-1), exit: sl, closedAt: ct || Date.now(), costR: +costR.toFixed(3) };
       if (hitTpIdx >= 0) {
         const tp = tps[hitTpIdx];
         const r = (entry - tp) / risk;
         return {
           outcome: hitTpIdx === 0 ? "WIN_TP1" : hitTpIdx === 1 ? "WIN_TP2" : "WIN_TP3",
-          rMultiple: +r.toFixed(2),
+          rMultiple: netR(r),
           exit: tp,
           closedAt: ct || Date.now(),
+          costR: +costR.toFixed(3),
         };
       }
     }
@@ -1798,6 +1830,15 @@ function printOutcomeSummary(log, newlyClosed) {
       (st.avgR != null ? ` avgR=${st.avgR}` : "") +
       ` | open=${(log.open || []).length}`
   );
+    if (st.bySetup && Object.keys(st.bySetup).length) {
+      const parts = Object.entries(st.bySetup).map(([k, v]) => `${k}: n=${v.n} wr=${v.winrate ?? "n/a"} avgR=${v.avgR ?? "n/a"}`);
+      console.log(`  bySetup: ${parts.join(" | ")}`);
+    }
+    if (st.byAction && Object.keys(st.byAction).length) {
+      const parts = Object.entries(st.byAction).map(([k, v]) => `${k}: n=${v.n} wr=${v.winrate ?? "n/a"} avgR=${v.avgR ?? "n/a"}`);
+      console.log(`  byAction: ${parts.join(" | ")}`);
+    }
+
 }
 
 // ========== END OUTCOME TRACKER ==========
@@ -1805,7 +1846,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.14.0 | VALID + WATCH potential layer ===");
+  console.log("=== Strict Core v2.15.0 | Fee-aware outcome · path stats · SL live buffer · BTC soft ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
