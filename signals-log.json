@@ -18,6 +18,25 @@
       "regime": "normal"
     },
     {
+      "id": "KORU_SHORT_1789495452498",
+      "ts": 1789495452498,
+      "base": "KORU",
+      "instId": "KORUUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "RECLAIM_ZONE",
+      "probability": 99,
+      "entry": 18.648513423204626,
+      "sl": 18.77306055053639,
+      "tp1": 18.491026594215427,
+      "tp2": 18.392597326097178,
+      "tp3": 18.25479635073163,
+      "rr": 2.054773181767182,
+      "regime": "normal"
+    }
+  ],
+  "closed": [
+    {
       "id": "ETH_SHORT_1789489908187",
       "ts": 1789489908187,
       "base": "ETH",
@@ -32,7 +51,12 @@
       "tp2": 2382.9047804638167,
       "tp3": 2360.9917357343766,
       "rr": 2.0341268375255246,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.18,
+      "exit": 2438.937491231707,
+      "closedAt": 1789493400000,
+      "costR": 0.183
     },
     {
       "id": "ZEC_SHORT_1789489908187",
@@ -49,7 +73,12 @@
       "tp2": 1075.959327206178,
       "tp3": 1052.1858880095044,
       "rr": 2.3721094537883616,
-      "regime": "normal"
+      "regime": "normal",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.08,
+      "exit": 1138.7224096100672,
+      "closedAt": 1789493400000,
+      "costR": 0.084
     },
     {
       "id": "SUI_SHORT_1789489908187",
@@ -66,7 +95,12 @@
       "tp2": 0.6904240073481714,
       "tp3": 0.6836713449679381,
       "rr": 2.02115305864715,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.17,
+      "exit": 0.7077274200992857,
+      "closedAt": 1789493400000,
+      "costR": 0.172
     },
     {
       "id": "ADA_SHORT_1789489908187",
@@ -83,7 +117,12 @@
       "tp2": 0.19782662958606453,
       "tp3": 0.19556716351126885,
       "rr": 2.0740047885530384,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.15,
+      "exit": 0.20356758026563562,
+      "closedAt": 1789493400000,
+      "costR": 0.151
     },
     {
       "id": "PEPE_SHORT_1789489908187",
@@ -100,7 +139,12 @@
       "tp2": 0.0000033137470406157884,
       "tp3": 0.0000032676800624858284,
       "rr": 2.2712256711633816,
-      "regime": "normal"
+      "regime": "normal",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.13,
+      "exit": 0.000003436968189678566,
+      "closedAt": 1789493400000,
+      "costR": 0.126
     },
     {
       "id": "BTC_SHORT_1789490748664",
@@ -117,10 +161,13 @@
       "tp2": 75586.96261473767,
       "tp3": 75146.99080666798,
       "rr": 1.922398923725478,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.27,
+      "exit": 76733.54176421648,
+      "closedAt": 1789493400000,
+      "costR": 0.272
+    },
     {
       "id": "SPCX_SHORT_1789444721083",
       "ts": 1789444721083,
@@ -1069,19 +1116,19 @@
     }
   ],
   "stats": {
-    "total": 37,
+    "total": 43,
     "wins": 21,
-    "losses": 16,
+    "losses": 22,
     "expired": 0,
-    "sumR": 20.19,
+    "sumR": 13.209999999999999,
     "bySetup": {
       "TREND": {
-        "n": 35,
+        "n": 41,
         "wins": 21,
-        "losses": 14,
-        "sumR": 22.19,
-        "winrate": 60,
-        "avgR": 0.63
+        "losses": 20,
+        "sumR": 15.21,
+        "winrate": 51.2,
+        "avgR": 0.37
       },
       "MEAN_REV": {
         "n": 1,
@@ -1102,12 +1149,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 20,
+        "n": 26,
         "wins": 10,
-        "losses": 10,
-        "sumR": 4.370000000000001,
-        "winrate": 50,
-        "avgR": 0.22
+        "losses": 16,
+        "sumR": -2.61,
+        "winrate": 38.5,
+        "avgR": -0.1
       },
       "LONG": {
         "n": 17,
@@ -1120,7 +1167,7 @@
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 56.8,
-    "avgR": 0.55
+    "winrate": 48.8,
+    "avgR": 0.31
   }
 }
