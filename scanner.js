@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.17.0
+ * Strict Core Scanner v2.18.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -468,6 +468,140 @@ function councilConsensus(h1, m15, m5, h4) {
   return { side, net, votes: votes.length, t1, t15, t4 };
 }
 
+
+/** KikikJourney/Crypto-Scanner style: Location, Exhaustion, Flow, Structure
+ * Early / PRE-EXPANSION layers — Discord/Telegram/Square posting unchanged.
+ */
+function clamp01(x) {
+  if (x == null || !Number.isFinite(+x)) return 0;
+  return Math.min(1, Math.max(0, +x));
+}
+
+function kikikCandleFeatures(candles) {
+  if (!candles || candles.length < 40) return null;
+  const n = candles.length;
+  const closes = candles.map((c) => c.close);
+  const vols = candles.map((c) => c.volume || 0);
+  const last = closes[n - 1];
+  const tr = [];
+  for (let i = 0; i < n; i++) {
+    const h = candles[i].high, l = candles[i].low;
+    if (i === 0) tr.push(h - l);
+    else {
+      const pc = candles[i - 1].close;
+      tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+    }
+  }
+  const atr14 = mean(tr.slice(-14)) || last * 0.01;
+  const atr5 = mean(tr.slice(-5)) || atr14;
+  const atr20 = mean(tr.slice(-20)) || atr14;
+  const atrPct = (atr14 / last) * 100;
+  const rangeBars = Math.min(48, n);
+  const rangeSlice = closes.slice(-rangeBars);
+  const hi = Math.max(...rangeSlice);
+  const lo = Math.min(...rangeSlice);
+  const rng = hi - lo || 1e-12;
+  const pos = (last - lo) / rng;
+  const rsiV = rsi(closes, 14);
+  const r = rsiV[n - 1] != null ? rsiV[n - 1] : 50;
+  const baseVol = mean(vols.slice(-21, -1)) || 1;
+  const volumeRatio = vols[n - 1] / baseVol;
+  const down12 = n > 13 && closes[n - 13] ? (closes[n - 13] - last) / closes[n - 13] : 0;
+  const up12 = n > 13 && closes[n - 13] ? (last - closes[n - 13]) / closes[n - 13] : 0;
+  const down24 = n > 25 && closes[n - 25] ? (closes[n - 25] - last) / closes[n - 25] : 0;
+  const up24 = n > 25 && closes[n - 25] ? (last - closes[n - 25]) / closes[n - 25] : 0;
+  const longMove = Math.max(down12, down24);
+  const shortMove = Math.max(up12, up24);
+  let longExhaust = atrPct ? clamp01((longMove / ((atrPct / 100) * 8) - 0.45) / 1.2) : 0;
+  let shortExhaust = atrPct ? clamp01((shortMove / ((atrPct / 100) * 8) - 0.45) / 1.2) : 0;
+  longExhaust = 0.7 * longExhaust + 0.3 * clamp01((45 - r) / 20);
+  shortExhaust = 0.7 * shortExhaust + 0.3 * clamp01((r - 55) / 20);
+  const compression = clamp01(1 - (atr20 ? atr5 / atr20 : 1));
+  const recentLow = Math.min(...closes.slice(Math.max(0, n - 7), n - 1));
+  const recentHigh = Math.max(...closes.slice(Math.max(0, n - 7), n - 1));
+  const longReclaim = atr14 ? clamp01((last - recentLow) / (atr14 * 1.5)) : 0;
+  const shortReject = atr14 ? clamp01((recentHigh - last) / (atr14 * 1.5)) : 0;
+  return {
+    atrPct,
+    rsi: r,
+    pos,
+    volumeRatio,
+    compression,
+    long_location: clamp01((0.38 - pos) / 0.38),
+    short_location: clamp01((pos - 0.62) / 0.38),
+    long_exhaust: longExhaust,
+    short_exhaust: shortExhaust,
+    long_reclaim: longReclaim,
+    short_reject: shortReject,
+  };
+}
+
+function kikikFlow(m5, book) {
+  let flow = 0.5;
+  const press = m5 && m5.volume ? m5.volume.pressure : 0;
+  flow = clamp01(0.5 + press / 80);
+  if (book && book.imbalance != null) {
+    flow = clamp01(0.65 * flow + 0.35 * (0.5 + book.imbalance / 200));
+  }
+  return flow;
+}
+
+function kikikEarlyClassify(f, flow) {
+  if (!f) return null;
+  const sides = [
+    { side: "LONG", location: f.long_location, exhaustion: f.long_exhaust, flow, structure: f.long_reclaim },
+    { side: "SHORT", location: f.short_location, exhaustion: f.short_exhaust, flow: 1 - flow, structure: f.short_reject },
+  ];
+  const scored = sides.map((p) => {
+    const score =
+      30 * clamp01(p.location) +
+      25 * clamp01(p.exhaustion) +
+      25 * clamp01(p.flow) +
+      20 * clamp01(p.structure);
+    const ok =
+      score >= 65 &&
+      p.location >= 0.65 &&
+      p.exhaustion >= 0.5 &&
+      p.flow >= 0.55 &&
+      p.structure >= 0.15;
+    return Object.assign({}, p, { score: +score.toFixed(1), ok });
+  });
+  const hits = scored.filter((s) => s.ok).sort((a, b) => b.score - a.score);
+  if (hits.length) return { tier: "EARLY", side: hits[0].side, score: hits[0].score, parts: hits[0] };
+  scored.sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  return { tier: best.score >= 55 ? "MONITOR" : "NONE", side: best.side, score: best.score, parts: best };
+}
+
+function kikikPreClassify(f, flow) {
+  if (!f) return null;
+  const expansion = 0.55 * clamp01((f.volumeRatio - 1) / 2) + 0.45 * f.compression;
+  const longScore =
+    30 * clamp01(f.long_location) +
+    20 * clamp01(f.long_exhaust) +
+    20 * clamp01(flow) +
+    15 * clamp01(f.long_reclaim) +
+    15 * clamp01(expansion);
+  const shortScore =
+    30 * clamp01(f.short_location) +
+    20 * clamp01(f.short_exhaust) +
+    20 * clamp01(1 - flow) +
+    15 * clamp01(f.short_reject) +
+    15 * clamp01(expansion);
+  if (longScore >= 70 && f.long_location >= 0.6 && f.long_reclaim >= 0.25 && flow >= 0.55) {
+    return { tier: "PRE", side: "LONG", score: +longScore.toFixed(1), expansion };
+  }
+  if (shortScore >= 70 && f.short_location >= 0.6 && f.short_reject >= 0.25 && flow <= 0.45) {
+    return { tier: "PRE", side: "SHORT", score: +shortScore.toFixed(1), expansion };
+  }
+  return {
+    tier: "NONE",
+    side: longScore >= shortScore ? "LONG" : "SHORT",
+    score: +Math.max(longScore, shortScore).toFixed(1),
+    expansion,
+  };
+}
+
 function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = null, opts = {}) {
   if (!h1 || !m15 || !m5) return null;
   const strict = opts.strict !== false;
@@ -568,7 +702,7 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
 
   if (!action) return null;
   // VALID (strict): TREND atau REVERSAL early — SQUEEZE/parked paths hanya WATCH
-  if (strict && path !== "TREND" && path !== "REVERSAL") return null;
+  if (strict && path !== "TREND" && path !== "REVERSAL" && path !== "PRE_EXPANSION" && path !== "EARLY_REVERSAL") return null;
   // REVERSAL VALID: wajib score sedikit lebih tinggi (hindari false bottom/top)
   if (strict && path === "REVERSAL") {
     // conf dicek nanti; tandai untuk minConf bump via setup
@@ -1878,7 +2012,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.17.0 | TREND + early REVERSAL · BTC gate · clean symbols ===");
+  console.log("=== Strict Core v2.18.0 | Kikik Early/PRE + classic · Discord/TG/Square kept ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1959,14 +2093,80 @@ async function main() {
       // Volatility regime from 15m (most relevant for 15m-1h scalping)
       const regime = getVolatilityRegime(m15c);
 
+      // KikikJourney: Early / PRE-EXPANSION from 1H + flow proxy (no extra API)
+      const kf = kikikCandleFeatures(h1c);
+      const kFlow = kikikFlow(m5, book);
+      const kEarly = kikikEarlyClassify(kf, kFlow);
+      const kPre = kikikPreClassify(kf, kFlow);
+      let kikikHit = null;
+      if (kPre && kPre.tier === "PRE") kikikHit = Object.assign({}, kPre, { path: "PRE_EXPANSION" });
+      else if (kEarly && kEarly.tier === "EARLY") kikikHit = Object.assign({}, kEarly, { path: "EARLY_REVERSAL" });
+
       let scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: true });
       let tier = "VALID";
+      if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit) {
+        const confK = Math.min(99, Math.round(50 + kikikHit.score * 0.45));
+        const need = kikikHit.path === "PRE_EXPANSION" ? 76 : 80;
+        if (confK >= need) {
+          scored = {
+            action: kikikHit.side,
+            probability: confK,
+            setup: kikikHit.path,
+            h1: h1,
+            m15: m15,
+            m5: m5,
+            h4: h4,
+            trends: { h1: tfTrend(h1), m15: tfTrend(m15), h4: tfTrend(h4) },
+            book: book,
+            regime: regime,
+            volConfirm: !!(m5.volume && m5.volume.spike),
+            confluence: Math.round(kikikHit.score / 10),
+            pillars: ["kikik_" + String(kikikHit.path).toLowerCase()],
+            kikik: kikikHit,
+          };
+          tier = "VALID";
+        }
+      }
       if (!scored || scored.probability < MIN_PROB_VALID) {
         scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: false });
+        if (!scored && kikikHit) {
+          watches.push({
+            base: c.base,
+            action: kikikHit.side,
+            score: Math.round(kikikHit.score),
+            setup: kikikHit.path || "KIKIK",
+            confluence: null,
+            reason: "Kikik " + kikikHit.tier + " score " + kikikHit.score,
+          });
+          continue;
+        }
+        if (!scored && kEarly && kEarly.tier === "MONITOR") {
+          watches.push({
+            base: c.base,
+            action: kEarly.side,
+            score: Math.round(kEarly.score),
+            setup: "KIKIK_MONITOR",
+            reason: "Kikik MONITOR score " + kEarly.score,
+          });
+          continue;
+        }
         if (!scored) continue;
         tier = "WATCH";
       }
+      if (scored && kikikHit) scored.kikik = kikikHit;
 
+
+      // BTC gate (sama seperti classic VALID)
+      if (tier === "VALID" && scored && btcBias && Math.abs(btcBias.score || 0) >= 30) {
+        if (btcBias.bias === "bullish" && scored.action === "SHORT") {
+          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "BTC bullish — SHORT ditahan" });
+          continue;
+        }
+        if (btcBias.bias === "bearish" && scored.action === "LONG") {
+          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "BTC bearish — LONG ditahan" });
+          continue;
+        }
+      }
       const levels = buildLevels(m5c, scored, c.mark, regime);
       if (!levels || levels.rr < (tier === "VALID" ? MIN_RR : 1.2)) {
         if (tier === "WATCH") watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "rr/levels lemah" });
