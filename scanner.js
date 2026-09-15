@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.15.0
+ * Strict Core Scanner v2.16.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -549,6 +549,13 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   }
 
   if (!action) return null;
+  // B: VALID (strict) hanya TREND — MEAN_REV/SQUEEZE boleh WATCH saja
+  if (strict && path !== "TREND") return null;
+  // B: SHORT tidak dilawan bias BTC bullish kuat; LONG tidak dilawan bias bearish kuat
+  if (strict && btcBias && Math.abs(btcBias.score || 0) >= 30) {
+    if (btcBias.bias === "bullish" && action === "SHORT") return null;
+    if (btcBias.bias === "bearish" && action === "LONG") return null;
+  }
   const ob = book || { imbalance: 0, side: "FLAT" };
   if (action === "LONG" && ob.side === "ASK" && (ob.imbalance ?? 0) <= -12) return null;
   if (action === "SHORT" && ob.side === "BID" && (ob.imbalance ?? 0) >= 12) return null;
@@ -1846,7 +1853,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.15.0 | Fee-aware outcome · path stats · SL live buffer · BTC soft ===");
+  console.log("=== Strict Core v2.16.0 | TREND-only VALID · SHORT vs BTC · clean symbols ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1883,7 +1890,12 @@ async function main() {
       const chgPct = open && last ? ((last - open) / open) * 100 : chg;
       if (turnover < 2_000_000 || Math.abs(chgPct) > 28) return null;
       const base = symbol.replace(/USDT$/i, "");
-      if (!base || /^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
+      // C: buang symbol sampah / non-ASCII / leveraged tokens
+      if (!base || base.length > 12 || base.length < 2) return null;
+      if (/[^ -]/.test(base)) return null; // e.g. 龙虾
+      if (!/^[A-Za-z0-9]+$/.test(base)) return null;
+      if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
+      if (/^(SNXX|TEST|BTCDOM|DEFI)$/i.test(base)) return null;
       return {
         instId: symbol,
         base,
