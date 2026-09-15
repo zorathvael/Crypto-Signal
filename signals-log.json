@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "CRCL_SHORT_1789488128580",
-      "ts": 1789488128580,
-      "base": "CRCL",
-      "instId": "CRCLUSDT",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 89.72,
-      "sl": 90.96654534624896,
-      "tp1": 87.93527862773112,
-      "tp2": 86.81982777006307,
-      "tp3": 85.2581965693278,
-      "rr": 2.3265677728162597,
-      "regime": "normal"
-    },
-    {
       "id": "KORU_SHORT_1789495452498",
       "ts": 1789495452498,
       "base": "KORU",
@@ -33,9 +16,65 @@
       "tp3": 18.25479635073163,
       "rr": 2.054773181767182,
       "regime": "normal"
+    },
+    {
+      "id": "SPCX_SHORT_1789497453701",
+      "ts": 1789497453701,
+      "base": "SPCX",
+      "instId": "SPCXUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "SWEEP_MKT",
+      "probability": 99,
+      "entry": 144.5,
+      "sl": 145.32094212318637,
+      "tp1": 143.50670410204663,
+      "tp2": 142.91072656327464,
+      "tp3": 141.98365039185148,
+      "rr": 1.9359141062914704,
+      "regime": "low"
+    },
+    {
+      "id": "SKHY_SHORT_1789497453701",
+      "ts": 1789497453701,
+      "base": "SKHY",
+      "instId": "SKHYUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 173.65,
+      "sl": 174.63487897177254,
+      "tp1": 172.45053454968308,
+      "tp2": 171.73085527949294,
+      "tp3": 170.6113541925305,
+      "rr": 1.9486097028278428,
+      "regime": "low"
     }
   ],
   "closed": [
+    {
+      "id": "CRCL_SHORT_1789488128580",
+      "ts": 1789488128580,
+      "base": "CRCL",
+      "instId": "CRCLUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 89.72,
+      "sl": 90.96654534624896,
+      "tp1": 87.93527862773112,
+      "tp2": 86.81982777006307,
+      "tp3": 85.2581965693278,
+      "rr": 2.3265677728162597,
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.33,
+      "exit": 87.93527862773112,
+      "closedAt": 1789497000000,
+      "costR": 0.101
+    },
     {
       "id": "ETH_SHORT_1789489908187",
       "ts": 1789489908187,
@@ -1116,19 +1155,19 @@
     }
   ],
   "stats": {
-    "total": 43,
-    "wins": 21,
+    "total": 44,
+    "wins": 22,
     "losses": 22,
     "expired": 0,
-    "sumR": 13.209999999999999,
+    "sumR": 14.540000000000001,
     "bySetup": {
       "TREND": {
-        "n": 41,
-        "wins": 21,
+        "n": 42,
+        "wins": 22,
         "losses": 20,
-        "sumR": 15.21,
-        "winrate": 51.2,
-        "avgR": 0.37
+        "sumR": 16.540000000000003,
+        "winrate": 52.4,
+        "avgR": 0.39
       },
       "MEAN_REV": {
         "n": 1,
@@ -1149,12 +1188,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 26,
-        "wins": 10,
+        "n": 27,
+        "wins": 11,
         "losses": 16,
-        "sumR": -2.61,
-        "winrate": 38.5,
-        "avgR": -0.1
+        "sumR": -1.279999999999998,
+        "winrate": 40.7,
+        "avgR": -0.05
       },
       "LONG": {
         "n": 17,
@@ -1167,7 +1206,7 @@
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 48.8,
-    "avgR": 0.31
+    "winrate": 50,
+    "avgR": 0.33
   }
 }
