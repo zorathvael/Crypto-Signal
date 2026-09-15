@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.13.0
+ * Strict Core Scanner v2.14.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -468,8 +468,9 @@ function councilConsensus(h1, m15, m5, h4) {
   return { side, net, votes: votes.length, t1, t15, t4 };
 }
 
-function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = null) {
+function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = null, opts = {}) {
   if (!h1 || !m15 || !m5) return null;
+  const strict = opts.strict !== false;
 
   // Hard block on extreme volatility (protect small capital)
   if (regime && regime.regime === "extreme") return null;
@@ -631,11 +632,10 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     if (book && book.side !== "BID" && (book.imbalance == null || book.imbalance < 12)) pillars.push("book");
     if ((m5.rsi ?? 50) <= 58 && (m5.rsi ?? 50) >= 32) pillars.push("rsi_ok");
   }
-  // Selective rollback: confluence sebagai bukti, bukan tembok tinggi
-  const needPillars = path === "TREND" ? 3 : 3;
+  const needPillars = strict ? 3 : 2;
   if (pillars.length < needPillars) return null;
-  // TREND wajib multi-TF sejalan; pilar lain menguatkan (bukan semua wajib)
-  if (path === "TREND" && !pillars.includes("tf_align")) return null;
+  if (strict && path === "TREND" && !pillars.includes("tf_align")) return null;
+  if (!strict && path === "TREND" && t1 !== "neutral" && t15 !== "neutral" && t1 !== t15) return null;
   const confluenceN = pillars.length;
 
   // BTC soft bias — ringan saja (konteks pasar, bukan hard force)
@@ -761,8 +761,8 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     if (action === "LONG" && st15 === -1) conf -= 8;
     if (action === "SHORT" && st15 === 1) conf -= 8;
   }
-  let minConf = MIN_PROB_VALID;
-  if (regime && regime.regime === "high") minConf = Math.max(minConf, 80);
+  let minConf = strict ? MIN_PROB_VALID : 68;
+  if (strict && regime && regime.regime === "high") minConf = Math.max(minConf, 80);
   conf = clamp(Math.round(conf), 0, 99);
   if (conf < minConf) return null;
 
@@ -1303,6 +1303,36 @@ async function sendTelegram(signals) {
     else console.log(`Telegram sent: ${s.base} ${s.action} ${s.probability}%`);
   }
 }
+
+async function sendWatchDiscord(watches) {
+  if (!DISCORD_WEBHOOK || !watches || !watches.length) return;
+  const top = watches.slice(0, 8);
+  const lines = top.map(
+    (w) =>
+      `• **${w.base}** ${w.action} · score ${w.score}` +
+      (w.confluence != null ? ` · conf ${w.confluence}` : "") +
+      (w.reason ? ` · _${w.reason}_` : "")
+  );
+  const embed = {
+    title: `👀 WATCH · ${top.length} potensi (bukan entry)`,
+    description: lines.join("\n") + "\n\n_Belum lolos gate VALID — pantau zona, jangan FOMO._",
+    color: 0xfbbf24,
+    footer: { text: "Strict Core v2.14 · WATCH ≠ signal · NFA" },
+    timestamp: new Date().toISOString(),
+  };
+  try {
+    const res = await fetch(DISCORD_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "Strict Core Watch", embeds: [embed] }),
+    });
+    if (res.ok) console.log(`Discord WATCH: ${top.length} items`);
+    else console.warn("Discord WATCH failed:", res.status);
+  } catch (e) {
+    console.warn("Discord WATCH error:", e.message);
+  }
+}
+
 async function sendDiscord(signals) {
   if (!DISCORD_WEBHOOK) {
     console.log("Discord: skip (no secret)");
@@ -1775,7 +1805,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.13.0 | Bitget USDT-M data + selective filters ===");
+  console.log("=== Strict Core v2.14.0 | VALID + WATCH potential layer ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -1827,6 +1857,7 @@ async function main() {
     .slice(0, CANDIDATE_LIMIT);
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
   const signals = [];
+  const watches = [];
   for (const c of candidates) {
     try {
       // Anti-429: 2 gelombang request, bukan 6 paralel sekaligus
@@ -1850,21 +1881,38 @@ async function main() {
       // Volatility regime from 15m (most relevant for 15m-1h scalping)
       const regime = getVolatilityRegime(m15c);
 
-      const scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime);
-      if (!scored || scored.probability < MIN_PROB_VALID) continue;
+      let scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: true });
+      let tier = "VALID";
+      if (!scored || scored.probability < MIN_PROB_VALID) {
+        scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: false });
+        if (!scored) continue;
+        tier = "WATCH";
+      }
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
-      if (levels.rr < MIN_RR) continue;
-      // Prefer ZONE; MKT hanya jika score cukup kuat (hybrid wajar)
+      if (!levels || levels.rr < (tier === "VALID" ? MIN_RR : 1.2)) {
+        if (tier === "WATCH") watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "rr/levels lemah" });
+        continue;
+      }
       const modeStr = String(levels.mode || "");
-      if (!modeStr.includes("_ZONE") && !modeStr.includes("_MKT")) continue;
-      if (modeStr.includes("_MKT") && scored.probability < MIN_PROB_SNIPER) continue;
-      // High regime: R:R minimal sedikit lebih tinggi
-      if (scored.regime && scored.regime.regime === "high" && levels.rr < 1.6) continue;
-
-      // EV kasar: tolak hanya yang jelas tidak layak setelah biaya
+      if (!modeStr.includes("_ZONE") && !modeStr.includes("_MKT")) {
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "belum di zona entry" });
+        continue;
+      }
+      if (modeStr.includes("_MKT") && scored.probability < MIN_PROB_SNIPER) {
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "MKT butuh score lebih tinggi" });
+        continue;
+      }
+      if (scored.regime && scored.regime.regime === "high" && levels.rr < 1.6 && tier === "VALID") continue;
       const evInfo = estimateEV(levels.rr, levels.entry);
-      if (!evInfo || evInfo.netRr < 1.0) continue;
+      if (!evInfo || evInfo.netRr < (tier === "VALID" ? 1.0 : 0.7)) {
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "EV belum layak entry" });
+        continue;
+      }
+      if (tier === "WATCH") {
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, mode: levels.mode, entry: levels.entry, sl: levels.sl, tp1: levels.tp1, rr: levels.rr, confluence: scored.confluence, reason: "potensi — belum gate VALID" });
+        continue;
+      }
 
       let riskPct = suggestRisk(regime, scored.probability);
 
@@ -1935,12 +1983,22 @@ async function main() {
   saveLastSignals(newMap);
 
   signals.sort((a, b) => b.probability - a.probability);
-  console.log(`Strict signals: ${signals.length}`);
+  watches.sort((a, b) => (b.score || 0) - (a.score || 0));
+  console.log(`Strict signals (VALID): ${signals.length}`);
   signals.forEach((s) =>
     console.log(
       `  ${s.base} ${s.action} ${s.probability}% ${s.setup} R:R 1:${s.rr.toFixed(1)}` +
         (s.regime ? ` [${s.regime.regime}]` : "") +
         (s.confluence != null ? ` confN=${s.confluence}` : "") + (s.persistent ? " 🔁" : "")
+    )
+  );
+
+  console.log(`WATCH potential: ${watches.length}`);
+  watches.slice(0, 12).forEach((w) =>
+    console.log(
+      `  ~ ${w.base} ${w.action} score ${w.score} ${w.setup || ""}` +
+        (w.confluence != null ? ` confN=${w.confluence}` : "") +
+        (w.reason ? ` — ${w.reason}` : "")
     )
   );
 
