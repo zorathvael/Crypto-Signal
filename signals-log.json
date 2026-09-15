@@ -955,22 +955,47 @@
         "n": 34,
         "wins": 20,
         "losses": 14,
-        "sumR": 22.05
+        "sumR": 22.05,
+        "winrate": 58.8,
+        "avgR": 0.65
       },
       "MEAN_REV": {
         "n": 1,
         "wins": 0,
         "losses": 1,
-        "sumR": -1
+        "sumR": -1,
+        "winrate": 0,
+        "avgR": -1
       },
       "SQUEEZE": {
         "n": 1,
         "wins": 0,
         "losses": 1,
-        "sumR": -1
+        "sumR": -1,
+        "winrate": 0,
+        "avgR": -1
+      }
+    },
+    "byAction": {
+      "LONG": {
+        "n": 17,
+        "wins": 11,
+        "losses": 6,
+        "sumR": 15.82,
+        "winrate": 64.7,
+        "avgR": 0.93
+      },
+      "SHORT": {
+        "n": 19,
+        "wins": 9,
+        "losses": 10,
+        "sumR": 4.23,
+        "winrate": 47.4,
+        "avgR": 0.22
       }
     },
     "afterTs": 1789207200000,
+    "feeAware": true,
     "winrate": 55.6,
     "avgR": 0.56
   }
