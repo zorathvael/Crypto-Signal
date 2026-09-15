@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.16.0
+ * Strict Core Scanner v2.17.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -500,26 +500,44 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     path = "TREND";
   }
 
-  // MEAN_REV: only with HTF permission AND slope not fighting hard
+  // REVERSAL (early): tangkap putaran SEBELUM impuls besar — ketat
+  // ekstrem BB/RSI + volume climax + candle reversal + momentum 5m mulai berbalik + HTF tidak strong against
   if (!action) {
-    if (
-      m5.meanLong &&
+    const pos5r = m5.position != null ? m5.position : 50;
+    const rsi5r = m5.rsi != null ? m5.rsi : 50;
+    const pressR = m5.volume?.pressure ?? 0;
+    const spikeR = !!(m5.volume && m5.volume.spike);
+    const revR = m5.reversal || { bias: "neutral", quality: 0 };
+    const slope5r = m5.slope6 != null ? m5.slope6 : 0;
+    const macdTurnUp = !!(m5.macdUp || m5.macdCrossUp);
+    const macdTurnDown = !!(m5.macdDown || m5.macdCrossDown);
+
+    const longExt = pos5r <= 18 || (pos5r <= 28 && rsi5r <= 32);
+    const longClimax = (spikeR && pressR <= -8) || pressR <= -22;
+    const longCandle = revR.bias === "bullish" && revR.quality >= 0.75;
+    const longTurn = slope5r >= -0.12 && (macdTurnUp || slope5r > 0.04 || longCandle);
+    const longHtfOk =
       t1 !== "bearish" &&
-      t4 !== "bearish" &&
-      !h1Down &&
-      (h1.slope12 ?? 0) > -0.8
-    ) {
+      !h1StrongDown &&
+      (h1.slope12 ?? 0) > -1.2 &&
+      t4 !== "bearish";
+    if (longExt && longClimax && longCandle && longTurn && longHtfOk) {
       action = "LONG";
-      path = "MEAN_REV";
-    } else if (
-      m5.meanShort &&
+      path = "REVERSAL";
+    }
+
+    const shortExt = pos5r >= 82 || (pos5r >= 72 && rsi5r >= 68);
+    const shortClimax = (spikeR && pressR >= 8) || pressR >= 22;
+    const shortCandle = revR.bias === "bearish" && revR.quality >= 0.75;
+    const shortTurn = slope5r <= 0.12 && (macdTurnDown || slope5r < -0.04 || shortCandle);
+    const shortHtfOk =
       t1 !== "bullish" &&
-      t4 !== "bullish" &&
-      !h1Up &&
-      (h1.slope12 ?? 0) < 0.8
-    ) {
+      !h1StrongUp &&
+      (h1.slope12 ?? 0) < 1.2 &&
+      t4 !== "bullish";
+    if (!action && shortExt && shortClimax && shortCandle && shortTurn && shortHtfOk) {
       action = "SHORT";
-      path = "MEAN_REV";
+      path = "REVERSAL";
     }
   }
 
@@ -549,8 +567,12 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   }
 
   if (!action) return null;
-  // B: VALID (strict) hanya TREND — MEAN_REV/SQUEEZE boleh WATCH saja
-  if (strict && path !== "TREND") return null;
+  // VALID (strict): TREND atau REVERSAL early — SQUEEZE/parked paths hanya WATCH
+  if (strict && path !== "TREND" && path !== "REVERSAL") return null;
+  // REVERSAL VALID: wajib score sedikit lebih tinggi (hindari false bottom/top)
+  if (strict && path === "REVERSAL") {
+    // conf dicek nanti; tandai untuk minConf bump via setup
+  }
   // B: SHORT tidak dilawan bias BTC bullish kuat; LONG tidak dilawan bias bearish kuat
   if (strict && btcBias && Math.abs(btcBias.score || 0) >= 30) {
     if (btcBias.bias === "bullish" && action === "SHORT") return null;
@@ -689,7 +711,8 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     conf += Math.max(0, -m15.biasScore) * 0.1;
   }
 
-  if (path === "MEAN_REV") conf += 8;
+  if (path === "REVERSAL") conf += 10;
+  if (path === "MEAN_REV") conf += 4;
   if (path === "SQUEEZE") conf += 6;
   if (path === "TREND" && t1 === t15 && t15 === t4 && t4 !== "neutral") conf += 6;
 
@@ -776,7 +799,9 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
     if (action === "SHORT" && st15 === 1) conf -= 8;
   }
   let minConf = strict ? MIN_PROB_VALID : 68;
+  if (strict && path === "REVERSAL") minConf = Math.max(minConf, 80);
   if (strict && regime && regime.regime === "high") minConf = Math.max(minConf, 80);
+  if (strict && path === "REVERSAL" && regime && regime.regime === "high") minConf = Math.max(minConf, 84);
   conf = clamp(Math.round(conf), 0, 99);
   if (conf < minConf) return null;
 
@@ -1853,7 +1878,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.16.0 | TREND-only VALID · SHORT vs BTC · clean symbols ===");
+  console.log("=== Strict Core v2.17.0 | TREND + early REVERSAL · BTC gate · clean symbols ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
