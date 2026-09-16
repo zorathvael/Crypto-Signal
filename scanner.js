@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.20.0
+ * Strict Core Scanner v2.20.1
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -1013,7 +1013,7 @@ function buildLevels(candles, signal, mark, regime = null) {
     mktSlMin = 1.8; mktSlMax = 4.0; mktSlDef = 2.0;
     tp1R = 1.8; tp2R = 2.9; tp3R = 4.0;
   }
-  const liveBuf = mark * 0.0008 + atrV * 0.12;
+  const liveBuf = mark * 0.0012 + atrV * 0.18; // v2.20.1 wider — kurangi noise SL
 
   // Hybrid: prefer ZONE; MKT only if still reasonably close
   const NEAR_ATR = 1.0;
@@ -1510,6 +1510,18 @@ async function sendWatchDiscord(watches) {
   } catch (e) {
     console.warn("Discord WATCH error:", e.message);
   }
+}
+
+
+function consecutiveLossStreak(log) {
+  const closed = (log && log.closed) || [];
+  let streak = 0;
+  for (const c of closed) {
+    if ((c.ts || 0) < OUTCOME_STATS_AFTER_TS) break;
+    if (c.outcome === "LOSS_SL") streak++;
+    else break;
+  }
+  return streak;
 }
 
 async function sendDiscord(signals) {
@@ -2012,7 +2024,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.20.0 | LONG TREND/PRE only · EARLY=WATCH · clean baseline ===");
+  console.log("=== Strict Core v2.20.1 | LONG-only + circuit breaker (3 loss) + wider SL ===");
   console.log(new Date().toISOString());
   console.log("Stats baseline: 2026-09-16 (LONG-only era) — SHORT VALID frozen");
   console.log(
@@ -2370,9 +2382,32 @@ async function main() {
     console.warn("Outcome tracker error:", e.message);
   }
 
-  await sendDiscord(signals);
-  await sendTelegram(signals);
-  await sendBinanceSquare(signals);
+  let postSignals = signals.slice();
+  try {
+    const streak = consecutiveLossStreak(outcomeLog);
+    if (streak >= 3 && postSignals.length) {
+      console.log("CIRCUIT BREAKER: " + streak + " LOSS beruntun sejak baseline — VALID tidak dipost");
+      for (const s of postSignals) {
+        watches.push({
+          base: s.base,
+          action: s.action,
+          score: s.probability,
+          setup: s.setup,
+          reason: "circuit breaker (" + streak + " loss beruntun)",
+        });
+      }
+      postSignals = [];
+    } else if (streak > 0) {
+      console.log("Loss streak (baseline): " + streak + "/3 sebelum circuit breaker");
+    }
+  } catch (e) {
+    console.warn("Circuit breaker:", e.message);
+  }
+
+  await sendDiscord(postSignals);
+  await sendTelegram(postSignals);
+  await sendBinanceSquare(postSignals);
+  if (typeof sendWatchDiscord === "function") await sendWatchDiscord(watches);
   console.log("Done.");
 }
 main().catch((e) => {
