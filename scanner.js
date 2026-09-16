@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.18.2
+ * Strict Core Scanner v2.19.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -708,14 +708,10 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   if (strict && path === "REVERSAL") {
     // conf dicek nanti; tandai untuk minConf bump via setup
   }
-  // Audit v2.18.1: SHORT only if BTC bearish strong (score <= -40) — sample SHORT avgR was ~0/-neg
-  if (strict && btcBias) {
-    const sc = btcBias.score || 0;
-    if (action === "SHORT") {
-      if (btcBias.bias === "bullish" || sc > -40) return null;
-    }
-    if (action === "LONG" && btcBias.bias === "bearish" && sc <= -40) return null;
-  }
+  // v2.19: SHORT VALID frozen — sample SHORT avgR negative & declining; LONG-only VALID
+  if (strict && action === "SHORT") return null;
+  if (strict && btcBias && btcBias.bias === "bearish" && (btcBias.score || 0) <= -40 && action === "LONG") return null;
+
   const ob = book || { imbalance: 0, side: "FLAT" };
   if (action === "LONG" && ob.side === "ASK" && (ob.imbalance ?? 0) <= -12) return null;
   if (action === "SHORT" && ob.side === "BID" && (ob.imbalance ?? 0) >= 12) return null;
@@ -2016,7 +2012,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.18.2 | Kikik EARLY soft + LONG bias · SHORT still gated ===");
+  console.log("=== Strict Core v2.19.0 | LONG-only VALID · WAIT≠signal · mesin disederhanakan ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -2108,12 +2104,9 @@ async function main() {
 
       let scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: true });
       let tier = "VALID";
-      if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit) {
+      if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit && kikikHit.side === "LONG") {
         const confK = Math.min(99, Math.round(50 + kikikHit.score * 0.45));
-        // Data-driven: LONG boleh lebih agresif dari SHORT
-        let need = kikikHit.path === "PRE_EXPANSION" ? 76 : 78;
-        if (kikikHit.side === "SHORT") need = Math.max(need, kikikHit.path === "PRE_EXPANSION" ? 82 : 84);
-        if (kikikHit.side === "LONG") need = Math.min(need, kikikHit.path === "PRE_EXPANSION" ? 74 : 76);
+        let need = kikikHit.path === "PRE_EXPANSION" ? 74 : 76;
         if (confK >= need) {
           scored = {
             action: kikikHit.side,
@@ -2163,33 +2156,42 @@ async function main() {
       if (scored && kikikHit) scored.kikik = kikikHit;
 
 
-      // Audit: SHORT needs BTC bearish score <= -40
-      if (tier === "VALID" && scored && btcBias) {
-        const sc = btcBias.score || 0;
-        if (scored.action === "SHORT" && (btcBias.bias === "bullish" || sc > -40)) {
-          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "SHORT ditahan — BTC belum bearish kuat (perlu <= -40)" });
+      // v2.19: SHORT VALID frozen; LONG ditahan hanya jika BTC bearish sangat kuat
+      if (tier === "VALID" && scored) {
+        if (scored.action === "SHORT") {
+          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "SHORT VALID beku (edge historis negatif)" });
           continue;
         }
-        if (scored.action === "LONG" && btcBias.bias === "bearish" && sc <= -40) {
+        if (btcBias && btcBias.bias === "bearish" && (btcBias.score || 0) <= -40 && scored.action === "LONG") {
           watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "LONG ditahan — BTC bearish kuat" });
           continue;
         }
       }
       const levels = buildLevels(m5c, scored, c.mark, regime);
+      // WAIT / rr=0 = tidak ada entry zone — jangan anggap signal 99%
+      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr <= 0) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: Math.min(scored.probability, 70),
+          setup: scored.setup,
+          confluence: scored.confluence,
+          reason: "belum di zona entry (mode WAIT/rr=0) — bukan signal",
+        });
+        continue;
+      }
       const minRr = tier === "VALID"
         ? (scored.probability >= 92 && scored.setup === "TREND" ? Math.max(1.35, MIN_RR - 0.15) : MIN_RR)
         : 1.2;
-      if (!levels || levels.rr < minRr) {
-        if (tier === "WATCH" || scored.probability >= 85) {
-          watches.push({
-            base: c.base,
-            action: scored.action,
-            score: scored.probability,
-            setup: scored.setup,
-            confluence: scored.confluence,
-            reason: "rr/levels lemah (rr=" + (levels && levels.rr != null ? levels.rr.toFixed(2) : "n/a") + ")",
-          });
-        }
+      if (levels.rr < minRr) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: Math.min(scored.probability, 75),
+          setup: scored.setup,
+          confluence: scored.confluence,
+          reason: "rr lemah (rr=" + levels.rr.toFixed(2) + ")",
+        });
         continue;
       }
       const modeStr = String(levels.mode || "");
@@ -2286,7 +2288,7 @@ async function main() {
     return cb - ca;
   });
   // Audit: SHORT sample edge lemah — max 2 SHORT VALID per run (keep best)
-  const MAX_SHORT = 2;
+  const MAX_SHORT = 0; // frozen
   const MAX_LONG = 3;
   let nS = 0, nL = 0;
   const capped = [];
