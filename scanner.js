@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.18.1
+ * Strict Core Scanner v2.18.2
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -558,12 +558,13 @@ function kikikEarlyClassify(f, flow) {
       25 * clamp01(p.exhaustion) +
       25 * clamp01(p.flow) +
       20 * clamp01(p.structure);
+    // v2.18.2: slightly closer to Kikik production feel; still no expansion required
     const ok =
-      score >= 65 &&
-      p.location >= 0.65 &&
-      p.exhaustion >= 0.5 &&
-      p.flow >= 0.55 &&
-      p.structure >= 0.15;
+      score >= 62 &&
+      p.location >= 0.60 &&
+      p.exhaustion >= 0.48 &&
+      p.flow >= 0.52 &&
+      p.structure >= 0.12;
     return Object.assign({}, p, { score: +score.toFixed(1), ok });
   });
   const hits = scored.filter((s) => s.ok).sort((a, b) => b.score - a.score);
@@ -2015,7 +2016,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.18.1 | Audit: SHORT gate + cluster cap (data-driven) ===");
+  console.log("=== Strict Core v2.18.2 | Kikik EARLY soft + LONG bias · SHORT still gated ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -2109,7 +2110,10 @@ async function main() {
       let tier = "VALID";
       if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit) {
         const confK = Math.min(99, Math.round(50 + kikikHit.score * 0.45));
-        const need = kikikHit.path === "PRE_EXPANSION" ? 76 : 80;
+        // Data-driven: LONG boleh lebih agresif dari SHORT
+        let need = kikikHit.path === "PRE_EXPANSION" ? 76 : 78;
+        if (kikikHit.side === "SHORT") need = Math.max(need, kikikHit.path === "PRE_EXPANSION" ? 82 : 84);
+        if (kikikHit.side === "LONG") need = Math.min(need, kikikHit.path === "PRE_EXPANSION" ? 74 : 76);
         if (confK >= need) {
           scored = {
             action: kikikHit.side,
@@ -2172,8 +2176,20 @@ async function main() {
         }
       }
       const levels = buildLevels(m5c, scored, c.mark, regime);
-      if (!levels || levels.rr < (tier === "VALID" ? MIN_RR : 1.2)) {
-        if (tier === "WATCH") watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "rr/levels lemah" });
+      const minRr = tier === "VALID"
+        ? (scored.probability >= 92 && scored.setup === "TREND" ? Math.max(1.35, MIN_RR - 0.15) : MIN_RR)
+        : 1.2;
+      if (!levels || levels.rr < minRr) {
+        if (tier === "WATCH" || scored.probability >= 85) {
+          watches.push({
+            base: c.base,
+            action: scored.action,
+            score: scored.probability,
+            setup: scored.setup,
+            confluence: scored.confluence,
+            reason: "rr/levels lemah (rr=" + (levels && levels.rr != null ? levels.rr.toFixed(2) : "n/a") + ")",
+          });
+        }
         continue;
       }
       const modeStr = String(levels.mode || "");
