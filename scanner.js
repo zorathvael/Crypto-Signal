@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.18.0
+ * Strict Core Scanner v2.18.1
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -707,10 +707,13 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
   if (strict && path === "REVERSAL") {
     // conf dicek nanti; tandai untuk minConf bump via setup
   }
-  // B: SHORT tidak dilawan bias BTC bullish kuat; LONG tidak dilawan bias bearish kuat
-  if (strict && btcBias && Math.abs(btcBias.score || 0) >= 30) {
-    if (btcBias.bias === "bullish" && action === "SHORT") return null;
-    if (btcBias.bias === "bearish" && action === "LONG") return null;
+  // Audit v2.18.1: SHORT only if BTC bearish strong (score <= -40) — sample SHORT avgR was ~0/-neg
+  if (strict && btcBias) {
+    const sc = btcBias.score || 0;
+    if (action === "SHORT") {
+      if (btcBias.bias === "bullish" || sc > -40) return null;
+    }
+    if (action === "LONG" && btcBias.bias === "bearish" && sc <= -40) return null;
   }
   const ob = book || { imbalance: 0, side: "FLAT" };
   if (action === "LONG" && ob.side === "ASK" && (ob.imbalance ?? 0) <= -12) return null;
@@ -2012,7 +2015,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.18.0 | Kikik Early/PRE + classic · Discord/TG/Square kept ===");
+  console.log("=== Strict Core v2.18.1 | Audit: SHORT gate + cluster cap (data-driven) ===");
   console.log(new Date().toISOString());
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -2156,14 +2159,15 @@ async function main() {
       if (scored && kikikHit) scored.kikik = kikikHit;
 
 
-      // BTC gate (sama seperti classic VALID)
-      if (tier === "VALID" && scored && btcBias && Math.abs(btcBias.score || 0) >= 30) {
-        if (btcBias.bias === "bullish" && scored.action === "SHORT") {
-          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "BTC bullish — SHORT ditahan" });
+      // Audit: SHORT needs BTC bearish score <= -40
+      if (tier === "VALID" && scored && btcBias) {
+        const sc = btcBias.score || 0;
+        if (scored.action === "SHORT" && (btcBias.bias === "bullish" || sc > -40)) {
+          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "SHORT ditahan — BTC belum bearish kuat (perlu <= -40)" });
           continue;
         }
-        if (btcBias.bias === "bearish" && scored.action === "LONG") {
-          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "BTC bearish — LONG ditahan" });
+        if (scored.action === "LONG" && btcBias.bias === "bearish" && sc <= -40) {
+          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "LONG ditahan — BTC bearish kuat" });
           continue;
         }
       }
@@ -2260,7 +2264,38 @@ async function main() {
 
   saveLastSignals(newMap);
 
-  signals.sort((a, b) => b.probability - a.probability);
+  signals.sort((a, b) => {
+    const ca = (a.confluence || 0) + (a.probability || 0) * 0.01;
+    const cb = (b.confluence || 0) + (b.probability || 0) * 0.01;
+    return cb - ca;
+  });
+  // Audit: SHORT sample edge lemah — max 2 SHORT VALID per run (keep best)
+  const MAX_SHORT = 2;
+  const MAX_LONG = 3;
+  let nS = 0, nL = 0;
+  const capped = [];
+  for (const s of signals) {
+    if (s.action === "SHORT") {
+      if (nS >= MAX_SHORT) {
+        watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cluster cap SHORT (max 2/run)" });
+        continue;
+      }
+      nS++;
+    } else {
+      if (nL >= MAX_LONG) {
+        watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cluster cap LONG (max 3/run)" });
+        continue;
+      }
+      nL++;
+    }
+    capped.push(s);
+  }
+  if (capped.length < signals.length) {
+    console.log(`Cluster cap: ${signals.length} → ${capped.length} VALID (SHORT<=${MAX_SHORT}, LONG<=${MAX_LONG})`);
+  }
+  signals.length = 0;
+  signals.push(...capped);
+
   watches.sort((a, b) => (b.score || 0) - (a.score || 0));
   console.log(`Strict signals (VALID): ${signals.length}`);
   signals.forEach((s) =>
