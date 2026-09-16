@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.19.0
+ * Strict Core Scanner v2.20.0
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -38,7 +38,7 @@ const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
 const SLIPPAGE_RT = 0.0004;     // 0.04% round-turn conservative
 const EV_MIN_R = 0.05;          // minimum expected R after costs
 // Stats only count closed trades after this (Block A baseline) — ISO ms
-const OUTCOME_STATS_AFTER_TS = Date.parse("2026-09-12T10:00:00Z") || 0;
+const OUTCOME_STATS_AFTER_TS = Date.parse("2026-09-16T12:00:00Z") || 0; // v2.20 LONG-only era
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -703,7 +703,7 @@ function scoreSignal(h1, m15, m5, h4, funding, btcBias, book = null, regime = nu
 
   if (!action) return null;
   // VALID (strict): TREND atau REVERSAL early — SQUEEZE/parked paths hanya WATCH
-  if (strict && path !== "TREND" && path !== "REVERSAL" && path !== "PRE_EXPANSION" && path !== "EARLY_REVERSAL") return null;
+  if (strict && path !== "TREND" && path !== "PRE_EXPANSION") return null; // VALID: TREND atau PRE only
   // REVERSAL VALID: wajib score sedikit lebih tinggi (hindari false bottom/top)
   if (strict && path === "REVERSAL") {
     // conf dicek nanti; tandai untuk minConf bump via setup
@@ -2012,8 +2012,9 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.19.0 | LONG-only VALID · WAIT≠signal · mesin disederhanakan ===");
+  console.log("=== Strict Core v2.20.0 | LONG TREND/PRE only · EARLY=WATCH · clean baseline ===");
   console.log(new Date().toISOString());
+  console.log("Stats baseline: 2026-09-16 (LONG-only era) — SHORT VALID frozen");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2099,14 +2100,24 @@ async function main() {
       const kEarly = kikikEarlyClassify(kf, kFlow);
       const kPre = kikikPreClassify(kf, kFlow);
       let kikikHit = null;
-      if (kPre && kPre.tier === "PRE") kikikHit = Object.assign({}, kPre, { path: "PRE_EXPANSION" });
-      else if (kEarly && kEarly.tier === "EARLY") kikikHit = Object.assign({}, kEarly, { path: "EARLY_REVERSAL" });
+      // VALID hanya PRE LONG; EARLY → WATCH (sample EARLY masih 1 loss)
+      if (kPre && kPre.tier === "PRE" && kPre.side === "LONG") {
+        kikikHit = Object.assign({}, kPre, { path: "PRE_EXPANSION" });
+      } else if (kEarly && kEarly.tier === "EARLY") {
+        watches.push({
+          base: c.base,
+          action: kEarly.side,
+          score: Math.round(kEarly.score),
+          setup: "EARLY_REVERSAL",
+          reason: "Kikik EARLY → WATCH only (belum VALID)",
+        });
+      }
 
       let scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: true });
       let tier = "VALID";
-      if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit && kikikHit.side === "LONG") {
+      if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit && kikikHit.path === "PRE_EXPANSION") {
         const confK = Math.min(99, Math.round(50 + kikikHit.score * 0.45));
-        let need = kikikHit.path === "PRE_EXPANSION" ? 74 : 76;
+        const need = 74;
         if (confK >= need) {
           scored = {
             action: kikikHit.side,
@@ -2166,6 +2177,19 @@ async function main() {
           watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "LONG ditahan — BTC bearish kuat" });
           continue;
         }
+      }
+
+      // TREND VALID quality: confN minimal (hindari 99% tipis)
+      if (tier === "VALID" && scored.setup === "TREND" && (scored.confluence == null || scored.confluence < 5)) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: scored.probability,
+          setup: scored.setup,
+          confluence: scored.confluence,
+          reason: "TREND confN<" + 5 + " → WATCH",
+        });
+        continue;
       }
       const levels = buildLevels(m5c, scored, c.mark, regime);
       // WAIT / rr=0 = tidak ada entry zone — jangan anggap signal 99%
