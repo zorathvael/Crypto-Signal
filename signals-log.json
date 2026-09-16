@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "CRCL_SHORT_1789516300813",
-      "ts": 1789516300813,
-      "base": "CRCL",
-      "instId": "CRCLUSDT",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 84.77,
-      "sl": 85.4422303735346,
-      "tp1": 83.90527206243873,
-      "tp2": 83.38643529990196,
-      "tp3": 82.57935589151144,
-      "rr": 2.058170464424597,
-      "regime": "low"
-    },
-    {
       "id": "XLM_SHORT_1789526125328",
       "ts": 1789526125328,
       "base": "XLM",
@@ -70,6 +53,28 @@
     }
   ],
   "closed": [
+    {
+      "id": "CRCL_SHORT_1789516300813",
+      "ts": 1789516300813,
+      "base": "CRCL",
+      "instId": "CRCLUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 84.77,
+      "sl": 85.4422303735346,
+      "tp1": 83.90527206243873,
+      "tp2": 83.38643529990196,
+      "tp3": 82.57935589151144,
+      "rr": 2.058170464424597,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.18,
+      "exit": 85.4422303735346,
+      "closedAt": 1789528500000,
+      "costR": 0.177
+    },
     {
       "id": "LINK_SHORT_1789526125328",
       "ts": 1789526125328,
@@ -1326,19 +1331,19 @@
     }
   ],
   "stats": {
-    "total": 51,
+    "total": 52,
     "wins": 26,
-    "losses": 25,
+    "losses": 26,
     "expired": 0,
-    "sumR": 15.280000000000001,
+    "sumR": 14.1,
     "bySetup": {
       "TREND": {
-        "n": 49,
+        "n": 50,
         "wins": 26,
-        "losses": 23,
-        "sumR": 17.28,
-        "winrate": 53.1,
-        "avgR": 0.35
+        "losses": 24,
+        "sumR": 16.1,
+        "winrate": 52,
+        "avgR": 0.32
       },
       "MEAN_REV": {
         "n": 1,
@@ -1359,12 +1364,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 34,
+        "n": 35,
         "wins": 15,
-        "losses": 19,
-        "sumR": -0.5399999999999996,
-        "winrate": 44.1,
-        "avgR": -0.02
+        "losses": 20,
+        "sumR": -1.7199999999999993,
+        "winrate": 42.9,
+        "avgR": -0.05
       },
       "LONG": {
         "n": 17,
@@ -1377,7 +1382,7 @@
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 51,
-    "avgR": 0.3
+    "winrate": 50,
+    "avgR": 0.27
   }
 }
