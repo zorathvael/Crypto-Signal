@@ -1,23 +1,6 @@
 {
   "open": [
     {
-      "id": "SPCX_SHORT_1789516300813",
-      "ts": 1789516300813,
-      "base": "SPCX",
-      "instId": "SPCXUSDT",
-      "action": "SHORT",
-      "setup": "TREND",
-      "mode": "PULLBACK_MKT",
-      "probability": 99,
-      "entry": 143.31,
-      "sl": 143.66124576769133,
-      "tp1": 142.9772048681413,
-      "tp2": 142.77752778902607,
-      "tp3": 142.4669189992913,
-      "rr": 1.5159533863533223,
-      "regime": "low"
-    },
-    {
       "id": "CRCL_SHORT_1789516300813",
       "ts": 1789516300813,
       "base": "CRCL",
@@ -35,6 +18,98 @@
       "regime": "low"
     },
     {
+      "id": "XLM_SHORT_1789526125328",
+      "ts": 1789526125328,
+      "base": "XLM",
+      "instId": "XLMUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.17663,
+      "sl": 0.17741154709059873,
+      "tp1": 0.17516299999999999,
+      "tp2": 0.17344057032073873,
+      "tp3": 0.17275075899240167,
+      "rr": 4.08091811437487,
+      "regime": "normal"
+    },
+    {
+      "id": "DOGE_SHORT_1789526125328",
+      "ts": 1789526125328,
+      "base": "DOGE",
+      "instId": "DOGEUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 0.08025,
+      "sl": 0.08050166775849772,
+      "tp1": 0.0798425,
+      "tp2": 0.07935876970324364,
+      "tp3": 0.07915900360540495,
+      "rr": 3.5412970738738325,
+      "regime": "low"
+    },
+    {
+      "id": "ADA_SHORT_1789526125328",
+      "ts": 1789526125328,
+      "base": "ADA",
+      "instId": "ADAUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.1945,
+      "sl": 0.19587159352800768,
+      "tp1": 0.19278254379013982,
+      "tp2": 0.19175207006422368,
+      "tp3": 0.19014911093502082,
+      "rr": 2.00345793390253,
+      "regime": "low"
+    },
+    {
+      "id": "LINK_SHORT_1789526125328",
+      "ts": 1789526125328,
+      "base": "LINK",
+      "instId": "LINKUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_ZONE",
+      "probability": 99,
+      "entry": 10.925,
+      "sl": 10.966544705557723,
+      "tp1": 10.847349999999997,
+      "tp2": 10.758316803943694,
+      "tp3": 10.7233498017607,
+      "rr": 4.012140507885306,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
+      "id": "SPCX_SHORT_1789516300813",
+      "ts": 1789516300813,
+      "base": "SPCX",
+      "instId": "SPCXUSDT",
+      "action": "SHORT",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 143.31,
+      "sl": 143.66124576769133,
+      "tp1": 142.9772048681413,
+      "tp2": 142.77752778902607,
+      "tp3": 142.4669189992913,
+      "rr": 1.5159533863533223,
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.57,
+      "exit": 143.66124576769133,
+      "closedAt": 1789517700000,
+      "costR": 0.571
+    },
+    {
       "id": "MSTR_SHORT_1789516300813",
       "ts": 1789516300813,
       "base": "MSTR",
@@ -49,7 +124,12 @@
       "tp2": 126.70898839508023,
       "tp3": 125.66423162554369,
       "rr": 2.0095451056160787,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.2,
+      "exit": 129.39125225401233,
+      "closedAt": 1789518600000,
+      "costR": 0.202
     },
     {
       "id": "ADA_SHORT_1789516300813",
@@ -66,10 +146,13 @@
       "tp2": 0.19140839548616992,
       "tp3": 0.18915137767103063,
       "rr": 2.2723381342287694,
-      "regime": "normal"
-    }
-  ],
-  "closed": [
+      "regime": "normal",
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.25,
+      "exit": 0.19302055106841226,
+      "closedAt": 1789522200000,
+      "costR": 0.148
+    },
     {
       "id": "SPCX_SHORT_1789497453701",
       "ts": 1789497453701,
@@ -1238,19 +1321,19 @@
     }
   ],
   "stats": {
-    "total": 47,
-    "wins": 24,
-    "losses": 23,
+    "total": 50,
+    "wins": 25,
+    "losses": 25,
     "expired": 0,
-    "sumR": 15.299999999999997,
+    "sumR": 13.78,
     "bySetup": {
       "TREND": {
-        "n": 45,
-        "wins": 24,
-        "losses": 21,
-        "sumR": 17.3,
-        "winrate": 53.3,
-        "avgR": 0.38
+        "n": 48,
+        "wins": 25,
+        "losses": 23,
+        "sumR": 15.780000000000001,
+        "winrate": 52.1,
+        "avgR": 0.33
       },
       "MEAN_REV": {
         "n": 1,
@@ -1271,12 +1354,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 30,
-        "wins": 13,
-        "losses": 17,
-        "sumR": -0.52,
-        "winrate": 43.3,
-        "avgR": -0.02
+        "n": 33,
+        "wins": 14,
+        "losses": 19,
+        "sumR": -2.0399999999999996,
+        "winrate": 42.4,
+        "avgR": -0.06
       },
       "LONG": {
         "n": 17,
@@ -1289,7 +1372,7 @@
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 51.1,
-    "avgR": 0.33
+    "winrate": 50,
+    "avgR": 0.28
   }
 }
