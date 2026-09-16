@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "XAU_LONG_1789581254387",
       "ts": 1789581254387,
@@ -15,10 +16,13 @@
       "tp2": 4372.3122191395105,
       "tp3": 4383.006013637558,
       "rr": 1.3619950985174583,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.45,
+      "exit": 4340.520172457694,
+      "closedAt": 1789581600000,
+      "costR": 0.453
+    },
     {
       "id": "XAG_LONG_1789562526060",
       "ts": 1789562526060,
@@ -1429,19 +1433,19 @@
     }
   ],
   "stats": {
-    "total": 3,
+    "total": 4,
     "wins": 0,
-    "losses": 3,
+    "losses": 4,
     "expired": 0,
-    "sumR": -4.49,
+    "sumR": -5.94,
     "bySetup": {
       "TREND": {
-        "n": 2,
+        "n": 3,
         "wins": 0,
-        "losses": 2,
-        "sumR": -3.1500000000000004,
+        "losses": 3,
+        "sumR": -4.6,
         "winrate": 0,
-        "avgR": -1.58
+        "avgR": -1.53
       },
       "EARLY_REVERSAL": {
         "n": 1,
@@ -1454,17 +1458,17 @@
     },
     "byAction": {
       "LONG": {
-        "n": 3,
+        "n": 4,
         "wins": 0,
-        "losses": 3,
-        "sumR": -4.49,
+        "losses": 4,
+        "sumR": -5.94,
         "winrate": 0,
-        "avgR": -1.5
+        "avgR": -1.49
       }
     },
     "afterTs": 1789560000000,
     "feeAware": true,
     "winrate": 0,
-    "avgR": -1.5
+    "avgR": -1.49
   }
 }
