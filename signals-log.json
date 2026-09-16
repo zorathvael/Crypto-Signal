@@ -1,6 +1,42 @@
 {
   "open": [
     {
+      "id": "XAG_LONG_1789562526060",
+      "ts": 1789562526060,
+      "base": "XAG",
+      "instId": "XAGUSDT",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 64.75,
+      "sl": 64.46752264009343,
+      "tp1": 65.07876764466107,
+      "tp2": 65.27602823145772,
+      "tp3": 65.58287803314138,
+      "rr": 1.8621960769943102,
+      "regime": "low"
+    },
+    {
+      "id": "XLM_LONG_1789562526060",
+      "ts": 1789562526060,
+      "base": "XLM",
+      "instId": "XLMUSDT",
+      "action": "LONG",
+      "setup": "EARLY_REVERSAL",
+      "mode": "PULLBACK_ZONE",
+      "probability": 78,
+      "entry": 0.1747,
+      "sl": 0.17397878845375264,
+      "tp1": 0.1757735,
+      "tp2": 0.1769657797490522,
+      "tp3": 0.1775849548170167,
+      "rr": 3.141629887709972,
+      "regime": "low"
+    }
+  ],
+  "closed": [
+    {
       "id": "XAU_LONG_1789560927540",
       "ts": 1789560927540,
       "base": "XAU",
@@ -15,10 +51,13 @@
       "tp2": 4358.733718993924,
       "tp3": 4361.162331299363,
       "rr": 1.450969502550409,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.83,
+      "exit": 4340.67042383881,
+      "closedAt": 1789561800000,
+      "costR": 0.826
+    },
     {
       "id": "DOGE_SHORT_1789526125328",
       "ts": 1789526125328,
@@ -1363,19 +1402,19 @@
     }
   ],
   "stats": {
-    "total": 55,
+    "total": 56,
     "wins": 26,
-    "losses": 29,
+    "losses": 30,
     "expired": 0,
-    "sumR": 10.13,
+    "sumR": 8.299999999999999,
     "bySetup": {
       "TREND": {
-        "n": 53,
+        "n": 54,
         "wins": 26,
-        "losses": 27,
-        "sumR": 12.13,
-        "winrate": 49.1,
-        "avgR": 0.23
+        "losses": 28,
+        "sumR": 10.299999999999999,
+        "winrate": 48.1,
+        "avgR": 0.19
       },
       "MEAN_REV": {
         "n": 1,
@@ -1395,6 +1434,14 @@
       }
     },
     "byAction": {
+      "LONG": {
+        "n": 18,
+        "wins": 11,
+        "losses": 7,
+        "sumR": 13.99,
+        "winrate": 61.1,
+        "avgR": 0.78
+      },
       "SHORT": {
         "n": 38,
         "wins": 15,
@@ -1402,19 +1449,11 @@
         "sumR": -5.689999999999998,
         "winrate": 39.5,
         "avgR": -0.15
-      },
-      "LONG": {
-        "n": 17,
-        "wins": 11,
-        "losses": 6,
-        "sumR": 15.82,
-        "winrate": 64.7,
-        "avgR": 0.93
       }
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 47.3,
-    "avgR": 0.18
+    "winrate": 46.4,
+    "avgR": 0.15
   }
 }
