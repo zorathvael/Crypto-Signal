@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "DOGE_SHORT_1789526125328",
       "ts": 1789526125328,
@@ -15,7 +16,12 @@
       "tp2": 0.07935876970324364,
       "tp3": 0.07915900360540495,
       "rr": 3.5412970738738325,
-      "regime": "low"
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.45,
+      "exit": 0.08050166775849772,
+      "closedAt": 1789532100000,
+      "costR": 0.446
     },
     {
       "id": "ADA_SHORT_1789526125328",
@@ -32,10 +38,13 @@
       "tp2": 0.19175207006422368,
       "tp3": 0.19014911093502082,
       "rr": 2.00345793390253,
-      "regime": "low"
-    }
-  ],
-  "closed": [
+      "regime": "low",
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.2,
+      "exit": 0.19587159352800768,
+      "closedAt": 1789532100000,
+      "costR": 0.199
+    },
     {
       "id": "XLM_SHORT_1789526125328",
       "ts": 1789526125328,
@@ -1336,19 +1345,19 @@
     }
   ],
   "stats": {
-    "total": 53,
+    "total": 55,
     "wins": 26,
-    "losses": 27,
+    "losses": 29,
     "expired": 0,
-    "sumR": 12.78,
+    "sumR": 10.13,
     "bySetup": {
       "TREND": {
-        "n": 51,
+        "n": 53,
         "wins": 26,
-        "losses": 25,
-        "sumR": 14.78,
-        "winrate": 51,
-        "avgR": 0.29
+        "losses": 27,
+        "sumR": 12.13,
+        "winrate": 49.1,
+        "avgR": 0.23
       },
       "MEAN_REV": {
         "n": 1,
@@ -1369,12 +1378,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 36,
+        "n": 38,
         "wins": 15,
-        "losses": 21,
-        "sumR": -3.0399999999999996,
-        "winrate": 41.7,
-        "avgR": -0.08
+        "losses": 23,
+        "sumR": -5.689999999999998,
+        "winrate": 39.5,
+        "avgR": -0.15
       },
       "LONG": {
         "n": 17,
@@ -1387,7 +1396,7 @@
     },
     "afterTs": 1789207200000,
     "feeAware": true,
-    "winrate": 49.1,
-    "avgR": 0.24
+    "winrate": 47.3,
+    "avgR": 0.18
   }
 }
