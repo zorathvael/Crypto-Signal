@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "XAU_LONG_1789560927540",
+      "ts": 1789560927540,
+      "base": "XAU",
+      "instId": "XAUUSDT",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "RECLAIM_ZONE",
+      "probability": 99,
+      "entry": 4348.040281006073,
+      "sl": 4340.67042383881,
+      "tp1": 4353.386999999999,
+      "tp2": 4358.733718993924,
+      "tp3": 4361.162331299363,
+      "rr": 1.450969502550409,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "DOGE_SHORT_1789526125328",
