@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "SUI_LONG_1789667983738",
+      "ts": 1789667983738,
+      "base": "SUI",
+      "instId": "SUIUSDT",
+      "action": "LONG",
+      "setup": "TREND",
+      "mode": "PULLBACK_MKT",
+      "probability": 99,
+      "entry": 0.7326,
+      "sl": 0.7263519870694317,
+      "tp1": 0.7400261874900258,
+      "tp2": 0.7444818999840414,
+      "tp3": 0.7514130083080655,
+      "rr": 1.9017086097740445,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "XAU_LONG_1789581254387",
