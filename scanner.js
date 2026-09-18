@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.2.0 — Selective Scalper — LOC extreme + 2H
+ * Strict Core Scanner v3.2.1 — Selective + POTENSI — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -726,6 +726,69 @@ function scalpSignal(h1, m15, m5, h4, book, regime, h2) {
     confluence: 4,
     pillars: ["loc_extreme", "tf_2h", "tf_1h", "tf_15m", "tf_5m"],
     location: { pos5: pos5, pos15: pos15, pos2: pos2 },
+  };
+}
+
+
+/** WATCH/POTENSI: near-miss lokasi atau MTF — bukan entry */
+function scalpPotential(h1, m15, m5, h4, book, regime, h2) {
+  if (!h1 || !m15 || !m5) return null;
+  const t1 = tfTrend(h1);
+  const t15 = tfTrend(m15);
+  const t5 = tfTrend(m5);
+  const t2 = h2 ? tfTrend(h2) : "neutral";
+  const pos15 = m15.position != null ? m15.position : 50;
+  const pos5 = m5.position != null ? m5.position : 50;
+  const pos2 = h2 && h2.position != null ? h2.position : 50;
+  const rsi15 = m15.rsi != null ? m15.rsi : 50;
+  const rsi5 = m5.rsi != null ? m5.rsi : 50;
+
+  // Zona "hampir" ekstrem (lebih longgar dari VALID)
+  const nearLong = pos15 <= 42 && pos5 <= 50 && pos2 <= 58;
+  const nearShort = pos15 >= 58 && pos5 >= 50 && pos2 >= 42;
+  if (!nearLong && !nearShort) return null;
+
+  let action = null;
+  let reasons = [];
+  if (nearLong && !nearShort) action = "LONG";
+  else if (nearShort && !nearLong) action = "SHORT";
+  else {
+    // keduanya near: pilih yang lebih ekstrem
+    action = pos15 <= 50 - (pos15 - 50) ? "LONG" : "SHORT";
+    if (pos15 < 50) action = "LONG";
+    else action = "SHORT";
+  }
+
+  if (action === "LONG") {
+    if (t2 === "bearish") reasons.push("2H bearish");
+    if (t1 === "bearish") reasons.push("1H bearish");
+    if (t5 === "bearish") reasons.push("5M bearish");
+    if (pos15 > 35) reasons.push("15M belum cukup bawah (pos=" + Math.round(pos15) + ")");
+    if (rsi15 > 45) reasons.push("RSI15 belum oversold-ish");
+  } else {
+    if (t2 === "bullish") reasons.push("2H bullish");
+    if (t1 === "bullish") reasons.push("1H bullish");
+    if (t5 === "bullish") reasons.push("5M bullish");
+    if (pos15 < 65) reasons.push("15M belum cukup atas (pos=" + Math.round(pos15) + ")");
+    if (rsi15 < 55) reasons.push("RSI15 belum overbought-ish");
+  }
+
+  // score potensi 60-75
+  let score = 62;
+  if (action === "LONG" && pos15 <= 35) score += 6;
+  if (action === "SHORT" && pos15 >= 65) score += 6;
+  if (action === "LONG" && t2 !== "bearish") score += 4;
+  if (action === "SHORT" && t2 !== "bullish") score += 4;
+  if (action === "LONG" && t5 !== "bearish") score += 3;
+  if (action === "SHORT" && t5 !== "bullish") score += 3;
+  score = clamp(score, 60, 75);
+
+  return {
+    action,
+    score,
+    setup: "POTENSI",
+    reason: reasons.length ? reasons.slice(0, 3).join("; ") : "dekat zona + MTF belum lengkap",
+    location: { pos5, pos15, pos2 },
   };
 }
 
@@ -2150,10 +2213,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.2.0 | Selective Scalper · jarang · lokasi ekstrem · MTF ketat ===");
+  console.log("=== Strict Core v3.2.1 | Selective VALID + lapisan POTENSI (bukan entry) ===");
   console.log(new Date().toISOString());
-  console.log("Filosofi: diam > trade sampah | LONG=zona bawah | SHORT=zona atas | 2H+1H+15M+5M");
-  console.log("Data: Bitget USDT-M | max 2 VALID/run | score 76-90 (no fake 99)");
+  console.log("VALID = entry ketat | POTENSI/WATCH = pantau saja (tidak ke Square sebagai signal)");
+  console.log("Data: Bitget | LONG bawah / SHORT atas | 2H+1H+15M+5M");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2236,7 +2299,20 @@ async function main() {
       const h2 = h2c.length >= 20 ? analyzeTF(h2c, "2H") : null;
       let scored = scalpSignal(h1, m15, m5, h4, book, regime, h2);
       let tier = "VALID";
-      if (!scored) continue; // diam jika tidak lolos scalp — WATCH hanya dari zona/rr miss di bawah
+      if (!scored) {
+        const pot = scalpPotential(h1, m15, m5, h4, book, regime, h2);
+        if (pot) {
+          watches.push({
+            base: c.base,
+            action: pot.action,
+            score: pot.score,
+            setup: "POTENSI",
+            reason: pot.reason,
+            location: pot.location,
+          });
+        }
+        continue;
+      }
 
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
@@ -2375,6 +2451,7 @@ async function main() {
   signals.push(...top);
 
   watches.sort((a, b) => (b.score || 0) - (a.score || 0));
+  if (watches.length > 12) watches.length = 12;
   console.log(`Strict signals (VALID): ${signals.length}`);
   signals.forEach((s) =>
     console.log(
@@ -2384,7 +2461,7 @@ async function main() {
     )
   );
 
-  console.log(`WATCH potential: ${watches.length}`);
+  console.log(`WATCH / POTENSI (bukan entry): ${watches.length}`);
   watches.slice(0, 12).forEach((w) =>
     console.log(
       `  ~ ${w.base} ${w.action} score ${w.score} ${w.setup || ""}` +
