@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.0.0 — Scalp 15M MTF
+ * Strict Core Scanner v3.1.1 — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -608,73 +608,123 @@ function kikikPreClassify(f, flow) {
  * v3.0 SCALP 15M — pure multi-TF scalping
  * Setup 15M + bias 1H + trigger 5M | pullback entry | no fake 99
  */
-function scalpSignal(h1, m15, m5, h4, book, regime) {
+/** Agregasi 1H → 2H (Bitget sering tanpa granularity 2H) */
+function candlesTo2H(h1Candles) {
+  if (!h1Candles || h1Candles.length < 4) return [];
+  const out = [];
+  const start = h1Candles.length % 2 === 0 ? 0 : 1;
+  for (let k = start; k + 1 < h1Candles.length; k += 2) {
+    const a = h1Candles[k];
+    const b = h1Candles[k + 1];
+    out.push({
+      ts: b.ts,
+      open: a.open,
+      high: Math.max(a.high, b.high),
+      low: Math.min(a.low, b.low),
+      close: b.close,
+      volume: (a.volume || 0) + (b.volume || 0),
+      confirm: "1",
+    });
+  }
+  return out;
+}
+
+/**
+ * v3.1 SCALP location-extreme + MTF termasuk 2H
+ * LONG: harga di area BAWAH (15M/5M) + 2H tidak bearish
+ * SHORT: harga di area ATAS + 2H tidak bullish
+ */
+function scalpSignal(h1, m15, m5, h4, book, regime, h2) {
   if (!h1 || !m15 || !m5) return null;
   if (regime && regime.regime === "extreme") return null;
 
   const t1 = tfTrend(h1);
   const t15 = tfTrend(m15);
   const t5 = tfTrend(m5);
-
-  let action = null;
-  if (t15 === "bullish" && t1 !== "bearish") action = "LONG";
-  if (t15 === "bearish" && t1 !== "bullish") action = "SHORT";
-  if (!action) return null;
-
-  if (action === "LONG" && t5 === "bearish") return null;
-  if (action === "SHORT" && t5 === "bullish") return null;
+  const t2 = h2 ? tfTrend(h2) : "neutral";
+  const t4 = h4 ? tfTrend(h4) : "neutral";
 
   const pos15 = m15.position != null ? m15.position : 50;
   const pos5 = m5.position != null ? m5.position : 50;
-  if (action === "LONG" && (pos15 >= 88 || pos5 >= 90)) return null;
-  if (action === "SHORT" && (pos15 <= 12 || pos5 <= 10)) return null;
-  if (action === "LONG" && pos5 > 75 && pos15 > 80) return null;
-  if (action === "SHORT" && pos5 < 25 && pos15 < 20) return null;
+  const pos2 = h2 && h2.position != null ? h2.position : 50;
+  const rsi5 = m5.rsi != null ? m5.rsi : 50;
+  const rsi15 = m15.rsi != null ? m15.rsi : 50;
 
-  const press = (m5.volume && m5.volume.pressure != null) ? m5.volume.pressure : 0;
-  if (action === "LONG" && press < -25) return null;
-  if (action === "SHORT" && press > 25) return null;
+  const longLoc = pos15 <= 38 && pos5 <= 45 && (pos2 <= 55 || pos15 <= 30);
+  const shortLoc = pos15 >= 62 && pos5 >= 55 && (pos2 >= 45 || pos15 >= 70);
+  const longRsi = rsi15 <= 48 && rsi5 <= 50;
+  const shortRsi = rsi15 >= 52 && rsi5 >= 50;
 
-  if (action === "LONG" && m15.stDir === -1) return null;
-  if (action === "SHORT" && m15.stDir === 1) return null;
+  let action = null;
+  if (longLoc && longRsi) action = "LONG";
+  if (shortLoc && shortRsi) action = "SHORT";
+  if (!action) return null;
 
-  if (book && !book.missing) {
-    if (action === "LONG" && book.side === "ASK" && (book.imbalance ?? 0) <= -18) return null;
-    if (action === "SHORT" && book.side === "BID" && (book.imbalance ?? 0) >= 18) return null;
+  if (action === "LONG") {
+    if (t2 === "bearish") return null;
+    if (t1 === "bearish" && (h1.slope12 ?? 0) < -0.2) return null;
+    if (t15 === "bearish" && (m15.slope6 ?? 0) < -0.15) return null;
+    if (t5 === "bearish") return null;
+  } else {
+    if (t2 === "bullish") return null;
+    if (t1 === "bullish" && (h1.slope12 ?? 0) > 0.2) return null;
+    if (t15 === "bullish" && (m15.slope6 ?? 0) > 0.15) return null;
+    if (t5 === "bullish") return null;
   }
 
-  let score = 55;
-  if (t1 === t15 && t15 !== "neutral") score += 12;
-  if (t5 === t15) score += 8;
-  else if (t5 === "neutral") score += 3;
-  if (action === "LONG" && m15.emaBull) score += 6;
-  if (action === "SHORT" && m15.emaBear) score += 6;
-  if (action === "LONG" && (m5.macdUp || m5.macdCrossUp)) score += 5;
-  if (action === "SHORT" && (m5.macdDown || m5.macdCrossDown)) score += 5;
-  if (m5.volume && m5.volume.spike) score += 4;
-  if (h1.adx != null && h1.adx >= 18) score += 4;
-  if (action === "LONG" && pos5 >= 25 && pos5 <= 55) score += 6;
-  if (action === "SHORT" && pos5 >= 45 && pos5 <= 75) score += 6;
-  if (regime && regime.regime === "high") score -= 5;
-  if (regime && regime.regime === "low") score += 2;
+  const press = (m5.volume && m5.volume.pressure != null) ? m5.volume.pressure : 0;
+  if (action === "LONG" && press < -28) return null;
+  if (action === "SHORT" && press > 28) return null;
+
+  if (book && !book.missing) {
+    if (action === "LONG" && book.side === "ASK" && (book.imbalance ?? 0) <= -20) return null;
+    if (action === "SHORT" && book.side === "BID" && (book.imbalance ?? 0) >= 20) return null;
+  }
+
+  let score = 50;
+  if (action === "LONG") {
+    if (pos15 <= 25) score += 12;
+    else if (pos15 <= 32) score += 9;
+    else score += 6;
+    if (pos5 <= 30) score += 6;
+    if (pos2 <= 40) score += 5;
+    if (t2 === "bullish") score += 8;
+    if (t1 !== "bearish") score += 5;
+    if (t15 === "bullish" || t15 === "neutral") score += 6;
+    if (m5.macdUp || m5.macdCrossUp) score += 5;
+  } else {
+    if (pos15 >= 75) score += 12;
+    else if (pos15 >= 68) score += 9;
+    else score += 6;
+    if (pos5 >= 70) score += 6;
+    if (pos2 >= 60) score += 5;
+    if (t2 === "bearish") score += 8;
+    if (t1 !== "bullish") score += 5;
+    if (t15 === "bearish" || t15 === "neutral") score += 6;
+    if (m5.macdDown || m5.macdCrossDown) score += 5;
+  }
+  if (m5.volume && m5.volume.spike) score += 3;
+  if (regime && regime.regime === "high") score -= 4;
 
   score = clamp(Math.round(score), 0, 92);
-  if (score < 72) return null;
+  if (score < 74) return null;
 
   return {
     action: action,
     probability: score,
-    setup: "SCALP_15M",
+    setup: "SCALP_LOC_15M",
     h1: h1,
     m15: m15,
     m5: m5,
     h4: h4,
-    trends: { h1: t1, m15: t15, h4: tfTrend(h4) },
+    h2: h2 || null,
+    trends: { h2: t2, h1: t1, m15: t15, h4: t4 },
     book: book,
     regime: regime || null,
     volConfirm: !!(m5.volume && m5.volume.spike),
-    confluence: (t1 === t15 ? 1 : 0) + (t5 === t15 ? 1 : 0) + (m15.stDir ? 1 : 0),
-    pillars: ["mtf_15m", "bias_1h", "trigger_5m"],
+    confluence: 4,
+    pillars: ["loc_extreme", "tf_2h", "tf_1h", "tf_15m", "tf_5m"],
+    location: { pos5: pos5, pos15: pos15, pos2: pos2 },
   };
 }
 
@@ -1663,8 +1713,8 @@ function toBitgetSymbol(sym) {
   return s;
 }
 
-async function fetchOkxCandles(instId, bar, limit = 100) {
-  // Name kept for minimal churn — data from Bitget USDT-M
+async function fetchBitgetCandles(instId, bar, limit = 100) {
+  // Bitget USDT-M perpetual candles
   const symbol = toBitgetSymbol(instId);
   const gran = bitgetGranularity(bar);
   const url =
@@ -2011,7 +2061,7 @@ async function evaluateOpenOutcomes(log) {
     }
     const instId = sig.instId || `${sig.base}USDT`;
     try {
-      const candles = await fetchOkxCandles(instId, OUTCOME_BAR, 100);
+      const candles = await fetchBitgetCandles(instId, OUTCOME_BAR, 100);
       // ensure ts on candles if missing
       const norm = (candles || []).map((c) => ({
         ...c,
@@ -2099,9 +2149,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.0.0 | Scalp 15M · MTF 1H+15M+5M · pure rules ===");
+  console.log("=== Strict Core v3.1.1 | Bitget only · LOC extreme · 2H MTF ===");
   console.log(new Date().toISOString());
-  console.log("Mode: Scalp 15M | VALID = MTF 1H+15M+5M + zona entry + score>=72 | max score 92");
+  console.log("Mode: LONG=price low zone | SHORT=price high zone | 2H must not fight | score>=74");
+  console.log("Data provider: Bitget USDT-M (bukan OKX)");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2109,7 +2160,7 @@ async function main() {
   );
   let btcBias = { bias: "neutral", score: 0 };
   try {
-    const btcCandles = await fetchOkxCandles("BTCUSDT", "1H", 100);
+    const btcCandles = await fetchBitgetCandles("BTCUSDT", "1H", 100);
     const btcTF = analyzeTF(btcCandles, "BTC1H");
     if (btcTF) {
       btcBias = { bias: btcTF.bias, score: btcTF.biasScore, adx: btcTF.adx };
@@ -2162,13 +2213,13 @@ async function main() {
     try {
       // Anti-429: 2 gelombang request, bukan 6 paralel sekaligus
       const [h1c, m15c, m5c] = await Promise.all([
-        fetchOkxCandles(c.instId, "1H", 100),
-        fetchOkxCandles(c.instId, "15m", 100),
-        fetchOkxCandles(c.instId, "5m", 100),
+        fetchBitgetCandles(c.instId, "1H", 100),
+        fetchBitgetCandles(c.instId, "15m", 100),
+        fetchBitgetCandles(c.instId, "5m", 100),
       ]);
       await new Promise((r) => setTimeout(r, 120));
       const [h4c, funding, rawBook] = await Promise.all([
-        fetchOkxCandles(c.instId, "4H", 100),
+        fetchBitgetCandles(c.instId, "4H", 100),
         fetchFunding(c.instId),
         fetchOrderBook(c.instId, 20),
       ]);
@@ -2180,7 +2231,9 @@ async function main() {
 
       // === v3.0 pure scalp 15M ===
       const regime = getVolatilityRegime(m15c);
-      let scored = scalpSignal(h1, m15, m5, h4, book, regime);
+      const h2c = candlesTo2H(h1c);
+      const h2 = h2c.length >= 20 ? analyzeTF(h2c, "2H") : null;
+      let scored = scalpSignal(h1, m15, m5, h4, book, regime, h2);
       let tier = "VALID";
       if (!scored) continue; // diam jika tidak lolos scalp — WATCH hanya dari zona/rr miss di bawah
 
