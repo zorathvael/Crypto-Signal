@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.1.1 — LOC extreme + 2H
+ * Strict Core Scanner v3.2.0 — Selective Scalper — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -650,10 +650,11 @@ function scalpSignal(h1, m15, m5, h4, book, regime, h2) {
   const rsi5 = m5.rsi != null ? m5.rsi : 50;
   const rsi15 = m15.rsi != null ? m15.rsi : 50;
 
-  const longLoc = pos15 <= 38 && pos5 <= 45 && (pos2 <= 55 || pos15 <= 30);
-  const shortLoc = pos15 >= 62 && pos5 >= 55 && (pos2 >= 45 || pos15 >= 70);
-  const longRsi = rsi15 <= 48 && rsi5 <= 50;
-  const shortRsi = rsi15 >= 52 && rsi5 >= 50;
+  // Seleksi ketat: benar-benar bawah/atas, bukan tengah
+  const longLoc = pos15 <= 35 && pos5 <= 42 && pos2 <= 52;
+  const shortLoc = pos15 >= 65 && pos5 >= 58 && pos2 >= 48;
+  const longRsi = rsi15 <= 45 && rsi5 <= 48;
+  const shortRsi = rsi15 >= 55 && rsi5 >= 52;
 
   let action = null;
   if (longLoc && longRsi) action = "LONG";
@@ -706,8 +707,8 @@ function scalpSignal(h1, m15, m5, h4, book, regime, h2) {
   if (m5.volume && m5.volume.spike) score += 3;
   if (regime && regime.regime === "high") score -= 4;
 
-  score = clamp(Math.round(score), 0, 92);
-  if (score < 74) return null;
+  score = clamp(Math.round(score), 0, 90); // tidak pernah 99 palsu
+  if (score < 76) return null; // lebih selektif
 
   return {
     action: action,
@@ -1621,7 +1622,7 @@ async function sendWatchDiscord(watches) {
     title: `👀 WATCH · ${top.length} potensi (bukan entry)`,
     description: lines.join("\n") + "\n\n_Belum lolos gate VALID — pantau zona, jangan FOMO._",
     color: 0xfbbf24,
-    footer: { text: "Strict Core v2.14 · WATCH ≠ signal · NFA" },
+    footer: { text: "Selective Scalper v3.2 · lokasi+MTF · NFA" },
     timestamp: new Date().toISOString(),
   };
   try {
@@ -1679,7 +1680,7 @@ async function sendDiscord(signals) {
         { name: "Book", value: s.book ? `${s.book.side} (${s.book.imbalance}) · ${s.book.quality || "—"}` : "—", inline: true },
         { name: "1H / 15M / 5M", value: `${s.trends?.h1 || s.h1?.bias || "—"} / ${s.trends?.m15 || s.m15?.bias || "—"} / ${s.m5?.volume?.side || "—"}`, inline: true },
       ],
-      footer: { text: "Strict Core v2.12 · potensi + proteksi · NFA" },
+      footer: { text: "Selective Scalper v3.2 · lokasi+MTF · NFA" },
       timestamp: new Date().toISOString(),
     };
     const res = await fetch(DISCORD_WEBHOOK, {
@@ -2149,10 +2150,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.1.1 | Bitget only · LOC extreme · 2H MTF ===");
+  console.log("=== Strict Core v3.2.0 | Selective Scalper · jarang · lokasi ekstrem · MTF ketat ===");
   console.log(new Date().toISOString());
-  console.log("Mode: LONG=price low zone | SHORT=price high zone | 2H must not fight | score>=74");
-  console.log("Data provider: Bitget USDT-M (bukan OKX)");
+  console.log("Filosofi: diam > trade sampah | LONG=zona bawah | SHORT=zona atas | 2H+1H+15M+5M");
+  console.log("Data: Bitget USDT-M | max 2 VALID/run | score 76-90 (no fake 99)");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2340,8 +2341,8 @@ async function main() {
     return cb - ca;
   });
   // Audit: SHORT sample edge lemah — max 2 SHORT VALID per run (keep best)
-  const MAX_SHORT = 2;
-  const MAX_LONG = 2;
+  const MAX_SHORT = 1;
+  const MAX_LONG = 1;
   let nS = 0, nL = 0;
   const capped = [];
   for (const s of signals) {
@@ -2361,10 +2362,17 @@ async function main() {
     capped.push(s);
   }
   if (capped.length < signals.length) {
-    console.log(`Cluster cap: ${signals.length} → ${capped.length} VALID (SHORT<=${MAX_SHORT}, LONG<=${MAX_LONG})`);
+    console.log("Seleksi cluster: " + signals.length + " → " + capped.length + " VALID (max 1 LONG + 1 SHORT)");
+  }
+  // Selective scalper: max 2 total
+  const top = capped.slice(0, 2);
+  if (top.length < capped.length) {
+    for (const s of capped.slice(2)) {
+      watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cap total 2 VALID/run" });
+    }
   }
   signals.length = 0;
-  signals.push(...capped);
+  signals.push(...top);
 
   watches.sort((a, b) => (b.score || 0) - (a.score || 0));
   console.log(`Strict signals (VALID): ${signals.length}`);
