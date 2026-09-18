@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v2.20.1
+ * Strict Core Scanner v3.0.0 — Scalp 15M MTF
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -38,7 +38,7 @@ const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
 const SLIPPAGE_RT = 0.0004;     // 0.04% round-turn conservative
 const EV_MIN_R = 0.05;          // minimum expected R after costs
 // Stats only count closed trades after this (Block A baseline) — ISO ms
-const OUTCOME_STATS_AFTER_TS = Date.parse("2026-09-16T12:00:00Z") || 0; // v2.20 LONG-only era
+const OUTCOME_STATS_AFTER_TS = Date.parse("2026-09-18T00:00:00Z") || 0; // v3.0 scalp 15M era
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -600,6 +600,81 @@ function kikikPreClassify(f, flow) {
     side: longScore >= shortScore ? "LONG" : "SHORT",
     score: +Math.max(longScore, shortScore).toFixed(1),
     expansion,
+  };
+}
+
+
+/**
+ * v3.0 SCALP 15M — pure multi-TF scalping
+ * Setup 15M + bias 1H + trigger 5M | pullback entry | no fake 99
+ */
+function scalpSignal(h1, m15, m5, h4, book, regime) {
+  if (!h1 || !m15 || !m5) return null;
+  if (regime && regime.regime === "extreme") return null;
+
+  const t1 = tfTrend(h1);
+  const t15 = tfTrend(m15);
+  const t5 = tfTrend(m5);
+
+  let action = null;
+  if (t15 === "bullish" && t1 !== "bearish") action = "LONG";
+  if (t15 === "bearish" && t1 !== "bullish") action = "SHORT";
+  if (!action) return null;
+
+  if (action === "LONG" && t5 === "bearish") return null;
+  if (action === "SHORT" && t5 === "bullish") return null;
+
+  const pos15 = m15.position != null ? m15.position : 50;
+  const pos5 = m5.position != null ? m5.position : 50;
+  if (action === "LONG" && (pos15 >= 88 || pos5 >= 90)) return null;
+  if (action === "SHORT" && (pos15 <= 12 || pos5 <= 10)) return null;
+  if (action === "LONG" && pos5 > 75 && pos15 > 80) return null;
+  if (action === "SHORT" && pos5 < 25 && pos15 < 20) return null;
+
+  const press = (m5.volume && m5.volume.pressure != null) ? m5.volume.pressure : 0;
+  if (action === "LONG" && press < -25) return null;
+  if (action === "SHORT" && press > 25) return null;
+
+  if (action === "LONG" && m15.stDir === -1) return null;
+  if (action === "SHORT" && m15.stDir === 1) return null;
+
+  if (book && !book.missing) {
+    if (action === "LONG" && book.side === "ASK" && (book.imbalance ?? 0) <= -18) return null;
+    if (action === "SHORT" && book.side === "BID" && (book.imbalance ?? 0) >= 18) return null;
+  }
+
+  let score = 55;
+  if (t1 === t15 && t15 !== "neutral") score += 12;
+  if (t5 === t15) score += 8;
+  else if (t5 === "neutral") score += 3;
+  if (action === "LONG" && m15.emaBull) score += 6;
+  if (action === "SHORT" && m15.emaBear) score += 6;
+  if (action === "LONG" && (m5.macdUp || m5.macdCrossUp)) score += 5;
+  if (action === "SHORT" && (m5.macdDown || m5.macdCrossDown)) score += 5;
+  if (m5.volume && m5.volume.spike) score += 4;
+  if (h1.adx != null && h1.adx >= 18) score += 4;
+  if (action === "LONG" && pos5 >= 25 && pos5 <= 55) score += 6;
+  if (action === "SHORT" && pos5 >= 45 && pos5 <= 75) score += 6;
+  if (regime && regime.regime === "high") score -= 5;
+  if (regime && regime.regime === "low") score += 2;
+
+  score = clamp(Math.round(score), 0, 92);
+  if (score < 72) return null;
+
+  return {
+    action: action,
+    probability: score,
+    setup: "SCALP_15M",
+    h1: h1,
+    m15: m15,
+    m5: m5,
+    h4: h4,
+    trends: { h1: t1, m15: t15, h4: tfTrend(h4) },
+    book: book,
+    regime: regime || null,
+    volConfirm: !!(m5.volume && m5.volume.spike),
+    confluence: (t1 === t15 ? 1 : 0) + (t5 === t15 ? 1 : 0) + (m15.stDir ? 1 : 0),
+    pillars: ["mtf_15m", "bias_1h", "trigger_5m"],
   };
 }
 
@@ -2024,9 +2099,9 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v2.20.1 | LONG-only + circuit breaker (3 loss) + wider SL ===");
+  console.log("=== Strict Core v3.0.0 | Scalp 15M · MTF 1H+15M+5M · pure rules ===");
   console.log(new Date().toISOString());
-  console.log("Stats baseline: 2026-09-16 (LONG-only era) — SHORT VALID frozen");
+  console.log("Mode: Scalp 15M | VALID = MTF 1H+15M+5M + zona entry + score>=72 | max score 92");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2103,156 +2178,44 @@ async function main() {
       const h4 = analyzeTF(h4c, "4H");
       const book = analyzeOrderBook(rawBook);
 
-      // Volatility regime from 15m (most relevant for 15m-1h scalping)
+      // === v3.0 pure scalp 15M ===
       const regime = getVolatilityRegime(m15c);
-
-      // KikikJourney: Early / PRE-EXPANSION from 1H + flow proxy (no extra API)
-      const kf = kikikCandleFeatures(h1c);
-      const kFlow = kikikFlow(m5, book);
-      const kEarly = kikikEarlyClassify(kf, kFlow);
-      const kPre = kikikPreClassify(kf, kFlow);
-      let kikikHit = null;
-      // VALID hanya PRE LONG; EARLY → WATCH (sample EARLY masih 1 loss)
-      if (kPre && kPre.tier === "PRE" && kPre.side === "LONG") {
-        kikikHit = Object.assign({}, kPre, { path: "PRE_EXPANSION" });
-      } else if (kEarly && kEarly.tier === "EARLY") {
-        watches.push({
-          base: c.base,
-          action: kEarly.side,
-          score: Math.round(kEarly.score),
-          setup: "EARLY_REVERSAL",
-          reason: "Kikik EARLY → WATCH only (belum VALID)",
-        });
-      }
-
-      let scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: true });
+      let scored = scalpSignal(h1, m15, m5, h4, book, regime);
       let tier = "VALID";
-      if ((!scored || scored.probability < MIN_PROB_VALID) && kikikHit && kikikHit.path === "PRE_EXPANSION") {
-        const confK = Math.min(99, Math.round(50 + kikikHit.score * 0.45));
-        const need = 74;
-        if (confK >= need) {
-          scored = {
-            action: kikikHit.side,
-            probability: confK,
-            setup: kikikHit.path,
-            h1: h1,
-            m15: m15,
-            m5: m5,
-            h4: h4,
-            trends: { h1: tfTrend(h1), m15: tfTrend(m15), h4: tfTrend(h4) },
-            book: book,
-            regime: regime,
-            volConfirm: !!(m5.volume && m5.volume.spike),
-            confluence: Math.round(kikikHit.score / 10),
-            pillars: ["kikik_" + String(kikikHit.path).toLowerCase()],
-            kikik: kikikHit,
-          };
-          tier = "VALID";
-        }
-      }
-      if (!scored || scored.probability < MIN_PROB_VALID) {
-        scored = scoreSignal(h1, m15, m5, h4, funding, btcBias, book, regime, { strict: false });
-        if (!scored && kikikHit) {
-          watches.push({
-            base: c.base,
-            action: kikikHit.side,
-            score: Math.round(kikikHit.score),
-            setup: kikikHit.path || "KIKIK",
-            confluence: null,
-            reason: "Kikik " + kikikHit.tier + " score " + kikikHit.score,
-          });
-          continue;
-        }
-        if (!scored && kEarly && kEarly.tier === "MONITOR") {
-          watches.push({
-            base: c.base,
-            action: kEarly.side,
-            score: Math.round(kEarly.score),
-            setup: "KIKIK_MONITOR",
-            reason: "Kikik MONITOR score " + kEarly.score,
-          });
-          continue;
-        }
-        if (!scored) continue;
-        tier = "WATCH";
-      }
-      if (scored && kikikHit) scored.kikik = kikikHit;
+      if (!scored) continue; // diam jika tidak lolos scalp — WATCH hanya dari zona/rr miss di bawah
 
 
-      // v2.19: SHORT VALID frozen; LONG ditahan hanya jika BTC bearish sangat kuat
-      if (tier === "VALID" && scored) {
-        if (scored.action === "SHORT") {
-          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "SHORT VALID beku (edge historis negatif)" });
-          continue;
-        }
-        if (btcBias && btcBias.bias === "bearish" && (btcBias.score || 0) <= -40 && scored.action === "LONG") {
-          watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, reason: "LONG ditahan — BTC bearish kuat" });
-          continue;
-        }
-      }
-
-      // TREND VALID quality: confN minimal (hindari 99% tipis)
-      if (tier === "VALID" && scored.setup === "TREND" && (scored.confluence == null || scored.confluence < 5)) {
+      const levels = buildLevels(m5c, scored, c.mark, regime);
+      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR) {
         watches.push({
           base: c.base,
           action: scored.action,
           score: scored.probability,
-          setup: scored.setup,
-          confluence: scored.confluence,
-          reason: "TREND confN<" + 5 + " → WATCH",
-        });
-        continue;
-      }
-      const levels = buildLevels(m5c, scored, c.mark, regime);
-      // WAIT / rr=0 = tidak ada entry zone — jangan anggap signal 99%
-      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr <= 0) {
-        watches.push({
-          base: c.base,
-          action: scored.action,
-          score: Math.min(scored.probability, 70),
-          setup: scored.setup,
-          confluence: scored.confluence,
-          reason: "belum di zona entry (mode WAIT/rr=0) — bukan signal",
-        });
-        continue;
-      }
-      const minRr = tier === "VALID"
-        ? (scored.probability >= 92 && scored.setup === "TREND" ? Math.max(1.35, MIN_RR - 0.15) : MIN_RR)
-        : 1.2;
-      if (levels.rr < minRr) {
-        watches.push({
-          base: c.base,
-          action: scored.action,
-          score: Math.min(scored.probability, 75),
-          setup: scored.setup,
-          confluence: scored.confluence,
-          reason: "rr lemah (rr=" + levels.rr.toFixed(2) + ")",
+          setup: "SCALP_15M",
+          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr<" + MIN_RR + " (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
         });
         continue;
       }
       const modeStr = String(levels.mode || "");
       if (!modeStr.includes("_ZONE") && !modeStr.includes("_MKT")) {
-        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "belum di zona entry" });
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: "SCALP_15M", reason: "mode entry tidak valid" });
         continue;
       }
-      if (modeStr.includes("_MKT") && scored.probability < MIN_PROB_SNIPER) {
-        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "MKT butuh score lebih tinggi" });
+      // Market entry only if score kuat
+      if (modeStr.includes("_MKT") && scored.probability < 80) {
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: "SCALP_15M", reason: "MKT butuh score>=80" });
         continue;
       }
-      if (scored.regime && scored.regime.regime === "high" && levels.rr < 1.6 && tier === "VALID") continue;
+
       const evInfo = estimateEV(levels.rr, levels.entry);
-      if (!evInfo || evInfo.netRr < (tier === "VALID" ? 1.0 : 0.7)) {
-        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, confluence: scored.confluence, reason: "EV belum layak entry" });
-        continue;
-      }
-      if (tier === "WATCH") {
-        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: scored.setup, mode: levels.mode, entry: levels.entry, sl: levels.sl, tp1: levels.tp1, rr: levels.rr, confluence: scored.confluence, reason: "potensi — belum gate VALID" });
+      if (!evInfo || evInfo.netRr < 1.0) {
+        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: "SCALP_15M", reason: "EV/netR rendah" });
         continue;
       }
 
       let riskPct = suggestRisk(regime, scored.probability);
 
-      signals.push({
+            signals.push({
         base: c.base,
         instId: c.instId,
         action: scored.action,
@@ -2324,8 +2287,8 @@ async function main() {
     return cb - ca;
   });
   // Audit: SHORT sample edge lemah — max 2 SHORT VALID per run (keep best)
-  const MAX_SHORT = 0; // frozen
-  const MAX_LONG = 3;
+  const MAX_SHORT = 2;
+  const MAX_LONG = 2;
   let nS = 0, nL = 0;
   const capped = [];
   for (const s of signals) {
