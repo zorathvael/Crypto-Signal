@@ -1455,42 +1455,16 @@
     }
   ],
   "stats": {
-    "total": 5,
-    "wins": 1,
-    "losses": 4,
+    "total": 0,
+    "wins": 0,
+    "losses": 0,
     "expired": 0,
-    "sumR": -4.92,
-    "bySetup": {
-      "TREND": {
-        "n": 4,
-        "wins": 1,
-        "losses": 3,
-        "sumR": -3.58,
-        "winrate": 25,
-        "avgR": -0.9
-      },
-      "EARLY_REVERSAL": {
-        "n": 1,
-        "wins": 0,
-        "losses": 1,
-        "sumR": -1.34,
-        "winrate": 0,
-        "avgR": -1.34
-      }
-    },
-    "byAction": {
-      "LONG": {
-        "n": 5,
-        "wins": 1,
-        "losses": 4,
-        "sumR": -4.92,
-        "winrate": 20,
-        "avgR": -0.98
-      }
-    },
-    "afterTs": 1789560000000,
+    "sumR": 0,
+    "bySetup": {},
+    "byAction": {},
+    "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 20,
-    "avgR": -0.98
+    "winrate": null,
+    "avgR": null
   }
 }
