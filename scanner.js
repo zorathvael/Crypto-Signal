@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.2.1 — Selective + POTENSI — LOC extreme + 2H
+ * Strict Core Scanner v3.3.0 — Kikik MTF + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -609,6 +609,125 @@ function kikikPreClassify(f, flow) {
  * Setup 15M + bias 1H + trigger 5M | pullback entry | no fake 99
  */
 /** Agregasi 1H → 2H (Bitget sering tanpa granularity 2H) */
+
+function tfSideScore(tf, wantLong) {
+  if (!tf) return 0.5;
+  const tr = tfTrend(tf);
+  if (wantLong) {
+    if (tr === "bullish") return 1;
+    if (tr === "neutral") return 0.55;
+    return 0.15;
+  }
+  if (tr === "bearish") return 1;
+  if (tr === "neutral") return 0.55;
+  return 0.15;
+}
+function liquiditySweepScore(m5, wantLong) {
+  if (!m5 || m5.position == null) return 0.5;
+  const pos = m5.position;
+  const rev = m5.reversal || { bias: "neutral", quality: 0 };
+  if (wantLong) {
+    let s = pos <= 30 ? 0.85 : pos <= 45 ? 0.65 : 0.35;
+    if (rev.bias === "bullish" && rev.quality >= 0.7) s = Math.min(1, s + 0.2);
+    return s;
+  }
+  let s = pos >= 70 ? 0.85 : pos >= 55 ? 0.65 : 0.35;
+  if (rev.bias === "bearish" && rev.quality >= 0.7) s = Math.min(1, s + 0.2);
+  return s;
+}
+function volumeScoreMtf(m5) {
+  if (!m5 || !m5.volume) return 0.5;
+  let s = 0.45;
+  if (m5.volume.spike) s += 0.25;
+  const pr = Math.abs(m5.volume.pressure || 0);
+  if (pr >= 12) s += 0.15;
+  if (pr >= 22) s += 0.1;
+  return Math.min(1, Math.max(0, s));
+}
+function rsiMomScore(m5, wantLong) {
+  const r = m5 && m5.rsi != null ? m5.rsi : 50;
+  if (wantLong) {
+    if (r <= 35) return 0.9;
+    if (r <= 45) return 0.75;
+    if (r <= 55) return 0.55;
+    return 0.25;
+  }
+  if (r >= 65) return 0.9;
+  if (r >= 55) return 0.75;
+  if (r >= 45) return 0.55;
+  return 0.25;
+}
+function kikikLocation(pos, wantLong) {
+  if (wantLong) return Math.min(1, Math.max(0, (0.38 - pos / 100) / 0.38));
+  return Math.min(1, Math.max(0, (pos / 100 - 0.62) / 0.38));
+}
+function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
+  if (!h4 || !h1 || !m15 || !m5) return null;
+  if (regime && regime.regime === "extreme") return null;
+  const pos15 = m15.position != null ? m15.position : 50;
+  function confFor(wantLong) {
+    const w4 = tfSideScore(h4, wantLong);
+    const w1 = tfSideScore(h1, wantLong);
+    const w30 = tfSideScore(m30 || m15, wantLong);
+    const w15 = tfSideScore(m15, wantLong);
+    const sweep = liquiditySweepScore(m5, wantLong);
+    const vol = volumeScoreMtf(m5);
+    const rsiS = rsiMomScore(m5, wantLong);
+    let conf =
+      100 *
+      (0.2 * w4 + 0.2 * w1 + 0.2 * w30 + 0.15 * w15 + 0.1 * sweep + 0.1 * vol + 0.05 * rsiS);
+    const loc = kikikLocation(pos15, wantLong);
+    if (loc >= 0.6) conf += 6;
+    else if (loc >= 0.4) conf += 2;
+    else conf -= 8;
+    if (book && !book.missing) {
+      if (wantLong && book.side === "BID" && (book.imbalance || 0) >= 8) conf += 3;
+      if (!wantLong && book.side === "ASK" && (book.imbalance || 0) <= -8) conf += 3;
+      if (wantLong && book.side === "ASK" && (book.imbalance || 0) <= -18) conf -= 10;
+      if (!wantLong && book.side === "BID" && (book.imbalance || 0) >= 18) conf -= 10;
+    }
+    let align = 0;
+    if (w4 >= 0.9) align += 1;
+    if (w1 >= 0.9) align += 1;
+    if (w30 >= 0.9) align += 1;
+    if (w15 >= 0.9) align += 1;
+    conf = Math.min(92, Math.max(0, Math.round(conf)));
+    return { side: wantLong ? "LONG" : "SHORT", conf, align, loc, w4, w1, w30, w15 };
+  }
+  const L = confFor(true);
+  const S = confFor(false);
+  const best = L.conf >= S.conf ? L : S;
+  if (best.conf >= 80 && best.align >= 3 && best.loc >= 0.35) {
+    return {
+      action: best.side,
+      probability: best.conf,
+      setup: "KIKIK_MTF",
+      h1: h1,
+      m15: m15,
+      m5: m5,
+      h4: h4,
+      trends: { h4: tfTrend(h4), h1: tfTrend(h1), m30: m30 ? tfTrend(m30) : "n/a", m15: tfTrend(m15) },
+      book: book,
+      regime: regime || null,
+      volConfirm: !!(m5.volume && m5.volume.spike),
+      confluence: best.align,
+      pillars: ["kikik_mtf", "loc", "align"],
+      kikik: best,
+    };
+  }
+  if (best.conf >= 65 && best.loc >= 0.25) {
+    return {
+      watch: true,
+      action: best.side,
+      probability: best.conf,
+      setup: "KIKIK_POTENSI",
+      reason: "conf=" + best.conf + " align=" + best.align + " loc=" + best.loc.toFixed(2),
+      kikik: best,
+    };
+  }
+  return null;
+}
+
 function candlesTo2H(h1Candles) {
   if (!h1Candles || h1Candles.length < 4) return [];
   const out = [];
@@ -2213,10 +2332,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.2.1 | Selective VALID + lapisan POTENSI (bukan entry) ===");
+  console.log("=== Strict Core v3.3.0 | Kikik MTF brain + LOC · Bitget · Discord/TG/Square ===");
   console.log(new Date().toISOString());
-  console.log("VALID = entry ketat | POTENSI/WATCH = pantau saja (tidak ke Square sebagai signal)");
-  console.log("Data: Bitget | LONG bawah / SHORT atas | 2H+1H+15M+5M");
+  console.log("VALID: Kikik MTF conf>=80 align>=3 + lokasi | atau LOC extreme scalp");
+  console.log("POTENSI: conf 65-79 | Data Bitget | channel Discord+TG+Square tetap");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2281,9 +2400,10 @@ async function main() {
         fetchBitgetCandles(c.instId, "15m", 100),
         fetchBitgetCandles(c.instId, "5m", 100),
       ]);
-      await new Promise((r) => setTimeout(r, 120));
-      const [h4c, funding, rawBook] = await Promise.all([
+      await new Promise((r) => setTimeout(r, 100));
+      const [h4c, m30c, funding, rawBook] = await Promise.all([
         fetchBitgetCandles(c.instId, "4H", 100),
+        fetchBitgetCandles(c.instId, "30m", 100),
         fetchFunding(c.instId),
         fetchOrderBook(c.instId, 20),
       ]);
@@ -2291,14 +2411,30 @@ async function main() {
       const m15 = analyzeTF(m15c, "15M");
       const m5 = analyzeTF(m5c, "5M");
       const h4 = analyzeTF(h4c, "4H");
+      const m30 = m30c && m30c.length >= 40 ? analyzeTF(m30c, "30M") : null;
       const book = analyzeOrderBook(rawBook);
 
-      // === v3.0 pure scalp 15M ===
+      // === Kikik MTF brain (primary) + location scalp fallback ===
       const regime = getVolatilityRegime(m15c);
       const h2c = candlesTo2H(h1c);
       const h2 = h2c.length >= 20 ? analyzeTF(h2c, "2H") : null;
-      let scored = scalpSignal(h1, m15, m5, h4, book, regime, h2);
+      let scored = null;
       let tier = "VALID";
+      const kAct = kikikMtfAction(h4, h1, m30, m15, m5, book, regime);
+      if (kAct && !kAct.watch) {
+        scored = kAct;
+      } else if (kAct && kAct.watch) {
+        watches.push({
+          base: c.base,
+          action: kAct.action,
+          score: kAct.probability,
+          setup: "KIKIK_POTENSI",
+          reason: kAct.reason,
+        });
+      }
+      if (!scored) {
+        scored = scalpSignal(h1, m15, m5, h4, book, regime, h2);
+      }
       if (!scored) {
         const pot = scalpPotential(h1, m15, m5, h4, book, regime, h2);
         if (pot) {
