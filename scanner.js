@@ -1,1 +1,1 @@
-loading
+@file:///home/workdir/artifacts/scanner.js
