@@ -16,6 +16,23 @@
       "tp3": 0.8948331620334142,
       "rr": 2.1779801141228643,
       "regime": "normal"
+    },
+    {
+      "id": "LSK_SHORT_1789862164324",
+      "ts": 1789862164324,
+      "base": "LSK",
+      "instId": "LSKUSDT",
+      "action": "SHORT",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_ZONE",
+      "probability": 86,
+      "entry": 0.4063,
+      "sl": 0.4102847699567016,
+      "tp1": 0.399885,
+      "tp2": 0.39413686117077884,
+      "tp3": 0.3905536158492796,
+      "rr": 3.0524067791580105,
+      "regime": "normal"
     }
   ],
   "closed": [
