@@ -1,5 +1,23 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "SNDK_LONG_1789787624991",
+      "ts": 1789787624991,
+      "base": "SNDK",
+      "instId": "SNDKUSDT",
+      "action": "LONG",
+      "setup": "KIKIK_MTF",
+      "mode": "PULLBACK_MKT",
+      "probability": 82,
+      "entry": 1777.74,
+      "sl": 1769.426210207664,
+      "tp1": 1786.384675285859,
+      "tp2": 1791.5714804573743,
+      "tp3": 1799.6398440575094,
+      "rr": 1.6636793571717248,
+      "regime": "low"
+    }
+  ],
   "closed": [
     {
       "id": "SUI_LONG_1789667983738",
