@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.3.1 — Kikik MTF + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.4.0 — Kikik MTF + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -733,6 +733,64 @@ function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
     };
   }
   return null;
+}
+
+
+/**
+ * Early-reversal diagnostics (port ide KikikJourney)
+ * location / exhaustion / reclaim / trigger — untuk VALID soft-bonus & POTENSI audit
+ */
+function earlyReversalDiag(m15, m5, candles15, candles5) {
+  if (!m15 || !m5) return null;
+  const pos15 = m15.position != null ? m15.position : 50;
+  const pos5 = m5.position != null ? m5.position : 50;
+  const rsi15 = m15.rsi != null ? m15.rsi : 50;
+  const rsi5 = m5.rsi != null ? m5.rsi : 50;
+  const atrPct = m15.atr && candles15 && candles15.length
+    ? (m15.atr / candles15[candles15.length - 1].close) * 100
+    : 1.5;
+
+  // location 0..1 (LONG = discounted, SHORT = premium)
+  const longLoc = Math.min(1, Math.max(0, (0.38 - pos15 / 100) / 0.38));
+  const shortLoc = Math.min(1, Math.max(0, (pos15 / 100 - 0.62) / 0.38));
+
+  // exhaustion proxy: RSI extreme + pressure fade
+  const press = (m5.volume && m5.volume.pressure != null) ? m5.volume.pressure : 0;
+  const longExh = Math.min(1, Math.max(0, (45 - rsi15) / 25) * 0.7 + Math.min(1, Math.max(0, (-press) / 40)) * 0.3);
+  const shortExh = Math.min(1, Math.max(0, (rsi15 - 55) / 25) * 0.7 + Math.min(1, Math.max(0, press / 40)) * 0.3);
+
+  // reclaim / reject from reversal candle quality
+  const rev = m5.reversal || { bias: "neutral", quality: 0 };
+  const longReclaim = rev.bias === "bullish" ? Math.min(1, rev.quality) : Math.min(0.4, (pos5 < 40 ? 0.35 : 0.1));
+  const shortReject = rev.bias === "bearish" ? Math.min(1, rev.quality) : Math.min(0.4, (pos5 > 60 ? 0.35 : 0.1));
+
+  // trigger 5m: macd/structure mild
+  const longTrig = (m5.macdCrossUp || m5.macdUp ? 0.55 : 0.25) + (pos5 <= 45 ? 0.25 : 0) + (rsi5 <= 48 ? 0.2 : 0);
+  const shortTrig = (m5.macdCrossDown || m5.macdDown ? 0.55 : 0.25) + (pos5 >= 55 ? 0.25 : 0) + (rsi5 >= 52 ? 0.2 : 0);
+
+  const longScore = Math.round(
+    100 * (0.3 * longLoc + 0.25 * longExh + 0.25 * Math.min(1, longTrig) + 0.2 * longReclaim)
+  );
+  const shortScore = Math.round(
+    100 * (0.3 * shortLoc + 0.25 * shortExh + 0.25 * Math.min(1, shortTrig) + 0.2 * shortReject)
+  );
+
+  return {
+    longLoc, shortLoc, longExh, shortExh, longReclaim, shortReject,
+    longTrig: Math.min(1, longTrig), shortTrig: Math.min(1, shortTrig),
+    longScore: Math.min(99, longScore), shortScore: Math.min(99, shortScore),
+    atrPct,
+  };
+}
+
+/** Stale candle guard (Kikik: 15m<=30m, 5m<=10m age) */
+function isCandleFresh(candles, maxAgeMin) {
+  if (!candles || !candles.length) return false;
+  const last = candles[candles.length - 1];
+  const ts = last.ts || last.time || 0;
+  if (!ts) return true; // if missing, jangan hard-block
+  const ageMin = (Date.now() - ts) / 60000;
+  return ageMin <= maxAgeMin;
 }
 
 function candlesTo2H(h1Candles) {
@@ -1872,6 +1930,7 @@ async function sendDiscord(signals) {
       fields: [
         { name: "Score", value: `**${s.probability}**`, inline: true },
         { name: "Setup", value: displaySetup(s.setup), inline: true },
+        ...(s.validUntil ? [{ name: "Valid s/d", value: String(s.validUntil).slice(11, 19) + " UTC (15m)", inline: true }] : []),
         { name: "R:R", value: `1:${s.rr.toFixed(1)}`, inline: true },
         { name: "Entry", value: `$${formatPrice(s.entry)}`, inline: true },
         { name: "SL", value: `$${formatPrice(s.sl)}`, inline: true },
@@ -2351,10 +2410,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.3.1 | High-vol guard + BTC soft gate + wider SL ===");
+  console.log("=== Strict Core v3.4.0 | Kikik early+funnel+valid15m · high-vol/BTC guard ===");
   console.log(new Date().toISOString());
-  console.log("VALID: conf>=80 (high-vol>=88) + align | BTC soft tidak dilawan alt");
-  console.log("Guard: regime high/extreme | SL buffer lebih lebar | post label Scalp MTF");
+  console.log("VALID: MTF+early soft | high-vol>=88 | BTC soft gate | stale reject");
+  console.log("Funnel log + valid 15m di post | Discord/TG/Square | label Scalp MTF");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2411,6 +2470,18 @@ async function main() {
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
   const signals = [];
   const watches = [];
+  const funnel = {
+    scanned: 0,
+    dataSkip: 0,
+    stale: 0,
+    noScore: 0,
+    highVolHold: 0,
+    btcSoftHold: 0,
+    levelsFail: 0,
+    valid: 0,
+    potensi: 0,
+  };
+
   for (const c of candidates) {
     try {
       // Anti-429: 2 gelombang request, bukan 6 paralel sekaligus
@@ -2426,12 +2497,18 @@ async function main() {
         fetchFunding(c.instId),
         fetchOrderBook(c.instId, 20),
       ]);
+      funnel.scanned++;
+      if (!isCandleFresh(m15c, 35) || !isCandleFresh(m5c, 12)) {
+        funnel.stale++;
+        continue;
+      }
       const h1 = analyzeTF(h1c, "1H");
       const m15 = analyzeTF(m15c, "15M");
       const m5 = analyzeTF(m5c, "5M");
       const h4 = analyzeTF(h4c, "4H");
       const m30 = m30c && m30c.length >= 40 ? analyzeTF(m30c, "30M") : null;
       const book = analyzeOrderBook(rawBook);
+      const early = earlyReversalDiag(m15, m5, m15c, m5c);
 
       // === Kikik MTF brain (primary) + location scalp fallback ===
       const regime = getVolatilityRegime(m15c);
@@ -2457,14 +2534,26 @@ async function main() {
       if (!scored) {
         const pot = scalpPotential(h1, m15, m5, h4, book, regime, h2);
         if (pot) {
+          let er = pot.reason;
+          if (early) {
+            const side = pot.action === "LONG" ? "long" : "short";
+            const es = pot.action === "LONG" ? early.longScore : early.shortScore;
+            const loc = pot.action === "LONG" ? early.longLoc : early.shortLoc;
+            const exh = pot.action === "LONG" ? early.longExh : early.shortExh;
+            er = (er || "") + ` | early=${es} loc=${loc.toFixed(2)} exh=${exh.toFixed(2)}`;
+          }
           watches.push({
             base: c.base,
             action: pot.action,
             score: pot.score,
             setup: "POTENSI",
-            reason: pot.reason,
+            reason: er,
             location: pot.location,
+            early,
           });
+          funnel.potensi++;
+        } else {
+          funnel.noScore++;
         }
         continue;
       }
@@ -2480,6 +2569,7 @@ async function main() {
             setup: scored.setup || "SCALP_MTF",
             reason: "high-vol: conf " + scored.probability + "<88 → bukan VALID",
           });
+          funnel.highVolHold++;
           continue;
         }
       }
@@ -2495,6 +2585,7 @@ async function main() {
               setup: scored.setup || "SCALP_MTF",
               reason: "BTC soft bearish (" + bsc + ") — LONG alt ditahan",
             });
+            funnel.btcSoftHold++;
             continue;
           }
         }
@@ -2507,9 +2598,21 @@ async function main() {
               setup: scored.setup || "SCALP_MTF",
               reason: "BTC soft bullish (" + bsc + ") — SHORT alt ditahan",
             });
+            funnel.btcSoftHold++;
             continue;
           }
         }
+      }
+
+
+      // Early-reversal soft bonus (Kikik) — tidak mengoverride high-vol/BTC gate
+      if (early && scored) {
+        const es = scored.action === "LONG" ? early.longScore : early.shortScore;
+        const loc = scored.action === "LONG" ? early.longLoc : early.shortLoc;
+        if (es >= 70 && loc >= 0.55 && scored.probability < 90) {
+          scored.probability = Math.min(90, scored.probability + 2);
+        }
+        scored.early = early;
       }
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
@@ -2521,6 +2624,7 @@ async function main() {
           setup: "SCALP_15M",
           reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr<" + MIN_RR + " (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
         });
+        funnel.levelsFail++;
         continue;
       }
       const modeStr = String(levels.mode || "");
@@ -2542,12 +2646,15 @@ async function main() {
 
       let riskPct = suggestRisk(regime, scored.probability);
 
-            signals.push({
+            funnel.valid++;
+      const validUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      signals.push({
         base: c.base,
         instId: c.instId,
         action: scored.action,
         probability: scored.probability,
         setup: scored.setup,
+        validUntil,
         entry: levels.entry,
         mode: levels.mode || null,
         sl: levels.sl,
@@ -2706,6 +2813,9 @@ async function main() {
   await sendTelegram(postSignals);
   await sendBinanceSquare(postSignals);
   if (typeof sendWatchDiscord === "function") await sendWatchDiscord(watches);
+  console.log(
+    `Funnel: scanned=${funnel.scanned} stale=${funnel.stale} noScore=${funnel.noScore} highVol=${funnel.highVolHold} btcSoft=${funnel.btcSoftHold} levelsFail=${funnel.levelsFail} potensi=${funnel.potensi} VALID=${funnel.valid}`
+  );
   console.log("Done.");
 }
 main().catch((e) => {
