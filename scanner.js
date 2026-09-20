@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.4.0 — Kikik MTF + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.5.0 — MTF scalp + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -31,7 +31,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 28;
+const CANDIDATE_LIMIT = 48; // standard broader scan (still rate-safe)
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
@@ -469,7 +469,7 @@ function councilConsensus(h1, m15, m5, h4) {
 }
 
 
-/** KikikJourney/Crypto-Scanner style: Location, Exhaustion, Flow, Structure
+/** upstream research/Crypto-Scanner style: Location, Exhaustion, Flow, Structure
  * Early / PRE-EXPANSION layers — Discord/Telegram/Square posting unchanged.
  */
 function clamp01(x) {
@@ -477,7 +477,7 @@ function clamp01(x) {
   return Math.min(1, Math.max(0, +x));
 }
 
-function kikikCandleFeatures(candles) {
+function candleFeaturesER(candles) {
   if (!candles || candles.length < 40) return null;
   const n = candles.length;
   const closes = candles.map((c) => c.close);
@@ -536,7 +536,7 @@ function kikikCandleFeatures(candles) {
   };
 }
 
-function kikikFlow(m5, book) {
+function flowScoreER(m5, book) {
   let flow = 0.5;
   const press = m5 && m5.volume ? m5.volume.pressure : 0;
   flow = clamp01(0.5 + press / 80);
@@ -546,7 +546,7 @@ function kikikFlow(m5, book) {
   return flow;
 }
 
-function kikikEarlyClassify(f, flow) {
+function earlyClassifyER(f, flow) {
   if (!f) return null;
   const sides = [
     { side: "LONG", location: f.long_location, exhaustion: f.long_exhaust, flow, structure: f.long_reclaim },
@@ -558,7 +558,7 @@ function kikikEarlyClassify(f, flow) {
       25 * clamp01(p.exhaustion) +
       25 * clamp01(p.flow) +
       20 * clamp01(p.structure);
-    // v2.18.2: slightly closer to Kikik production feel; still no expansion required
+    // v2.18.2: slightly closer to  production feel; still no expansion required
     const ok =
       score >= 62 &&
       p.location >= 0.60 &&
@@ -574,7 +574,7 @@ function kikikEarlyClassify(f, flow) {
   return { tier: best.score >= 55 ? "MONITOR" : "NONE", side: best.side, score: best.score, parts: best };
 }
 
-function kikikPreClassify(f, flow) {
+function preClassifyER(f, flow) {
   if (!f) return null;
   const expansion = 0.55 * clamp01((f.volumeRatio - 1) / 2) + 0.45 * f.compression;
   const longScore =
@@ -657,11 +657,11 @@ function rsiMomScore(m5, wantLong) {
   if (r >= 45) return 0.55;
   return 0.25;
 }
-function kikikLocation(pos, wantLong) {
+function mtfLocationScore(pos, wantLong) {
   if (wantLong) return Math.min(1, Math.max(0, (0.38 - pos / 100) / 0.38));
   return Math.min(1, Math.max(0, (pos / 100 - 0.62) / 0.38));
 }
-function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
+function mtfScalpAction(h4, h1, m30, m15, m5, book, regime) {
   if (!h4 || !h1 || !m15 || !m5) return null;
   if (regime && regime.regime === "extreme") return null;
   const pos15 = m15.position != null ? m15.position : 50;
@@ -676,7 +676,7 @@ function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
     let conf =
       100 *
       (0.2 * w4 + 0.2 * w1 + 0.2 * w30 + 0.15 * w15 + 0.1 * sweep + 0.1 * vol + 0.05 * rsiS);
-    const loc = kikikLocation(pos15, wantLong);
+    const loc = mtfLocationScore(pos15, wantLong);
     if (loc >= 0.6) conf += 6;
     else if (loc >= 0.4) conf += 2;
     else conf -= 8;
@@ -715,8 +715,8 @@ function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
       regime: regime || null,
       volConfirm: !!(m5.volume && m5.volume.spike),
       confluence: best.align,
-      pillars: ["kikik_mtf", "loc", "align"],
-      kikik: best,
+      pillars: ["mtf_align", "loc", "align"],
+      mtf: best,
     };
   }
   if (best.conf >= 65 && best.loc >= 0.25) {
@@ -729,61 +729,222 @@ function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
       probability: best.conf,
       setup: "POTENSI",
       reason: why,
-      kikik: best,
+      mtf: best,
     };
   }
   return null;
 }
 
 
+
 /**
- * Early-reversal diagnostics (port ide KikikJourney)
- * location / exhaustion / reclaim / trigger — untuk VALID soft-bonus & POTENSI audit
+ * ========== upstream research Early Reversal Engine  ==========
+ * Eligible = location extreme + exhaustion + trigger + (base|structure)
+ * Primary VALID path when eligible; does not require HTF trend flip.
  */
-function earlyReversalDiag(m15, m5, candles15, candles5) {
-  if (!m15 || !m5) return null;
-  const pos15 = m15.position != null ? m15.position : 50;
-  const pos5 = m5.position != null ? m5.position : 50;
-  const rsi15 = m15.rsi != null ? m15.rsi : 50;
-  const rsi5 = m5.rsi != null ? m5.rsi : 50;
-  const atrPct = m15.atr && candles15 && candles15.length
-    ? (m15.atr / candles15[candles15.length - 1].close) * 100
-    : 1.5;
+function _erClose(c) { return c.close; }
+function _erHigh(c) { return c.high; }
+function _erLow(c) { return c.low; }
 
-  // location 0..1 (LONG = discounted, SHORT = premium)
-  const longLoc = Math.min(1, Math.max(0, (0.38 - pos15 / 100) / 0.38));
-  const shortLoc = Math.min(1, Math.max(0, (pos15 / 100 - 0.62) / 0.38));
+function erLocationScore(candles, direction, lookback = 32) {
+  if (!candles || candles.length < Math.max(8, lookback)) return 0;
+  const w = candles.slice(-lookback);
+  const hi = Math.max(...w.map(_erHigh));
+  const lo = Math.min(...w.map(_erLow));
+  const span = hi - lo;
+  if (span <= 0) return 0;
+  const pos = (_erClose(candles[candles.length - 1]) - lo) / span;
+  if (direction === "LONG") return pos <= 0.35 ? 1 : pos <= 0.5 ? 0.5 : 0;
+  return pos >= 0.65 ? 1 : pos >= 0.5 ? 0.5 : 0;
+}
 
-  // exhaustion proxy: RSI extreme + pressure fade
-  const press = (m5.volume && m5.volume.pressure != null) ? m5.volume.pressure : 0;
-  const longExh = Math.min(1, Math.max(0, (45 - rsi15) / 25) * 0.7 + Math.min(1, Math.max(0, (-press) / 40)) * 0.3);
-  const shortExh = Math.min(1, Math.max(0, (rsi15 - 55) / 25) * 0.7 + Math.min(1, Math.max(0, press / 40)) * 0.3);
+function erImpulseExhaustion(candles, direction) {
+  if (!candles || candles.length < 24) return 0;
+  const closes = candles.map(_erClose);
+  const last = closes[closes.length - 1];
+  const n = closes.length;
+  // move magnitude vs recent ATR-ish
+  const look = Math.min(24, n - 1);
+  const past = closes[n - 1 - look];
+  if (!past) return 0;
+  const move = direction === "LONG" ? (past - last) / past : (last - past) / past;
+  const atrV = atr(candles) || last * 0.01;
+  const atrPct = atrV / last;
+  let score = Math.min(1, Math.max(0, (move / Math.max(atrPct * 6, 0.01) - 0.3) / 1.2));
+  // RSI exhaustion soft
+  const rsis = rsi(closes, 14);
+  const r = rsis[rsis.length - 1];
+  if (direction === "LONG" && r != null && r <= 40) score = Math.min(1, score + 0.15);
+  if (direction === "SHORT" && r != null && r >= 60) score = Math.min(1, score + 0.15);
+  return score;
+}
 
-  // reclaim / reject from reversal candle quality
-  const rev = m5.reversal || { bias: "neutral", quality: 0 };
-  const longReclaim = rev.bias === "bullish" ? Math.min(1, rev.quality) : Math.min(0.4, (pos5 < 40 ? 0.35 : 0.1));
-  const shortReject = rev.bias === "bearish" ? Math.min(1, rev.quality) : Math.min(0.4, (pos5 > 60 ? 0.35 : 0.1));
+function erBaseScore(candles, direction) {
+  if (!candles || candles.length < 12) return 0;
+  const recent = candles.slice(-8);
+  const atrV = atr(candles) || recent[recent.length - 1].close * 0.01;
+  const range = Math.max(...recent.map(_erHigh)) - Math.min(...recent.map(_erLow));
+  // compact base after impulse
+  if (range <= atrV * 1.8) return 1;
+  if (range <= atrV * 2.8) return 0.5;
+  return 0;
+}
 
-  // trigger 5m: macd/structure mild
-  const longTrig = (m5.macdCrossUp || m5.macdUp ? 0.55 : 0.25) + (pos5 <= 45 ? 0.25 : 0) + (rsi5 <= 48 ? 0.2 : 0);
-  const shortTrig = (m5.macdCrossDown || m5.macdDown ? 0.55 : 0.25) + (pos5 >= 55 ? 0.25 : 0) + (rsi5 >= 52 ? 0.2 : 0);
+function erStructureShift(candles5, direction) {
+  if (!candles5 || candles5.length < 8) return 0;
+  const prev = candles5.slice(-7, -1);
+  const last = candles5[candles5.length - 1];
+  const priorHigh = Math.max(...prev.map(_erHigh));
+  const priorLow = Math.min(...prev.map(_erLow));
+  if (direction === "LONG") {
+    if (last.close > priorHigh) return 1;
+    if (last.close > prev[prev.length - 1].close && last.close > last.open) return 0.5;
+    return 0;
+  }
+  if (last.close < priorLow) return 1;
+  if (last.close < prev[prev.length - 1].close && last.close < last.open) return 0.5;
+  return 0;
+}
 
-  const longScore = Math.round(
-    100 * (0.3 * longLoc + 0.25 * longExh + 0.25 * Math.min(1, longTrig) + 0.2 * longReclaim)
-  );
-  const shortScore = Math.round(
-    100 * (0.3 * shortLoc + 0.25 * shortExh + 0.25 * Math.min(1, shortTrig) + 0.2 * shortReject)
-  );
+function erReversalTrigger(candles5, direction) {
+  if (!candles5 || candles5.length < 8) return 0;
+  const previous = candles5.slice(-7, -1);
+  const last = candles5[candles5.length - 1];
+  const priorHigh = Math.max(...previous.map(_erHigh));
+  const priorLow = Math.min(...previous.map(_erLow));
+  const o = last.open, c = last.close, h = last.high, l = last.low;
+  const rng = h - l;
+  if (rng <= 0) return 0;
+  if (direction === "LONG") {
+    const sweep = l < priorLow && c > priorLow;
+    const recovery = c > o && (c - l) / rng >= 0.6 && c > previous[previous.length - 1].close;
+    return sweep ? 1 : recovery ? 0.75 : 0;
+  }
+  const sweep = h > priorHigh && c < priorHigh;
+  const recovery = c < o && (h - c) / rng >= 0.6 && c < previous[previous.length - 1].close;
+  return sweep ? 1 : recovery ? 0.75 : 0;
+}
 
+function evaluateEarlyReversal(candles15, candles5, direction) {
+  if (direction !== "LONG" && direction !== "SHORT") {
+    return { eligible: false, score: 0, reason: "invalid direction" };
+  }
+  if (!candles15 || candles15.length < 40 || !candles5 || candles5.length < 20) {
+    return { eligible: false, score: 0, reason: "insufficient history" };
+  }
+  const location = erLocationScore(candles15, direction);
+  const exhaustion = erImpulseExhaustion(candles15, direction);
+  const base = erBaseScore(candles15, direction);
+  const structure = erStructureShift(candles5, direction);
+  const trigger = erReversalTrigger(candles5, direction);
+  const eligible =
+    location >= 1.0 &&
+    exhaustion >= 0.5 &&
+    trigger >= 0.75 &&
+    (base >= 1.0 || structure >= 1.0);
+  const score =
+    0.25 * location + 0.25 * exhaustion + 0.2 * base + 0.15 * structure + 0.15 * trigger;
+  let reason = "early reversal setup confirmed";
+  if (!eligible) {
+    if (location < 1) reason = "not at range extreme";
+    else if (exhaustion < 0.5) reason = "insufficient 15m exhaustion";
+    else if (trigger < 0.75) reason = "no 5m reversal trigger";
+    else reason = "no 15m base or 5m structure shift";
+  }
   return {
-    longLoc, shortLoc, longExh, shortExh, longReclaim, shortReject,
-    longTrig: Math.min(1, longTrig), shortTrig: Math.min(1, shortTrig),
-    longScore: Math.min(99, longScore), shortScore: Math.min(99, shortScore),
-    atrPct,
+    eligible,
+    score: +score.toFixed(4),
+    location_15m: location,
+    exhaustion_15m: exhaustion,
+    base_15m: base,
+    structure_shift_5m: structure,
+    reversal_trigger_5m: trigger,
+    reason,
   };
 }
 
-/** Stale candle guard (Kikik: 15m<=30m, 5m<=10m age) */
+function inferEarlyDirection(candles15, candles5) {
+  const L = evaluateEarlyReversal(candles15, candles5, "LONG");
+  const S = evaluateEarlyReversal(candles15, candles5, "SHORT");
+  const elig = [];
+  if (L.eligible) elig.push(["LONG", L]);
+  if (S.eligible) elig.push(["SHORT", S]);
+  if (!elig.length) return { direction: null, long: L, short: S };
+  elig.sort((a, b) => b[1].score - a[1].score);
+  if (elig.length === 2 && elig[0][1].score - elig[1][1].score < 0.2) {
+    return { direction: null, long: L, short: S };
+  }
+  return { direction: elig[0][0], detail: elig[0][1], long: L, short: S };
+}
+
+/** Legacy soft diag for POTENSI text */
+function earlyReversalDiag(m15, m5, candles15, candles5) {
+  const inf = inferEarlyDirection(candles15, candles5);
+  const L = inf.long, S = inf.short;
+  return {
+    longLoc: L.location_15m, shortLoc: S.location_15m,
+    longExh: L.exhaustion_15m, shortExh: S.exhaustion_15m,
+    longReclaim: L.reversal_trigger_5m, shortReject: S.reversal_trigger_5m,
+    longTrig: L.reversal_trigger_5m, shortTrig: S.reversal_trigger_5m,
+    longScore: Math.round(L.score * 100), shortScore: Math.round(S.score * 100),
+    longEligible: L.eligible, shortEligible: S.eligible,
+    longReason: L.reason, shortReason: S.reason,
+    infer: inf.direction,
+  };
+}
+
+/** 24h extreme anchors for standard SL */
+function extremes24h(candles1h) {
+  if (!candles1h || candles1h.length < 12) return null;
+  const w = candles1h.slice(-24);
+  return {
+    low: Math.min(...w.map((c) => c.low)),
+    high: Math.max(...w.map((c) => c.high)),
+  };
+}
+
+/**
+ *  execution geometry: entry=5m close, SL=24h extreme±0.25ATR, TP=2R
+ * risk band 0.10%–8%
+ */
+function buildLevelsExtreme(candles5, candles1h, action, mark, regime) {
+  if (!candles5 || candles5.length < 5) return null;
+  const last = candles5[candles5.length - 1];
+  const entry = last.close;
+  const atrV = atr(candles5) || entry * 0.005;
+  const ex = extremes24h(candles1h);
+  if (!ex) return null;
+  let sl, tp1, tp2, tp3;
+  if (action === "LONG") {
+    sl = ex.low - 0.25 * atrV;
+    if (sl >= entry) sl = entry - Math.max(atrV * 1.2, entry * 0.004);
+    const risk = entry - sl;
+    if (risk <= 0) return null;
+    tp1 = entry + 2 * risk;
+    tp2 = entry + 3 * risk;
+    tp3 = entry + 4 * risk;
+  } else {
+    sl = ex.high + 0.25 * atrV;
+    if (sl <= entry) sl = entry + Math.max(atrV * 1.2, entry * 0.004);
+    const risk = sl - entry;
+    if (risk <= 0) return null;
+    tp1 = entry - 2 * risk;
+    tp2 = entry - 3 * risk;
+    tp3 = entry - 4 * risk;
+  }
+  const riskPct = (Math.abs(entry - sl) / entry) * 100;
+  if (riskPct < 0.1 || riskPct > 8.0) {
+    return { mode: "WAIT", reason: "risk_pct outside 0.1-8%", riskPct, entry, sl, rr: 0 };
+  }
+  // high vol: still allow but require wider already via extreme
+  const rr = 2.0;
+  return {
+    entry, sl, tp1, tp2, tp3, rr,
+    mode: "EARLY_ZONE",
+    riskPct: +riskPct.toFixed(4),
+  };
+}
+
 function isCandleFresh(candles, maxAgeMin) {
   if (!candles || !candles.length) return false;
   const last = candles[candles.length - 1];
@@ -1905,7 +2066,7 @@ function consecutiveLossStreak(log) {
 /** Label setup untuk postingan publik — tanpa nama internal engine */
 function displaySetup(setup) {
   const s = String(setup || "");
-  if (/KIKIK|POTENSI|LOC|SCALP|TREND|PRE_|EARLY|MEAN|SQUEEZE/i.test(s)) return "Scalp MTF";
+  if (/SCALP|POTENSI|LOC|SCALP|TREND|PRE_|EARLY|MEAN|SQUEEZE/i.test(s)) return "Scalp MTF";
   return s || "Scalp MTF";
 }
 
@@ -2410,10 +2571,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.4.0 | Kikik early+funnel+valid15m · high-vol/BTC guard ===");
+  console.log("=== Strict Core v3.5.0 | Early reversal + 2R extreme SL · MTF · guards ===");
   console.log(new Date().toISOString());
-  console.log("VALID: MTF+early soft | high-vol>=88 | BTC soft gate | stale reject");
-  console.log("Funnel log + valid 15m di post | Discord/TG/Square | label Scalp MTF");
+  console.log("Primary: early reversal eligible | SL=24h extreme+0.25ATR | TP=2R | risk 0.1-8%");
+  console.log("Secondary: MTF/LOC | funnel+stale+BTC/high-vol | Discord+TG+Square");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2510,24 +2671,54 @@ async function main() {
       const book = analyzeOrderBook(rawBook);
       const early = earlyReversalDiag(m15, m5, m15c, m5c);
 
-      // === Kikik MTF brain (primary) + location scalp fallback ===
+      // === Primary: Early reversal Reversal → MTF → LOC fallback ===
       const regime = getVolatilityRegime(m15c);
       const h2c = candlesTo2H(h1c);
       const h2 = h2c.length >= 20 ? analyzeTF(h2c, "2H") : null;
       let scored = null;
       let tier = "VALID";
-      const kAct = kikikMtfAction(h4, h1, m30, m15, m5, book, regime);
-      if (kAct && !kAct.watch) {
-        scored = kAct;
-      } else if (kAct && kAct.watch) {
-        watches.push({
-          base: c.base,
-          action: kAct.action,
-          score: kAct.probability,
-          setup: "POTENSI",
-          reason: kAct.reason,
-        });
+      let useExtremeLevels = false;
+
+      // 1) Early reversal (primary — primary early path)
+      const erInf = inferEarlyDirection(m15c, m5c);
+      if (erInf.direction && erInf.detail) {
+        const conf = Math.min(92, Math.round(erInf.detail.score * 100));
+        // high-vol: tetap butuh conf tinggi
+        const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
+        if (!isHigh || conf >= 80) {
+          scored = {
+            action: erInf.direction,
+            probability: Math.max(conf, 80),
+            setup: "SCALP_MTF",
+            h1, m15, m5, h4,
+            trends: { h4: tfTrend(h4), h1: tfTrend(h1), m15: tfTrend(m15) },
+            book, regime: regime || null,
+            volConfirm: !!(m5.volume && m5.volume.spike),
+            confluence: 4,
+            pillars: ["early_reversal", "loc", "exhaust", "trigger"],
+            earlyDetail: erInf.detail,
+          };
+          useExtremeLevels = true;
+        }
       }
+
+      // 2) Classic MTF brain
+      if (!scored) {
+        const kAct = mtfScalpAction(h4, h1, m30, m15, m5, book, regime);
+        if (kAct && !kAct.watch) {
+          scored = kAct;
+        } else if (kAct && kAct.watch) {
+          watches.push({
+            base: c.base,
+            action: kAct.action,
+            score: kAct.probability,
+            setup: "POTENSI",
+            reason: kAct.reason,
+          });
+          funnel.potensi++;
+        }
+      }
+      // 3) LOC extreme fallback
       if (!scored) {
         scored = scalpSignal(h1, m15, m5, h4, book, regime, h2);
       }
@@ -2605,7 +2796,7 @@ async function main() {
       }
 
 
-      // Early-reversal soft bonus (Kikik) — tidak mengoverride high-vol/BTC gate
+      // Early-reversal soft bonus — tidak mengoverride high-vol/BTC gate
       if (early && scored) {
         const es = scored.action === "LONG" ? early.longScore : early.shortScore;
         const loc = scored.action === "LONG" ? early.longLoc : early.shortLoc;
@@ -2615,8 +2806,25 @@ async function main() {
         scored.early = early;
       }
 
-      const levels = buildLevels(m5c, scored, c.mark, regime);
-      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR) {
+      let levels = null;
+      if (useExtremeLevels) {
+        levels = buildLevelsExtreme(m5c, h1c, scored.action, c.mark, regime);
+        if (levels && levels.mode === "WAIT") {
+          watches.push({
+            base: c.base,
+            action: scored.action,
+            score: scored.probability,
+            setup: "POTENSI",
+            reason: levels.reason || "early risk band fail",
+          });
+          funnel.levelsFail++;
+          continue;
+        }
+      }
+      if (!levels) {
+        levels = buildLevels(m5c, scored, c.mark, regime);
+      }
+      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < (useExtremeLevels ? 1.5 : MIN_RR)) {
         watches.push({
           base: c.base,
           action: scored.action,
