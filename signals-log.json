@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "BZ_LONG_1789924294908",
+      "ts": 1789924294908,
+      "base": "BZ",
+      "instId": "BZUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_ZONE",
+      "probability": 88,
+      "entry": 100.5,
+      "sl": 100.29487656080121,
+      "tp1": 100.66,
+      "tp2": 100.8154348738218,
+      "tp3": 100.900657883279,
+      "rr": 1.5377807385342779,
+      "regime": "low",
+      "validUntil": "2026-09-20T17:26:17.336Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "FET_SHORT_1789902473964",
