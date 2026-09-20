@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "FET_SHORT_1789902473964",
+      "ts": 1789902473964,
+      "base": "FET",
+      "instId": "FETUSDT",
+      "action": "SHORT",
+      "setup": "SCALP_MTF",
+      "mode": "PULLBACK_MKT",
+      "probability": 88,
+      "entry": 0.1706,
+      "sl": 0.17242452206580478,
+      "tp1": 0.16826130383840207,
+      "tp2": 0.16679961873740337,
+      "tp3": 0.1647532595960052,
+      "rr": 2.0829461774255553,
+      "regime": "normal",
+      "validUntil": "2026-09-20T11:22:26.338Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "INJ_LONG_1789872491630",
