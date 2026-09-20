@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.3.0 — Kikik MTF + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.3.1 — Kikik MTF + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -697,7 +697,11 @@ function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
   const L = confFor(true);
   const S = confFor(false);
   const best = L.conf >= S.conf ? L : S;
-  if (best.conf >= 80 && best.align >= 3 && best.loc >= 0.35) {
+  // v3.3.1: regime high butuh conf lebih tinggi (audit INJ false positive)
+  const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
+  const needConf = isHigh ? 88 : 80;
+  const needAlign = isHigh ? 4 : 3;
+  if (best.conf >= needConf && best.align >= needAlign && best.loc >= 0.35) {
     return {
       action: best.side,
       probability: best.conf,
@@ -716,12 +720,15 @@ function kikikMtfAction(h4, h1, m30, m15, m5, book, regime) {
     };
   }
   if (best.conf >= 65 && best.loc >= 0.25) {
+    let why = "conf=" + best.conf + " align=" + best.align + " loc=" + best.loc.toFixed(2);
+    if (isHigh && best.conf < 88) why += " | high-vol butuh conf>=88";
+    if (isHigh && best.align < 4) why += " | high-vol butuh align>=4";
     return {
       watch: true,
       action: best.side,
       probability: best.conf,
       setup: "POTENSI",
-      reason: "conf=" + best.conf + " align=" + best.align + " loc=" + best.loc.toFixed(2),
+      reason: why,
       kikik: best,
     };
   }
@@ -756,6 +763,8 @@ function candlesTo2H(h1Candles) {
 function scalpSignal(h1, m15, m5, h4, book, regime, h2) {
   if (!h1 || !m15 || !m5) return null;
   if (regime && regime.regime === "extreme") return null;
+  // high vol: LOC scalp tidak VALID (hindari catch-knife seperti INJ)
+  if (regime && regime.regime === "high") return null;
 
   const t1 = tfTrend(h1);
   const t15 = tfTrend(m15);
@@ -1321,7 +1330,9 @@ function buildLevels(candles, signal, mark, regime = null) {
     mktSlMin = 1.8; mktSlMax = 4.0; mktSlDef = 2.0;
     tp1R = 1.8; tp2R = 2.9; tp3R = 4.0;
   }
-  const liveBuf = mark * 0.0012 + atrV * 0.18; // v2.20.1 wider — kurangi noise SL
+  let liveBuf = mark * 0.0012 + atrV * 0.18;
+  if (regime && regime.regime === "high") liveBuf = mark * 0.0022 + atrV * 0.32; // audit INJ
+  if (regime && regime.regime === "extreme") liveBuf = mark * 0.0028 + atrV * 0.42;
 
   // Hybrid: prefer ZONE; MKT only if still reasonably close
   const NEAR_ATR = 1.0;
@@ -2340,10 +2351,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.3.0 | Kikik MTF brain + LOC · Bitget · Discord/TG/Square ===");
+  console.log("=== Strict Core v3.3.1 | High-vol guard + BTC soft gate + wider SL ===");
   console.log(new Date().toISOString());
-  console.log("VALID: Kikik MTF conf>=80 align>=3 + lokasi | atau LOC extreme scalp");
-  console.log("POTENSI: conf 65-79 | Data Bitget | channel Discord+TG+Square tetap");
+  console.log("VALID: conf>=80 (high-vol>=88) + align | BTC soft tidak dilawan alt");
+  console.log("Guard: regime high/extreme | SL buffer lebih lebar | post label Scalp MTF");
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2458,6 +2469,48 @@ async function main() {
         continue;
       }
 
+      // --- v3.3.1 audit gates (INJ-style false positive) ---
+      const regName = regime && regime.regime ? regime.regime : "normal";
+      if (regName === "high" || regName === "extreme") {
+        if ((scored.probability || 0) < 88) {
+          watches.push({
+            base: c.base,
+            action: scored.action,
+            score: scored.probability,
+            setup: scored.setup || "SCALP_MTF",
+            reason: "high-vol: conf " + scored.probability + "<88 → bukan VALID",
+          });
+          continue;
+        }
+      }
+      // BTC soft bias: jangan LONG alt saat BTC bearish, jangan SHORT alt saat BTC bullish
+      if (btcBias && c.base !== "BTC") {
+        const bsc = btcBias.score || 0;
+        if (btcBias.bias === "bearish" && bsc <= -20 && scored.action === "LONG") {
+          if (bsc <= -35 || (scored.probability || 0) < 90) {
+            watches.push({
+              base: c.base,
+              action: scored.action,
+              score: scored.probability,
+              setup: scored.setup || "SCALP_MTF",
+              reason: "BTC soft bearish (" + bsc + ") — LONG alt ditahan",
+            });
+            continue;
+          }
+        }
+        if (btcBias.bias === "bullish" && bsc >= 20 && scored.action === "SHORT") {
+          if (bsc >= 35 || (scored.probability || 0) < 90) {
+            watches.push({
+              base: c.base,
+              action: scored.action,
+              score: scored.probability,
+              setup: scored.setup || "SCALP_MTF",
+              reason: "BTC soft bullish (" + bsc + ") — SHORT alt ditahan",
+            });
+            continue;
+          }
+        }
+      }
 
       const levels = buildLevels(m5c, scored, c.mark, regime);
       if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR) {
