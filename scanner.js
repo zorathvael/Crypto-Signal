@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.5.0 — MTF scalp + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.6.0 — MTF scalp + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -31,7 +31,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 48; // standard broader scan (still rate-safe)
+const CANDIDATE_LIMIT = 80; // A+B+C: broader scan + safer inter-coin delay
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
@@ -2333,9 +2333,12 @@ function isPersistent(base, action, lastMap, maxAgeMin = 75) {
 
 // ========== OUTCOME TRACKER ==========
 const OUTCOME_FILE = path.join(__dirname, "signals-log.json");
-const OUTCOME_MAX_AGE_H = 18; // expire open signals after 18h
-const OUTCOME_BAR = "15m"; // covers ~25h with limit 100
-const OUTCOME_MAX_CLOSED = 200; // keep last N closed records
+const OUTCOME_MAX_AGE_H = 6; // scalp: expire open after 6h
+const OUTCOME_BAR = "15m";
+const OUTCOME_MAX_CLOSED = 300;
+const DEDUP_WINDOW_MS = 90 * 60 * 1000; // no re-post same pair+side within 90m
+const SIGNAL_VALID_MS = 15 * 60 * 1000;
+const HORIZON_MIN = [15, 60]; // H15 / H60 forward R
 
 function loadOutcomeLog() {
   try {
@@ -2359,6 +2362,65 @@ function saveOutcomeLog(log) {
     console.warn("Outcome log save fail:", e.message);
   }
 }
+
+function isDuplicateSignal(log, base, action, now = Date.now()) {
+  const hit = (o) =>
+    o && o.base === base && o.action === action && now - (o.ts || 0) < DEDUP_WINDOW_MS;
+  if ((log.open || []).some(hit)) return true;
+  if ((log.closed || []).slice(0, 80).some(hit)) return true;
+  return false;
+}
+
+function filterSignalsForDelivery(signals, log) {
+  const now = Date.now();
+  const out = [];
+  for (const s of signals) {
+    if (s.validUntil) {
+      const exp = Date.parse(s.validUntil);
+      if (Number.isFinite(exp) && exp < now) {
+        console.log("Skip post " + s.base + " " + s.action + ": valid window expired");
+        continue;
+      }
+    }
+    if (isDuplicateSignal(log, s.base, s.action, now)) {
+      console.log("Skip post " + s.base + " " + s.action + ": dedup 90m");
+      continue;
+    }
+    out.push(s);
+  }
+  return out;
+}
+
+function enrichHorizons(sig, candles) {
+  if (!candles || !candles.length || !sig.entry) return sig;
+  const entry = +sig.entry;
+  const sl = +sig.sl;
+  const risk = Math.abs(entry - sl) || 1e-12;
+  const isLong = sig.action === "LONG";
+  const t0 = sig.ts || 0;
+  const horizons = Object.assign({}, sig.horizons || {});
+  for (const mins of HORIZON_MIN) {
+    const key = mins === 15 ? "h15" : "h60";
+    if (horizons[key] && horizons[key].r != null) continue;
+    const targetTs = t0 + mins * 60 * 1000;
+    let pick = null;
+    for (const c of candles) {
+      const ct = c.ts || c.time || 0;
+      if (ct >= targetTs) {
+        pick = c;
+        break;
+      }
+    }
+    if (!pick) continue;
+    const mid = (+pick.open + +pick.close) / 2;
+    if (!Number.isFinite(mid)) continue;
+    const grossR = isLong ? (mid - entry) / risk : (entry - mid) / risk;
+    horizons[key] = { r: +grossR.toFixed(3), price: mid, at: pick.ts || targetTs };
+  }
+  sig.horizons = horizons;
+  return sig;
+}
+
 
 function recomputeStats(closed, afterTs = 0) {
   const stats = {
@@ -2489,13 +2551,14 @@ async function evaluateOpenOutcomes(log) {
         ...c,
         ts: c.ts || c.time || 0,
       }));
+      enrichHorizons(sig, norm);
       const resolved = resolveOutcome(sig, norm);
       if (resolved) {
         newlyClosed.push({ ...sig, ...resolved });
       } else {
         stillOpen.push(sig);
       }
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 220));
     } catch (e) {
       console.warn(`Outcome eval skip ${sig.base}:`, e.message);
       stillOpen.push(sig);
@@ -2511,12 +2574,8 @@ async function evaluateOpenOutcomes(log) {
 function registerNewSignals(log, signals) {
   const now = Date.now();
   for (const s of signals) {
+    if (isDuplicateSignal(log, s.base, s.action, now)) continue;
     const id = `${s.base}_${s.action}_${now}`;
-    // avoid duplicate open same base+action within 2h
-    const dup = log.open.some(
-      (o) => o.base === s.base && o.action === s.action && now - (o.ts || 0) < 2 * 3600000
-    );
-    if (dup) continue;
     log.open.push({
       id,
       ts: now,
@@ -2533,6 +2592,8 @@ function registerNewSignals(log, signals) {
       tp3: s.tp3,
       rr: s.rr,
       regime: s.regime ? s.regime.regime : null,
+      validUntil: s.validUntil || new Date(now + SIGNAL_VALID_MS).toISOString(),
+      horizons: {},
     });
   }
   return log;
@@ -2542,9 +2603,14 @@ function printOutcomeSummary(log, newlyClosed) {
   if (newlyClosed.length) {
     console.log(`Outcome closed this run: ${newlyClosed.length}`);
     for (const c of newlyClosed) {
+      const hz = c.horizons || {};
+      const htxt =
+        (hz.h15 && hz.h15.r != null ? ` H15=${hz.h15.r}` : "") +
+        (hz.h60 && hz.h60.r != null ? ` H60=${hz.h60.r}` : "");
       console.log(
         `  ${c.base} ${c.action} → ${c.outcome}` +
-          (c.rMultiple != null ? ` R=${c.rMultiple}` : "")
+          (c.rMultiple != null ? ` R=${c.rMultiple}` : "") +
+          htxt
       );
     }
   }
@@ -2571,7 +2637,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.5.0 | Early reversal + 2R extreme SL · MTF · guards ===");
+  console.log("=== Strict Core v3.6.0 | Dedup90m + H15/H60 + candidates80 ===");
   console.log(new Date().toISOString());
   console.log("Primary: early reversal eligible | SL=24h extreme+0.25ATR | TP=2R | risk 0.1-8%");
   console.log("Secondary: MTF/LOC | funnel+stale+BTC/high-vol | Discord+TG+Square");
@@ -2651,7 +2717,7 @@ async function main() {
         fetchBitgetCandles(c.instId, "15m", 100),
         fetchBitgetCandles(c.instId, "5m", 100),
       ]);
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 170));
       const [h4c, m30c, funding, rawBook] = await Promise.all([
         fetchBitgetCandles(c.instId, "4H", 100),
         fetchBitgetCandles(c.instId, "30m", 100),
@@ -2988,14 +3054,18 @@ async function main() {
     const evaluated = await evaluateOpenOutcomes(outcomeLog);
     outcomeLog = evaluated.log;
     printOutcomeSummary(outcomeLog, evaluated.newlyClosed);
-    outcomeLog = registerNewSignals(outcomeLog, signals);
-    outcomeLog.stats = recomputeStats(outcomeLog.closed, OUTCOME_STATS_AFTER_TS);
-    saveOutcomeLog(outcomeLog);
   } catch (e) {
     console.warn("Outcome tracker error:", e.message);
   }
 
-  let postSignals = signals.slice();
+  // A: filter dulu (log belum berisi signal run ini) lalu post, baru register yang lolos
+  let postSignals = filterSignalsForDelivery(
+    signals.slice(),
+    outcomeLog || { open: [], closed: [] }
+  );
+  if (postSignals.length < signals.length) {
+    console.log(`Delivery filter: ${signals.length} → ${postSignals.length} (dedup/expiry)`);
+  }
   try {
     const streak = consecutiveLossStreak(outcomeLog);
     if (streak >= 3 && postSignals.length) {
@@ -3021,6 +3091,14 @@ async function main() {
   await sendTelegram(postSignals);
   await sendBinanceSquare(postSignals);
   if (typeof sendWatchDiscord === "function") await sendWatchDiscord(watches);
+  try {
+    outcomeLog = registerNewSignals(outcomeLog || loadOutcomeLog(), postSignals);
+    outcomeLog.stats = recomputeStats(outcomeLog.closed, OUTCOME_STATS_AFTER_TS);
+    saveOutcomeLog(outcomeLog);
+  } catch (e) {
+    console.warn("Outcome register error:", e.message);
+  }
+
   console.log(
     `Funnel: scanned=${funnel.scanned} stale=${funnel.stale} noScore=${funnel.noScore} highVol=${funnel.highVolHold} btcSoft=${funnel.btcSoftHold} levelsFail=${funnel.levelsFail} potensi=${funnel.potensi} VALID=${funnel.valid}`
   );
