@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "ALGO_LONG_1789932461167",
       "ts": 1789932461167,
@@ -17,10 +18,19 @@
       "rr": 3.13093718673353,
       "regime": "normal",
       "validUntil": "2026-09-20T19:42:14.948Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 0.791,
+          "price": 0.11065,
+          "at": 1789933500000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.39,
+      "exit": 0.11137,
+      "closedAt": 1789932600000,
+      "costR": 0.162
+    },
     {
       "id": "BZ_LONG_1789924294908",
       "ts": 1789924294908,
@@ -1653,19 +1663,19 @@
     }
   ],
   "stats": {
-    "total": 7,
-    "wins": 2,
+    "total": 8,
+    "wins": 3,
     "losses": 4,
     "expired": 1,
-    "sumR": -3.19,
+    "sumR": -1.7999999999999998,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 6,
-        "wins": 2,
+        "n": 7,
+        "wins": 3,
         "losses": 4,
-        "sumR": -3.19,
-        "winrate": 33.3,
-        "avgR": -0.53
+        "sumR": -1.7999999999999998,
+        "winrate": 42.9,
+        "avgR": -0.26
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -1678,12 +1688,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 5,
-        "wins": 2,
+        "n": 6,
+        "wins": 3,
         "losses": 2,
-        "sumR": -0.92,
-        "winrate": 50,
-        "avgR": -0.23
+        "sumR": 0.47,
+        "winrate": 60,
+        "avgR": 0.09
       },
       "SHORT": {
         "n": 2,
@@ -1696,7 +1706,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 33.3,
-    "avgR": -0.53
+    "winrate": 42.9,
+    "avgR": -0.26
   }
 }
