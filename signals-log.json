@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ALGO_LONG_1789932461167",
+      "ts": 1789932461167,
+      "base": "ALGO",
+      "instId": "ALGOUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_ZONE",
+      "probability": 90,
+      "entry": 0.1099,
+      "sl": 0.10895157261397628,
+      "tp1": 0.11137,
+      "tp2": 0.11286946657181812,
+      "tp3": 0.11370568389408632,
+      "rr": 3.13093718673353,
+      "regime": "normal",
+      "validUntil": "2026-09-20T19:42:14.948Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "BZ_LONG_1789924294908",
