@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ONDO_LONG_1789958794458",
+      "ts": 1789958794458,
+      "base": "ONDO",
+      "instId": "ONDOUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "PULLBACK_MKT",
+      "probability": 84,
+      "entry": 0.4265,
+      "sl": 0.41875265295656583,
+      "tp1": 0.4372874323338583,
+      "tp2": 0.44402957754251976,
+      "tp3": 0.4534685808346458,
+      "rr": 2.2626555186237596,
+      "regime": "normal",
+      "validUntil": "2026-09-21T03:00:55.789Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "ALGO_LONG_1789932461167",
