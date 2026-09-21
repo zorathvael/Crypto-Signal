@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "BTC_SHORT_1789986842706",
+      "ts": 1789986842706,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "SHORT",
+      "setup": "SCALP_MTF",
+      "mode": "EARLY_ZONE",
+      "probability": 82,
+      "entry": 84290.1,
+      "sl": 85344.18275261669,
+      "tp1": 82181.93449476664,
+      "tp2": 81127.85174214996,
+      "tp3": 80073.76898953327,
+      "rr": 2,
+      "regime": "low",
+      "validUntil": "2026-09-21T10:48:09.518Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "CL_LONG_1789962904787",
