@@ -1,6 +1,27 @@
 {
   "open": [
     {
+      "id": "PUMP_LONG_1789994034931",
+      "ts": 1789994034931,
+      "base": "PUMP",
+      "instId": "PUMPUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_MKT",
+      "probability": 86,
+      "entry": 0.004387,
+      "sl": 0.0043246782113862325,
+      "tp1": 0.004471589093881073,
+      "tp2": 0.004524457277556743,
+      "tp3": 0.004598472734702682,
+      "rr": 2.205605465026346,
+      "regime": "normal",
+      "validUntil": "2026-09-21T12:48:16.471Z",
+      "horizons": {}
+    }
+  ],
+  "closed": [
+    {
       "id": "BTC_SHORT_1789986842706",
       "ts": 1789986842706,
       "base": "BTC",
@@ -28,7 +49,12 @@
           "price": 84804.85,
           "at": 1789991100000
         }
-      }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.11,
+      "exit": 85344.18275261669,
+      "closedAt": 1789992900000,
+      "costR": 0.112
     },
     {
       "id": "SNDK_LONG_1789991628734",
@@ -47,10 +73,19 @@
       "rr": 3.2321967939901035,
       "regime": "low",
       "validUntil": "2026-09-21T12:08:09.880Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 1.504,
+          "price": 1811.7199999999998,
+          "at": 1789992900000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.23,
+      "exit": 1812.4724999999999,
+      "closedAt": 1789992000000,
+      "costR": 0.387
+    },
     {
       "id": "CL_LONG_1789962904787",
       "ts": 1789962904787,
@@ -1851,19 +1886,19 @@
     }
   ],
   "stats": {
-    "total": 12,
-    "wins": 6,
-    "losses": 4,
+    "total": 14,
+    "wins": 7,
+    "losses": 5,
     "expired": 2,
-    "sumR": 1.2000000000000002,
+    "sumR": 1.3200000000000003,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 11,
-        "wins": 6,
-        "losses": 4,
-        "sumR": 1.2000000000000002,
-        "winrate": 60,
-        "avgR": 0.12
+        "n": 13,
+        "wins": 7,
+        "losses": 5,
+        "sumR": 1.3200000000000003,
+        "winrate": 58.3,
+        "avgR": 0.11
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -1875,26 +1910,26 @@
       }
     },
     "byAction": {
-      "LONG": {
-        "n": 10,
-        "wins": 6,
-        "losses": 2,
-        "sumR": 3.4699999999999998,
-        "winrate": 75,
-        "avgR": 0.43
-      },
       "SHORT": {
-        "n": 2,
+        "n": 3,
         "wins": 0,
-        "losses": 2,
-        "sumR": -2.2699999999999996,
+        "losses": 3,
+        "sumR": -3.38,
         "winrate": 0,
         "avgR": -1.13
+      },
+      "LONG": {
+        "n": 11,
+        "wins": 7,
+        "losses": 2,
+        "sumR": 4.699999999999999,
+        "winrate": 77.8,
+        "avgR": 0.52
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 60,
-    "avgR": 0.12
+    "winrate": 58.3,
+    "avgR": 0.11
   }
 }
