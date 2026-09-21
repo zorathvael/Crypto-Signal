@@ -1,6 +1,27 @@
 {
   "open": [
     {
+      "id": "TAO_LONG_1790011940054",
+      "ts": 1790011940054,
+      "base": "TAO",
+      "instId": "TAOUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "PULLBACK_MKT",
+      "probability": 89,
+      "entry": 283.45,
+      "sl": 279.3128801841878,
+      "tp1": 288.9856591716071,
+      "tp2": 292.44544615386155,
+      "tp3": 297.2891479290178,
+      "rr": 2.1743257518142753,
+      "regime": "normal",
+      "validUntil": "2026-09-21T17:46:43.530Z",
+      "horizons": {}
+    }
+  ],
+  "closed": [
+    {
       "id": "PUMP_LONG_1789994034931",
       "ts": 1789994034931,
       "base": "PUMP",
@@ -17,10 +38,24 @@
       "rr": 2.205605465026346,
       "regime": "normal",
       "validUntil": "2026-09-21T12:48:16.471Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": -0.056,
+          "price": 0.0043835,
+          "at": 1789995600000
+        },
+        "h60": {
+          "r": -0.345,
+          "price": 0.0043655,
+          "at": 1789998300000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.1,
+      "exit": 0.0043246782113862325,
+      "closedAt": 1789999200000,
+      "costR": 0.099
+    },
     {
       "id": "BTC_SHORT_1789986842706",
       "ts": 1789986842706,
@@ -1886,19 +1921,19 @@
     }
   ],
   "stats": {
-    "total": 14,
+    "total": 15,
     "wins": 7,
-    "losses": 5,
+    "losses": 6,
     "expired": 2,
-    "sumR": 1.3200000000000003,
+    "sumR": 0.22000000000000042,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 13,
+        "n": 14,
         "wins": 7,
-        "losses": 5,
-        "sumR": 1.3200000000000003,
-        "winrate": 58.3,
-        "avgR": 0.11
+        "losses": 6,
+        "sumR": 0.22000000000000042,
+        "winrate": 53.8,
+        "avgR": 0.02
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -1910,6 +1945,14 @@
       }
     },
     "byAction": {
+      "LONG": {
+        "n": 12,
+        "wins": 7,
+        "losses": 3,
+        "sumR": 3.5999999999999996,
+        "winrate": 70,
+        "avgR": 0.36
+      },
       "SHORT": {
         "n": 3,
         "wins": 0,
@@ -1917,19 +1960,11 @@
         "sumR": -3.38,
         "winrate": 0,
         "avgR": -1.13
-      },
-      "LONG": {
-        "n": 11,
-        "wins": 7,
-        "losses": 2,
-        "sumR": 4.699999999999999,
-        "winrate": 77.8,
-        "avgR": 0.52
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 58.3,
-    "avgR": 0.11
+    "winrate": 53.8,
+    "avgR": 0.02
   }
 }
