@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "CL_LONG_1789962904787",
       "ts": 1789962904787,
@@ -28,7 +29,10 @@
           "price": 94.1825,
           "at": 1789966800000
         }
-      }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1789985240331
     },
     {
       "id": "ETH_LONG_1789977375928",
@@ -47,10 +51,24 @@
       "rr": 1.8137848382104378,
       "regime": "low",
       "validUntil": "2026-09-21T08:10:30.172Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 1.05,
+          "price": 2672.825,
+          "at": 1789978500000
+        },
+        "h60": {
+          "r": 2.344,
+          "price": 2694.98,
+          "at": 1789981200000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 0.92,
+      "exit": 2674.248809555641,
+      "closedAt": 1789978500000,
+      "costR": 0.217
+    },
     {
       "id": "ONDO_LONG_1789958794458",
       "ts": 1789958794458,
@@ -1783,19 +1801,19 @@
     }
   ],
   "stats": {
-    "total": 10,
-    "wins": 5,
+    "total": 12,
+    "wins": 6,
     "losses": 4,
-    "expired": 1,
-    "sumR": 0.28,
+    "expired": 2,
+    "sumR": 1.2000000000000002,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 9,
-        "wins": 5,
+        "n": 11,
+        "wins": 6,
         "losses": 4,
-        "sumR": 0.28,
-        "winrate": 55.6,
-        "avgR": 0.03
+        "sumR": 1.2000000000000002,
+        "winrate": 60,
+        "avgR": 0.12
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -1808,12 +1826,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 8,
-        "wins": 5,
+        "n": 10,
+        "wins": 6,
         "losses": 2,
-        "sumR": 2.55,
-        "winrate": 71.4,
-        "avgR": 0.36
+        "sumR": 3.4699999999999998,
+        "winrate": 75,
+        "avgR": 0.43
       },
       "SHORT": {
         "n": 2,
@@ -1826,7 +1844,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 55.6,
-    "avgR": 0.03
+    "winrate": 60,
+    "avgR": 0.12
   }
 }
