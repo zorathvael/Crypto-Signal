@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "TAO_LONG_1790011940054",
       "ts": 1790011940054,
@@ -17,10 +18,24 @@
       "rr": 2.1743257518142753,
       "regime": "normal",
       "validUntil": "2026-09-21T17:46:43.530Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": -0.363,
+          "price": 281.95000000000005,
+          "at": 1790013600000
+        },
+        "h60": {
+          "r": 0.282,
+          "price": 284.615,
+          "at": 1790016300000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.1,
+      "exit": 279.3128801841878,
+      "closedAt": 1790012700000,
+      "costR": 0.096
+    },
     {
       "id": "PUMP_LONG_1789994034931",
       "ts": 1789994034931,
@@ -1921,19 +1936,19 @@
     }
   ],
   "stats": {
-    "total": 15,
+    "total": 16,
     "wins": 7,
-    "losses": 6,
+    "losses": 7,
     "expired": 2,
-    "sumR": 0.22000000000000042,
+    "sumR": -0.8800000000000003,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 14,
+        "n": 15,
         "wins": 7,
-        "losses": 6,
-        "sumR": 0.22000000000000042,
-        "winrate": 53.8,
-        "avgR": 0.02
+        "losses": 7,
+        "sumR": -0.8800000000000003,
+        "winrate": 50,
+        "avgR": -0.06
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -1946,12 +1961,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 12,
+        "n": 13,
         "wins": 7,
-        "losses": 3,
-        "sumR": 3.5999999999999996,
-        "winrate": 70,
-        "avgR": 0.36
+        "losses": 4,
+        "sumR": 2.5,
+        "winrate": 63.6,
+        "avgR": 0.23
       },
       "SHORT": {
         "n": 3,
@@ -1964,7 +1979,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 53.8,
-    "avgR": 0.02
+    "winrate": 50,
+    "avgR": -0.06
   }
 }
