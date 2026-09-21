@@ -17,7 +17,13 @@
       "rr": 2,
       "regime": "low",
       "validUntil": "2026-09-21T10:48:09.518Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.168,
+          "price": 84467.35,
+          "at": 1789988400000
+        }
+      }
     }
   ],
   "closed": [
