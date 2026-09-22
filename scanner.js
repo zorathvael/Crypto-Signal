@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.6.0 — MTF scalp + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.7.0 — MTF scalp + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -2339,6 +2339,11 @@ const OUTCOME_MAX_CLOSED = 300;
 const DEDUP_WINDOW_MS = 90 * 60 * 1000; // no re-post same pair+side within 90m
 const SIGNAL_VALID_MS = 15 * 60 * 1000;
 const HORIZON_MIN = [15, 60]; // H15 / H60 forward R
+/** FreqAI-inspired: adaptive conf from recent outcomes (self-adapt) */
+const ADAPTIVE_LOOKBACK = 20; // last N closed with WIN/LOSS
+const ADAPTIVE_MIN_WR = 40; // if WR below → naikkan conf
+const ADAPTIVE_CONF_BUMP = 5;
+const STRATEGY_ID = "zorath-core-v3.7"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2421,6 +2426,46 @@ function enrichHorizons(sig, candles) {
   return sig;
 }
 
+
+
+/** FreqAI-style: naikkan bar conf jika edge live lemah */
+function adaptiveConfFloor(log, baseFloor) {
+  const closed = (log && log.closed) || [];
+  const recent = [];
+  for (const c of closed) {
+    if (!c.outcome) continue;
+    if (String(c.outcome).startsWith("WIN") || c.outcome === "LOSS_SL") recent.push(c);
+    if (recent.length >= ADAPTIVE_LOOKBACK) break;
+  }
+  if (recent.length < 8) return { floor: baseFloor, wr: null, n: recent.length, bumped: false };
+  const wins = recent.filter((c) => String(c.outcome).startsWith("WIN")).length;
+  const wr = (100 * wins) / recent.length;
+  if (wr < ADAPTIVE_MIN_WR) {
+    return { floor: baseFloor + ADAPTIVE_CONF_BUMP, wr: +wr.toFixed(1), n: recent.length, bumped: true };
+  }
+  return { floor: baseFloor, wr: +wr.toFixed(1), n: recent.length, bumped: false };
+}
+
+/** FreqAI: hanya candle closed — tolak bar yang masih open (ts terlalu dekat now) */
+function lastCandleIsClosed(candles, intervalMin) {
+  if (!candles || !candles.length) return false;
+  const last = candles[candles.length - 1];
+  const ts = last.ts || last.time || 0;
+  if (!ts) return true;
+  const ageMin = (Date.now() - ts) / 60000;
+  // bar baru terbuka: age < interval * 0.15 → masih forming
+  if (ageMin < intervalMin * 0.12) return false;
+  return true;
+}
+
+/** Shifted features (FreqAI include_shifted_candles=1): delta RSI/pos 1 bar */
+function shiftedMomentum(tf) {
+  if (!tf || tf.rsi == null) return { rsiDelta: 0, posDelta: 0 };
+  // analyzeTF doesn't store history — approximate from volume pressure / macd
+  const rsiDelta = tf.macdUp ? 2 : tf.macdDown ? -2 : 0;
+  const posDelta = tf.position != null ? (tf.position - 50) * 0.02 : 0;
+  return { rsiDelta, posDelta };
+}
 
 function recomputeStats(closed, afterTs = 0) {
   const stats = {
@@ -2614,6 +2659,19 @@ function printOutcomeSummary(log, newlyClosed) {
       );
     }
   }
+
+  // FreqAI-style forward research: avg H15/H60 R on closed
+  let h15n = 0, h15s = 0, h60n = 0, h60s = 0;
+  for (const c of log.closed || []) {
+    const hz = c.horizons || {};
+    if (hz.h15 && hz.h15.r != null) { h15n++; h15s += hz.h15.r; }
+    if (hz.h60 && hz.h60.r != null) { h60n++; h60s += hz.h60.r; }
+  }
+  if (h15n || h60n) {
+    console.log(
+      `Horizon research: H15 avgR=${h15n ? (h15s / h15n).toFixed(2) : "n/a"} (n=${h15n}) | H60 avgR=${h60n ? (h60s / h60n).toFixed(2) : "n/a"} (n=${h60n})`
+    );
+  }
   const st = log.stats || {};
   console.log(
     `Outcome stats (since Block A baseline): closed=${st.total || 0} wins=${st.wins || 0} losses=${st.losses || 0} expired=${st.expired || 0}` +
@@ -2637,10 +2695,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.6.0 | Dedup90m + H15/H60 + candidates80 ===");
+  console.log("=== Strict Core v3.7.0 | FreqAI-steal: adaptive conf + closed-bar + H15/H60 ===");
   console.log(new Date().toISOString());
-  console.log("Primary: early reversal eligible | SL=24h extreme+0.25ATR | TP=2R | risk 0.1-8%");
-  console.log("Secondary: MTF/LOC | funnel+stale+BTC/high-vol | Discord+TG+Square");
+  console.log("Primary: early+MTF | adaptive conf from live WR | closed-candle only");
+  console.log("Secondary: dedup90m + H15/H60 research | Discord+TG+Square | id=" + STRATEGY_ID);
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2695,6 +2753,15 @@ async function main() {
     .sort((a, b) => b.score - a.score)
     .slice(0, CANDIDATE_LIMIT);
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
+  // Outcome log early for adaptive conf (FreqAI self-adapt idea)
+  let outcomeLogEarly = loadOutcomeLog();
+  const adapt = adaptiveConfFloor(outcomeLogEarly, 80);
+  if (adapt.bumped) {
+    console.log(`Adaptive conf: WR ${adapt.wr}% on last ${adapt.n} → floor ${adapt.floor} (was 80)`);
+  } else if (adapt.wr != null) {
+    console.log(`Adaptive conf: WR ${adapt.wr}% on last ${adapt.n} → floor stays ${adapt.floor}`);
+  }
+
   const signals = [];
   const watches = [];
   const funnel = {
@@ -2729,6 +2796,11 @@ async function main() {
         funnel.stale++;
         continue;
       }
+      // FreqAI: no open-candle decisions
+      if (!lastCandleIsClosed(m5c, 5) || !lastCandleIsClosed(m15c, 15)) {
+        funnel.stale++;
+        continue;
+      }
       const h1 = analyzeTF(h1c, "1H");
       const m15 = analyzeTF(m15c, "15M");
       const m5 = analyzeTF(m5c, "5M");
@@ -2751,7 +2823,8 @@ async function main() {
         const conf = Math.min(92, Math.round(erInf.detail.score * 100));
         // high-vol: tetap butuh conf tinggi
         const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
-        if (!isHigh || conf >= 80) {
+        const needConf = isHigh ? Math.max(88, adapt.floor) : adapt.floor;
+        if (conf >= needConf) {
           scored = {
             action: erInf.direction,
             probability: Math.max(conf, 80),
@@ -2772,7 +2845,17 @@ async function main() {
       if (!scored) {
         const kAct = mtfScalpAction(h4, h1, m30, m15, m5, book, regime);
         if (kAct && !kAct.watch) {
-          scored = kAct;
+          if ((kAct.probability || 0) >= adapt.floor) scored = kAct;
+          else {
+            watches.push({
+              base: c.base,
+              action: kAct.action,
+              score: kAct.probability,
+              setup: "POTENSI",
+              reason: "adaptive floor conf " + kAct.probability + "<" + adapt.floor,
+            });
+            funnel.potensi++;
+          }
         } else if (kAct && kAct.watch) {
           watches.push({
             base: c.base,
@@ -2923,6 +3006,7 @@ async function main() {
             funnel.valid++;
       const validUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
       signals.push({
+        strategyId: STRATEGY_ID,
         base: c.base,
         instId: c.instId,
         action: scored.action,
