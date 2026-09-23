@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ZEC_LONG_1790174102191",
+      "ts": 1790174102191,
+      "base": "ZEC",
+      "instId": "ZECUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_ZONE",
+      "probability": 84,
+      "entry": 1547.33,
+      "sl": 1528.7620399999998,
+      "tp1": 1578.895532,
+      "tp2": 1593.7499,
+      "tp3": 1612.3178599999999,
+      "rr": 1.7000000000000042,
+      "regime": "normal",
+      "validUntil": "2026-09-23T14:44:29.763Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "ZHIPU_LONG_1790157651874",
