@@ -103,6 +103,25 @@
       "regime": "normal",
       "validUntil": "2026-09-23T08:29:53.264Z",
       "horizons": {}
+    },
+    {
+      "id": "XRP_LONG_1790152414500",
+      "ts": 1790152414500,
+      "base": "XRP",
+      "instId": "XRPUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "PULLBACK_ZONE",
+      "probability": 92,
+      "entry": 1.6031,
+      "sl": 1.593213709330721,
+      "tp1": 1.6174899999999997,
+      "tp2": 1.629042298472598,
+      "tp3": 1.636998269141877,
+      "rr": 2.6240679482763216,
+      "regime": "normal",
+      "validUntil": "2026-09-23T08:47:37.088Z",
+      "horizons": {}
     }
   ],
   "closed": [
