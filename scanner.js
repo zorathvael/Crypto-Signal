@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.8.0 — MTF scalp + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.9.0 — MTF scalp + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -915,26 +915,34 @@ function buildLevelsExtreme(candles5, candles1h, action, mark, regime) {
   const ex = extremes24h(candles1h);
   if (!ex) return null;
   let sl, tp1, tp2, tp3;
+  // v3.9 scalp: SL tidak boleh terlalu dalam (cap 1.2% atau 1.8*ATR)
+  const riskCap = Math.min(entry * 0.012, atrV * 1.8);
+  const riskFloor = Math.max(atrV * 0.55, entry * 0.0025);
   if (action === "LONG") {
-    sl = ex.low - 0.25 * atrV;
-    if (sl >= entry) sl = entry - Math.max(atrV * 1.2, entry * 0.004);
+    let rawSl = ex.low - 0.12 * atrV;
+    if (rawSl >= entry) rawSl = entry - riskFloor;
+    // tarik SL naik jika 24h low terlalu jauh
+    sl = Math.max(rawSl, entry - riskCap);
+    if (entry - sl < riskFloor) sl = entry - riskFloor;
     const risk = entry - sl;
     if (risk <= 0) return null;
-    tp1 = entry + 2 * risk;
-    tp2 = entry + 3 * risk;
-    tp3 = entry + 4 * risk;
+    tp1 = entry + 1.8 * risk;
+    tp2 = entry + 2.6 * risk;
+    tp3 = entry + 3.5 * risk;
   } else {
-    sl = ex.high + 0.25 * atrV;
-    if (sl <= entry) sl = entry + Math.max(atrV * 1.2, entry * 0.004);
+    let rawSl = ex.high + 0.12 * atrV;
+    if (rawSl <= entry) rawSl = entry + riskFloor;
+    sl = Math.min(rawSl, entry + riskCap);
+    if (sl - entry < riskFloor) sl = entry + riskFloor;
     const risk = sl - entry;
     if (risk <= 0) return null;
-    tp1 = entry - 2 * risk;
-    tp2 = entry - 3 * risk;
-    tp3 = entry - 4 * risk;
+    tp1 = entry - 1.8 * risk;
+    tp2 = entry - 2.6 * risk;
+    tp3 = entry - 3.5 * risk;
   }
   const riskPct = (Math.abs(entry - sl) / entry) * 100;
-  if (riskPct < 0.1 || riskPct > 8.0) {
-    return { mode: "WAIT", reason: "risk_pct outside 0.1-8%", riskPct, entry, sl, rr: 0 };
+  if (riskPct < 0.12 || riskPct > 2.5) {
+    return { mode: "WAIT", reason: "risk_pct outside 0.12-2.5% scalp", riskPct, entry, sl, rr: 0 };
   }
   // high vol: still allow but require wider already via extreme
   const rr = 2.0;
@@ -1545,10 +1553,10 @@ function buildLevels(candles, signal, mark, regime = null) {
   const swingHigh = Math.max(...recent.map((c) => c.high));
 
   // Adaptive by regime + live buffer (noise + fee space) — v2.15
-  let slBuf = 0.62;
-  let slMinMult = 1.05, slMaxMult = 2.8, slDefault = 1.35;
-  let mktSlMin = 1.35, mktSlMax = 3.2, mktSlDef = 1.55;
-  let tp1R = 1.6, tp2R = 2.6, tp3R = 4.0;
+  let slBuf = 0.48;
+  let slMinMult = 0.9, slMaxMult = 2.2, slDefault = 1.15;
+  let mktSlMin = 1.1, mktSlMax = 2.6, mktSlDef = 1.35;
+  let tp1R = 1.7, tp2R = 2.5, tp3R = 3.5;
   const reg = regime && regime.regime ? regime.regime : "normal";
   if (reg === "low") {
     slBuf = 0.55; slMinMult = 0.95; slMaxMult = 2.5; slDefault = 1.2;
@@ -1568,8 +1576,8 @@ function buildLevels(candles, signal, mark, regime = null) {
   if (regime && regime.regime === "extreme") liveBuf = mark * 0.0028 + atrV * 0.42;
 
   // Hybrid: prefer ZONE; MKT only if still reasonably close
-  const NEAR_ATR = 1.0;
-  const FAR_ATR = 2.2;
+  const NEAR_ATR = 1.35; // v3.9: zona lebih longgar
+  const FAR_ATR = 2.6;
   // between NEAR and FAR → market entry + SL beyond structure
 
   let entry, sl, tp1, tp2, tp3, mode;
@@ -2358,7 +2366,7 @@ const ADAPTIVE_LOOKBACK = 20;
 const ADAPTIVE_MIN_WR = 35;
 const ADAPTIVE_CONF_BUMP = 3;
 const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
-const STRATEGY_ID = "zorath-core-v3.8.0"; // identifier seperti FreqAI model id
+const STRATEGY_ID = "zorath-core-v3.9.0"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2711,10 +2719,10 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.8.0 | Potential-aware — soft breaker + conf76 + max2L ===");
+  console.log("=== Strict Core v3.9.0 | LONG-focus · SL-cap · soft88 · crypto-only ===");
   console.log(new Date().toISOString());
-  console.log("Primary: early+MTF | floor~76 (cap82) | soft breaker (bukan diam total)");
-  console.log("Secondary: dedup90m + H15/H60 research | Discord+TG+Square | id=" + STRATEGY_ID);
+  console.log("Primary: LONG only VALID | SL max~1.2% | soft breaker conf>=88");
+  console.log("Secondary: SHORT=WATCH | equity filtered | Discord+TG+Square | id=" + STRATEGY_ID);
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
     "| Telegram:", TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "YES" : "NO",
@@ -2756,6 +2764,8 @@ async function main() {
       if (!/^[A-Za-z0-9]+$/.test(base)) return null;
       if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
       if (/^(SNXX|TEST|BTCDOM|DEFI)$/i.test(base)) return null;
+      // v3.9: fokus crypto — buang equity/stock ticker di Bitget
+      if (/^(TSLA|NVDA|AAPL|MSFT|META|AMZN|GOOG|GOOGL|AMD|INTC|NFLX|COIN|MSTR|HOOD|PLTR|SOXL|SOXS|MRNA|SAMSUNG|SKHY|SKHYNIX|MU|ARM|CRCL|SNDK|MRVL|NBIS)$/i.test(base)) return null;
       return {
         instId: symbol,
         base,
@@ -2917,13 +2927,13 @@ async function main() {
 
 
       // Data-driven: SHORT historis lemah — butuh conf lebih tinggi
-      if (scored.action === "SHORT" && (scored.probability || 0) < 85) {
+      if (scored.action === "SHORT") {
         watches.push({
           base: c.base,
           action: scored.action,
           score: scored.probability,
           setup: scored.setup || "SCALP_MTF",
-          reason: "SHORT butuh conf>=85 (edge historis lemah)",
+          reason: "SHORT = WATCH only (edge VALID off)",
         });
         funnel.potensi++;
         continue;
@@ -3184,8 +3194,15 @@ async function main() {
     const streak = consecutiveLossStreak(outcomeLog);
     // v3.8 SOFT breaker: jangan bunuh semua potensi — izinkan 1 sinyal terbaik conf tinggi
     if (streak >= 4 && postSignals.length) {
-      const ranked = postSignals.slice().sort((a, b) => (b.probability || 0) - (a.probability || 0));
-      const keep = ranked.filter((s) => (s.probability || 0) >= 90).slice(0, 1);
+      const ranked = postSignals.slice().sort((a, b) => {
+        const d = (b.probability || 0) - (a.probability || 0);
+        if (d) return d;
+        if (a.action === "LONG" && b.action !== "LONG") return -1;
+        if (b.action === "LONG" && a.action !== "LONG") return 1;
+        return 0;
+      });
+      let keep = ranked.filter((s) => (s.probability || 0) >= 88 && s.action === "LONG").slice(0, 1);
+      if (!keep.length) keep = ranked.filter((s) => (s.probability || 0) >= 90).slice(0, 1);
       const drop = postSignals.filter((s) => !keep.includes(s));
       for (const s of drop) {
         watches.push({
@@ -3193,18 +3210,18 @@ async function main() {
           action: s.action,
           score: s.probability,
           setup: s.setup,
-          reason: "soft breaker streak=" + streak + " (hanya top conf>=90 dipost)",
+          reason: "soft breaker streak=" + streak + " (max 1 LONG conf>=88)",
         });
       }
       postSignals = keep;
       console.log(
-        "SOFT CIRCUIT BREAKER: " + streak + " LOSS beruntun — post " + keep.length + " top signal(s) conf>=90"
+        "SOFT CIRCUIT BREAKER: " + streak + " LOSS — post " + keep.length + " LONG conf>=88"
       );
     } else if (streak >= 3 && postSignals.length) {
-      // streak 3: tetap post, tapi max 1
       const ranked = postSignals.slice().sort((a, b) => (b.probability || 0) - (a.probability || 0));
-      postSignals = ranked.slice(0, 1);
-      console.log("Loss streak " + streak + "/4 — batasi post 1 VALID terbaik (bukan blok total)");
+      const longs = ranked.filter((s) => s.action === "LONG");
+      postSignals = (longs.length ? longs : ranked).slice(0, 1);
+      console.log("Loss streak " + streak + "/4 — post 1 terbaik (prioritas LONG)");
     } else if (streak > 0) {
       console.log("Loss streak (baseline): " + streak + "/4");
     }
