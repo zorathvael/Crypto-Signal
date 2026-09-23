@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "SKHYNIX_LONG_1790138029306",
+      "ts": 1790138029306,
+      "base": "SKHYNIX",
+      "instId": "SKHYNIXUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "EARLY_ZONE",
+      "probability": 82,
+      "entry": 1371.76,
+      "sl": 1326.6689939055047,
+      "tp1": 1461.9420121889905,
+      "tp2": 1507.0330182834857,
+      "tp3": 1552.124024377981,
+      "rr": 2,
+      "regime": "low",
+      "validUntil": "2026-09-23T04:48:19.585Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "TAO_LONG_1790011940054",
