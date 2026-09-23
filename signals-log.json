@@ -29,6 +29,44 @@
           "at": 1790162100000
         }
       }
+    },
+    {
+      "id": "UNI_LONG_1790168402028",
+      "ts": 1790168402028,
+      "base": "UNI",
+      "instId": "UNIUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "EARLY_ZONE",
+      "probability": 77,
+      "entry": 9.701,
+      "sl": 9.587505700500383,
+      "tp1": 9.905289739099311,
+      "tp2": 9.996085178699005,
+      "tp3": 10.098230048248661,
+      "rr": 2,
+      "regime": "normal",
+      "validUntil": "2026-09-23T13:09:56.347Z",
+      "horizons": {}
+    },
+    {
+      "id": "IONQ_LONG_1790168402028",
+      "ts": 1790168402028,
+      "base": "IONQ",
+      "instId": "IONQUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "PULLBACK_ZONE",
+      "probability": 88,
+      "entry": 44.81,
+      "sl": 44.39118749620533,
+      "tp1": 45.52198125645094,
+      "tp2": 45.857031259486675,
+      "tp3": 46.275843763281344,
+      "rr": 1.7000000000000068,
+      "regime": "normal",
+      "validUntil": "2026-09-23T13:13:54.619Z",
+      "horizons": {}
     }
   ],
   "closed": [
