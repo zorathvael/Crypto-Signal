@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "ZEC_LONG_1790174102191",
       "ts": 1790174102191,
@@ -17,10 +18,19 @@
       "rr": 1.7000000000000042,
       "regime": "normal",
       "validUntil": "2026-09-23T14:44:29.763Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 3.169,
+          "price": 1606.1799999999998,
+          "at": 1790175600000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.58,
+      "exit": 1578.895532,
+      "closedAt": 1790174700000,
+      "costR": 0.117
+    },
     {
       "id": "ZHIPU_LONG_1790157651874",
       "ts": 1790157651874,
@@ -2325,19 +2335,19 @@
     }
   ],
   "stats": {
-    "total": 28,
-    "wins": 11,
+    "total": 29,
+    "wins": 12,
     "losses": 13,
     "expired": 4,
-    "sumR": -2.920000000000001,
+    "sumR": -1.3400000000000003,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 27,
-        "wins": 11,
+        "n": 28,
+        "wins": 12,
         "losses": 13,
-        "sumR": -2.920000000000001,
-        "winrate": 45.8,
-        "avgR": -0.12
+        "sumR": -1.3400000000000003,
+        "winrate": 48,
+        "avgR": -0.05
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -2350,12 +2360,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 25,
-        "wins": 11,
+        "n": 26,
+        "wins": 12,
         "losses": 10,
-        "sumR": 0.45999999999999974,
-        "winrate": 52.4,
-        "avgR": 0.02
+        "sumR": 2.04,
+        "winrate": 54.5,
+        "avgR": 0.09
       },
       "SHORT": {
         "n": 3,
@@ -2368,7 +2378,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 45.8,
-    "avgR": -0.12
+    "winrate": 48,
+    "avgR": -0.05
   }
 }
