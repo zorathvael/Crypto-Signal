@@ -59,6 +59,25 @@
           "at": 1790146800000
         }
       }
+    },
+    {
+      "id": "ETH_LONG_1790147038036",
+      "ts": 1790147038036,
+      "base": "ETH",
+      "instId": "ETHUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_ZONE",
+      "probability": 86,
+      "entry": 2750.5,
+      "sl": 2742.277054287205,
+      "tp1": 2758.8965,
+      "tp2": 2767.720640241406,
+      "tp3": 2772.687454500332,
+      "rr": 2.0942179168968766,
+      "regime": "low",
+      "validUntil": "2026-09-23T07:18:15.419Z",
+      "horizons": {}
     }
   ],
   "closed": [
