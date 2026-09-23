@@ -59,6 +59,25 @@
           "at": 1790146800000
         }
       }
+    },
+    {
+      "id": "DOGE_LONG_1790150243516",
+      "ts": 1790150243516,
+      "base": "DOGE",
+      "instId": "DOGEUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWEEP_ZONE",
+      "probability": 92,
+      "entry": 0.10062,
+      "sl": 0.10000825364481704,
+      "tp1": 0.10174749999999999,
+      "tp2": 0.10278451253608623,
+      "tp3": 0.10327517889126919,
+      "rr": 3.5382516262624177,
+      "regime": "normal",
+      "validUntil": "2026-09-23T08:11:37.184Z",
+      "horizons": {}
     }
   ],
   "closed": [
