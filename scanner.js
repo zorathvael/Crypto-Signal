@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.11.0 — MTF scalp + LOC + Positioning Layer
+ * Strict Core Scanner v3.11.1 — MTF scalp + LOC + Positioning Layer
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -2387,7 +2387,7 @@ const ADAPTIVE_LOOKBACK = 20;
 const ADAPTIVE_MIN_WR = 35;
 const ADAPTIVE_CONF_BUMP = 3;
 const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
-const STRATEGY_ID = "zorath-core-v3.10.0"; // identifier seperti FreqAI model id
+const STRATEGY_ID = "zorath-core-v3.11.1"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2740,7 +2740,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.11.0 | Positioning Layer · Funding+OI+LS · Anti-chase ===");
+  console.log("=== Strict Core v3.11.1 | FIX candidates=0 + Positioning · Anti-chase ===");
   console.log(new Date().toISOString());
   console.log("Primary: LONG VALID | anti-chase RSI/pos | SL cap 1.2% both paths");
   console.log("Secondary: SHORT=WATCH | equity filtered | Discord+TG+Square | id=" + STRATEGY_ID);
@@ -2781,7 +2781,7 @@ async function main() {
       const base = symbol.replace(/USDT$/i, "");
       // C: buang symbol sampah / non-ASCII / leveraged tokens
       if (!base || base.length > 12 || base.length < 2) return null;
-      if (/[^-]/.test(base)) return null; // e.g. 龙虾
+      if (/[^\x00-\x7f]/.test(base)) return null; // non-ASCII e.g. emoji names
       if (!/^[A-Za-z0-9]+$/.test(base)) return null;
       if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
       if (/^(SNXX|TEST|BTCDOM|DEFI)$/i.test(base)) return null;
