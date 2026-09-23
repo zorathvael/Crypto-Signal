@@ -2,7 +2,6 @@ name: Strict Crypto Scanner
 
 on:
   schedule:
-    # Setiap jam tepat (UTC)
     - cron: "0 * * * *"
   workflow_dispatch:
 
@@ -23,12 +22,22 @@ jobs:
         with:
           node-version: "22"
 
-      # Soft install: apt mirror sometimes fails — scanner still runs (text-only Square)
+      - name: Assemble scanner from parts
+        run: |
+          if [ -f scanner.part1.js ] && [ -f scanner.part2.js ]; then
+            echo "Parts present — bootstrap will assemble"
+            node --check positioning.js
+            node --check scanner.js || true
+          else
+            echo "WARNING: scanner.part1.js / scanner.part2.js missing"
+            exit 1
+          fi
+
       - name: Install SVG renderer (Square card)
         continue-on-error: true
         run: |
           sudo apt-get update -qq || true
-          sudo apt-get install -y -qq librsvg2-bin || echo "rsvg missing — Square will post text only"
+          sudo apt-get install -y -qq librsvg2-bin || echo "rsvg missing"
 
       - name: Run Strict Scanner
         env:
@@ -38,7 +47,6 @@ jobs:
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
         run: node scanner.js
 
-      # Persist outcome log so next hourly run can evaluate open signals
       - name: Commit signals-log.json
         run: |
           git config user.name "github-actions[bot]"
