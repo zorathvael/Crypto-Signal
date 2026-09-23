@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.9.0 — MTF scalp + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.10.0 — MTF scalp + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -1726,14 +1726,31 @@ function buildLevels(candles, signal, mark, regime = null) {
     else sl = Math.max(sl, entry) + liveBuf;
   }
 
-  const risk = Math.abs(entry - sl);
+  // v3.10: cap risk kedua path (extreme + classic)
+  let risk = Math.abs(entry - sl);
+  const atrHere = atr(candles) || entry * 0.005;
+  const maxRisk = Math.min(entry * 0.012, atrHere * 1.9);
+  const minRisk = Math.max(entry * 0.002, atrHere * 0.5);
+  if (signal.action === "LONG") {
+    if (risk > maxRisk) { sl = entry - maxRisk; risk = maxRisk; }
+    else if (risk < minRisk) { sl = entry - minRisk; risk = minRisk; }
+    tp1 = entry + risk * tp1R;
+    tp2 = entry + risk * tp2R;
+    tp3 = entry + risk * tp3R;
+  } else {
+    if (risk > maxRisk) { sl = entry + maxRisk; risk = maxRisk; }
+    else if (risk < minRisk) { sl = entry + minRisk; risk = minRisk; }
+    tp1 = entry - risk * tp1R;
+    tp2 = entry - risk * tp2R;
+    tp3 = entry - risk * tp3R;
+  }
   if (signal.action === "LONG" && !(sl < entry && entry < tp1 && tp1 <= tp2 && tp2 <= tp3)) {
     return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
   }
   if (signal.action === "SHORT" && !(sl > entry && entry > tp1 && tp1 >= tp2 && tp2 >= tp3)) {
     return { entry, sl, tp1, tp2, tp3, rr: 0, mode, mark };
   }
-  const rrCore = risk > 0 ? Math.abs(tp2 - entry) / risk : 0;
+  const rrCore = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
   return { entry, sl, tp1, tp2, tp3, rr: rrCore, mode, mark };
 }
 
@@ -2366,7 +2383,7 @@ const ADAPTIVE_LOOKBACK = 20;
 const ADAPTIVE_MIN_WR = 35;
 const ADAPTIVE_CONF_BUMP = 3;
 const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
-const STRATEGY_ID = "zorath-core-v3.9.0"; // identifier seperti FreqAI model id
+const STRATEGY_ID = "zorath-core-v3.10.0"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2719,9 +2736,9 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.9.0 | LONG-focus · SL-cap · soft88 · crypto-only ===");
+  console.log("=== Strict Core v3.10.0 | Anti-chase · SL-cap both paths · ETF filter ===");
   console.log(new Date().toISOString());
-  console.log("Primary: LONG only VALID | SL max~1.2% | soft breaker conf>=88");
+  console.log("Primary: LONG VALID | anti-chase RSI/pos | SL cap 1.2% both paths");
   console.log("Secondary: SHORT=WATCH | equity filtered | Discord+TG+Square | id=" + STRATEGY_ID);
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -2765,7 +2782,7 @@ async function main() {
       if (/^[0-9]/.test(base) || /UP|DOWN|BEAR|BULL/i.test(base)) return null;
       if (/^(SNXX|TEST|BTCDOM|DEFI)$/i.test(base)) return null;
       // v3.9: fokus crypto — buang equity/stock ticker di Bitget
-      if (/^(TSLA|NVDA|AAPL|MSFT|META|AMZN|GOOG|GOOGL|AMD|INTC|NFLX|COIN|MSTR|HOOD|PLTR|SOXL|SOXS|MRNA|SAMSUNG|SKHY|SKHYNIX|MU|ARM|CRCL|SNDK|MRVL|NBIS)$/i.test(base)) return null;
+      if (/^(TSLA|NVDA|AAPL|MSFT|META|AMZN|GOOG|GOOGL|AMD|INTC|NFLX|COIN|MSTR|HOOD|PLTR|SOXL|SOXS|TQQQ|SQQQ|QLD|QID|SPY|QQQ|IWM|MRNA|SAMSUNG|SKHY|SKHYNIX|MU|ARM|CRCL|SNDK|MRVL|NBIS|MSTU|MSTX|CONL)$/i.test(base)) return null;
       return {
         instId: symbol,
         base,
@@ -3041,9 +3058,25 @@ async function main() {
         continue;
       }
 
-      let riskPct = suggestRisk(regime, scored.probability);
+            let riskPct = suggestRisk(regime, scored.probability);
 
-            funnel.valid++;
+      // v3.10 anti-chase: LONG di puncak range / RSI ekstrem → WATCH saja
+      const pos15 = scored.m15 && scored.m15.position != null ? scored.m15.position : 50;
+      const rsi15 = scored.m15 && scored.m15.rsi != null ? scored.m15.rsi : 50;
+      const pos5 = scored.m5 && scored.m5.position != null ? scored.m5.position : 50;
+      if (scored.action === "LONG" && (pos15 >= 88 || rsi15 >= 72 || pos5 >= 92)) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: scored.probability,
+          setup: scored.setup || "SCALP_MTF",
+          reason: "anti-chase LONG (pos/RSI tinggi pos15=" + pos15.toFixed(0) + " rsi=" + rsi15.toFixed(0) + ")",
+        });
+        funnel.potensi++;
+        continue;
+      }
+
+      funnel.valid++;
       const validUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
       signals.push({
         strategyId: STRATEGY_ID,
