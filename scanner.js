@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.7.1 — MTF scalp + LOC — LOC extreme + 2H
+ * Strict Core Scanner v3.8.0 — MTF scalp + LOC — LOC extreme + 2H
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -699,8 +699,8 @@ function mtfScalpAction(h4, h1, m30, m15, m5, book, regime) {
   const best = L.conf >= S.conf ? L : S;
   // v3.3.1: regime high butuh conf lebih tinggi (audit INJ false positive)
   const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
-  const needConf = isHigh ? 88 : 80;
-  const needAlign = isHigh ? 4 : 3;
+  const needConf = isHigh ? 86 : 76;
+  const needAlign = isHigh ? 3 : 3;
   if (best.conf >= needConf && best.align >= needAlign && best.loc >= 0.35) {
     return {
       action: best.side,
@@ -721,8 +721,8 @@ function mtfScalpAction(h4, h1, m30, m15, m5, book, regime) {
   }
   if (best.conf >= 65 && best.loc >= 0.25) {
     let why = "conf=" + best.conf + " align=" + best.align + " loc=" + best.loc.toFixed(2);
-    if (isHigh && best.conf < 88) why += " | high-vol butuh conf>=88";
-    if (isHigh && best.align < 4) why += " | high-vol butuh align>=4";
+    if (isHigh && best.conf < 84) why += " | high-vol butuh conf>=84";
+    if (isHigh && best.align < 3) why += " | high-vol butuh align>=3";
     return {
       watch: true,
       action: best.side,
@@ -2354,10 +2354,11 @@ const DEDUP_WINDOW_MS = 90 * 60 * 1000; // no re-post same pair+side within 90m
 const SIGNAL_VALID_MS = 15 * 60 * 1000;
 const HORIZON_MIN = [15, 60]; // H15 / H60 forward R
 /** FreqAI-inspired: adaptive conf from recent outcomes (self-adapt) */
-const ADAPTIVE_LOOKBACK = 20; // last N closed with WIN/LOSS
-const ADAPTIVE_MIN_WR = 45; // if WR at/below → naikkan conf
-const ADAPTIVE_CONF_BUMP = 5;
-const STRATEGY_ID = "zorath-core-v3.7.1"; // identifier seperti FreqAI model id
+const ADAPTIVE_LOOKBACK = 20;
+const ADAPTIVE_MIN_WR = 35;
+const ADAPTIVE_CONF_BUMP = 3;
+const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
+const STRATEGY_ID = "zorath-core-v3.8.0"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2455,7 +2456,8 @@ function adaptiveConfFloor(log, baseFloor) {
   const wins = recent.filter((c) => String(c.outcome).startsWith("WIN")).length;
   const wr = (100 * wins) / recent.length;
   if (wr <= ADAPTIVE_MIN_WR) {
-    return { floor: baseFloor + ADAPTIVE_CONF_BUMP, wr: +wr.toFixed(1), n: recent.length, bumped: true };
+    const floor = Math.min(ADAPTIVE_FLOOR_CAP, baseFloor + ADAPTIVE_CONF_BUMP);
+    return { floor, wr: +wr.toFixed(1), n: recent.length, bumped: true };
   }
   return { floor: baseFloor, wr: +wr.toFixed(1), n: recent.length, bumped: false };
 }
@@ -2709,9 +2711,9 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.7.1 | FreqAI-steal: adaptive conf + closed-bar + H15/H60 ===");
+  console.log("=== Strict Core v3.8.0 | Potential-aware — soft breaker + conf76 + max2L ===");
   console.log(new Date().toISOString());
-  console.log("Primary: early+MTF | adaptive conf from live WR | closed-candle only");
+  console.log("Primary: early+MTF | floor~76 (cap82) | soft breaker (bukan diam total)");
   console.log("Secondary: dedup90m + H15/H60 research | Discord+TG+Square | id=" + STRATEGY_ID);
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -2769,7 +2771,7 @@ async function main() {
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
   // Outcome log early for adaptive conf (FreqAI self-adapt idea)
   let outcomeLogEarly = loadOutcomeLog();
-  const adapt = adaptiveConfFloor(outcomeLogEarly, 80);
+  const adapt = adaptiveConfFloor(outcomeLogEarly, 76);
   if (adapt.bumped) {
     console.log(`Adaptive conf: WR ${adapt.wr}% on last ${adapt.n} → floor ${adapt.floor} (was 80)`);
   } else if (adapt.wr != null) {
@@ -2838,7 +2840,7 @@ async function main() {
         const conf = Math.min(92, Math.round(erInf.detail.score * 100));
         // high-vol: tetap butuh conf tinggi
         const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
-        const needConf = isHigh ? Math.max(88, adapt.floor) : adapt.floor;
+        const needConf = isHigh ? Math.max(84, adapt.floor) : adapt.floor;
         if (conf >= needConf) {
           scored = {
             action: erInf.direction,
@@ -2929,13 +2931,13 @@ async function main() {
       // --- v3.3.1 audit gates (INJ-style false positive) ---
       const regName = regime && regime.regime ? regime.regime : "normal";
       if (regName === "high" || regName === "extreme") {
-        if ((scored.probability || 0) < 88) {
+        if ((scored.probability || 0) < 84) {
           watches.push({
             base: c.base,
             action: scored.action,
             score: scored.probability,
             setup: scored.setup || "SCALP_MTF",
-            reason: "high-vol: conf " + scored.probability + "<88 → bukan VALID",
+            reason: "high-vol: conf " + scored.probability + "<84 → bukan VALID",
           });
           funnel.highVolHold++;
           continue;
@@ -3108,7 +3110,7 @@ async function main() {
   });
   // Audit: SHORT sample edge lemah — max 2 SHORT VALID per run (keep best)
   const MAX_SHORT = 1;
-  const MAX_LONG = 1;
+  const MAX_LONG = 2; // v3.8: jangan buang potensi LONG
   let nS = 0, nL = 0;
   const capped = [];
   for (const s of signals) {
@@ -3120,7 +3122,7 @@ async function main() {
       nS++;
     } else {
       if (nL >= MAX_LONG) {
-        watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cluster cap LONG (max 3/run)" });
+        watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cluster cap LONG (max 2/run)" });
         continue;
       }
       nL++;
@@ -3128,13 +3130,13 @@ async function main() {
     capped.push(s);
   }
   if (capped.length < signals.length) {
-    console.log("Seleksi cluster: " + signals.length + " → " + capped.length + " VALID (max 1 LONG + 1 SHORT)");
+    console.log("Seleksi cluster: " + signals.length + " → " + capped.length + " VALID (max 2 LONG + 1 SHORT)");
   }
-  // Selective scalper: max 2 total
-  const top = capped.slice(0, 2);
+  // Selective: max 3 VALID/run (2L+1S)
+  const top = capped.slice(0, 3);
   if (top.length < capped.length) {
-    for (const s of capped.slice(2)) {
-      watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cap total 2 VALID/run" });
+    for (const s of capped.slice(3)) {
+      watches.push({ base: s.base, action: s.action, score: s.probability, setup: s.setup, reason: "cap total 3 VALID/run" });
     }
   }
   signals.length = 0;
@@ -3180,20 +3182,31 @@ async function main() {
   }
   try {
     const streak = consecutiveLossStreak(outcomeLog);
-    if (streak >= 3 && postSignals.length) {
-      console.log("CIRCUIT BREAKER: " + streak + " LOSS beruntun sejak baseline — VALID tidak dipost");
-      for (const s of postSignals) {
+    // v3.8 SOFT breaker: jangan bunuh semua potensi — izinkan 1 sinyal terbaik conf tinggi
+    if (streak >= 4 && postSignals.length) {
+      const ranked = postSignals.slice().sort((a, b) => (b.probability || 0) - (a.probability || 0));
+      const keep = ranked.filter((s) => (s.probability || 0) >= 90).slice(0, 1);
+      const drop = postSignals.filter((s) => !keep.includes(s));
+      for (const s of drop) {
         watches.push({
           base: s.base,
           action: s.action,
           score: s.probability,
           setup: s.setup,
-          reason: "circuit breaker (" + streak + " loss beruntun)",
+          reason: "soft breaker streak=" + streak + " (hanya top conf>=90 dipost)",
         });
       }
-      postSignals = [];
+      postSignals = keep;
+      console.log(
+        "SOFT CIRCUIT BREAKER: " + streak + " LOSS beruntun — post " + keep.length + " top signal(s) conf>=90"
+      );
+    } else if (streak >= 3 && postSignals.length) {
+      // streak 3: tetap post, tapi max 1
+      const ranked = postSignals.slice().sort((a, b) => (b.probability || 0) - (a.probability || 0));
+      postSignals = ranked.slice(0, 1);
+      console.log("Loss streak " + streak + "/4 — batasi post 1 VALID terbaik (bukan blok total)");
     } else if (streak > 0) {
-      console.log("Loss streak (baseline): " + streak + "/3 sebelum circuit breaker");
+      console.log("Loss streak (baseline): " + streak + "/4");
     }
   } catch (e) {
     console.warn("Circuit breaker:", e.message);
