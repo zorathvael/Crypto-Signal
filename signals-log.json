@@ -1,6 +1,38 @@
 {
   "open": [
     {
+      "id": "ZHIPU_LONG_1790157651874",
+      "ts": 1790157651874,
+      "base": "ZHIPU",
+      "instId": "ZHIPUUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "EARLY_ZONE",
+      "probability": 87,
+      "entry": 84.1,
+      "sl": 83.51546627554042,
+      "tp1": 85.15216070402722,
+      "tp2": 85.6197876835949,
+      "tp3": 86.14586803560852,
+      "rr": 2,
+      "regime": "normal",
+      "validUntil": "2026-09-23T10:15:24.650Z",
+      "horizons": {
+        "h15": {
+          "r": 0.676,
+          "price": 84.495,
+          "at": 1790159400000
+        },
+        "h60": {
+          "r": -0.325,
+          "price": 83.91,
+          "at": 1790162100000
+        }
+      }
+    }
+  ],
+  "closed": [
+    {
       "id": "SKHYNIX_LONG_1790138029306",
       "ts": 1790138029306,
       "base": "SKHYNIX",
@@ -28,7 +60,10 @@
           "price": 1369.2350000000001,
           "at": 1790142300000
         }
-      }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790167174226
     },
     {
       "id": "SKHY_LONG_1790142637111",
@@ -58,32 +93,10 @@
           "price": 192.035,
           "at": 1790146800000
         }
-      }
-    },
-    {
-      "id": "ZHIPU_LONG_1790157651874",
-      "ts": 1790157651874,
-      "base": "ZHIPU",
-      "instId": "ZHIPUUSDT",
-      "action": "LONG",
-      "setup": "SCALP_MTF",
-      "mode": "EARLY_ZONE",
-      "probability": 87,
-      "entry": 84.1,
-      "sl": 83.51546627554042,
-      "tp1": 85.15216070402722,
-      "tp2": 85.6197876835949,
-      "tp3": 86.14586803560852,
-      "rr": 2,
-      "regime": "normal",
-      "validUntil": "2026-09-23T10:15:24.650Z",
-      "horizons": {
-        "h15": {
-          "r": 0.676,
-          "price": 84.495,
-          "at": 1790159400000
-        }
-      }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790167174226
     },
     {
       "id": "ZEC_LONG_1790159626599",
@@ -102,10 +115,24 @@
       "rr": 1.7000000000000017,
       "regime": "normal",
       "validUntil": "2026-09-23T10:48:04.535Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 2.492,
+          "price": 1644.375,
+          "at": 1790161200000
+        },
+        "h60": {
+          "r": 0.29,
+          "price": 1616.455,
+          "at": 1790163900000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.52,
+      "exit": 1634.3346557041066,
+      "closedAt": 1790160300000,
+      "costR": 0.178
+    },
     {
       "id": "LTC_LONG_1790157651874",
       "ts": 1790157651874,
@@ -2226,19 +2253,19 @@
     }
   ],
   "stats": {
-    "total": 22,
-    "wins": 9,
+    "total": 25,
+    "wins": 10,
     "losses": 11,
-    "expired": 2,
-    "sumR": -3.670000000000001,
+    "expired": 4,
+    "sumR": -2.15,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 21,
-        "wins": 9,
+        "n": 24,
+        "wins": 10,
         "losses": 11,
-        "sumR": -3.670000000000001,
-        "winrate": 45,
-        "avgR": -0.18
+        "sumR": -2.15,
+        "winrate": 47.6,
+        "avgR": -0.1
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -2251,12 +2278,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 19,
-        "wins": 9,
+        "n": 22,
+        "wins": 10,
         "losses": 8,
-        "sumR": -0.29000000000000037,
-        "winrate": 52.9,
-        "avgR": -0.02
+        "sumR": 1.2300000000000004,
+        "winrate": 55.6,
+        "avgR": 0.07
       },
       "SHORT": {
         "n": 3,
@@ -2269,7 +2296,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 45,
-    "avgR": -0.18
+    "winrate": 47.6,
+    "avgR": -0.1
   }
 }
