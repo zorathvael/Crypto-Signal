@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.11.2 — MTF scalp + LOC + Positioning Layer
+ * Strict Core Scanner v3.12.0 — MTF scalp + LOC + Positioning Layer
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -33,7 +33,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 48; // v3.11.2 speed: top liquidity only
+const CANDIDATE_LIMIT = 48; // v3.12.0 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
@@ -909,6 +909,160 @@ function extremes24h(candles1h) {
  *  execution geometry: entry=5m close, SL=24h extreme±0.25ATR, TP=2R
  * risk band 0.10%–8%
  */
+
+/**
+ * Entry dari ekstrem 40 candle 5m (acuan user):
+ * LONG  → entry sedikit di atas low40, SL di bawah low, TP di bawah high 15m
+ * SHORT → entry sedikit di bawah high40, SL di atas high, TP di atas low 15m
+ * Arah action tetap dari engine trend/MTF (bukan dari ekstrem ini).
+ */
+function buildLevels40Swing(candles5, candles15, action, mark, regime) {
+  if (!candles5 || candles5.length < 40) return null;
+  if (!action || (action !== "LONG" && action !== "SHORT")) return null;
+  const win = candles5.slice(-40);
+  const low40 = Math.min(...win.map((c) => c.low));
+  const high40 = Math.max(...win.map((c) => c.high));
+  if (!(low40 > 0) || !(high40 > low40)) return null;
+
+  const atrV = atr(candles5) || mark * 0.005;
+  const tick = Math.max(mark * 0.00012, low40 * 0.0002, 1e-12);
+  const pad = Math.max(tick, atrV * 0.06);
+
+  const w15 =
+    candles15 && candles15.length >= 12 ? candles15.slice(-Math.min(40, candles15.length)) : win;
+  const high15 = Math.max(...w15.map((c) => c.high));
+  const low15 = Math.min(...w15.map((c) => c.low));
+
+  let entry, sl, tp1, tp2, tp3, mode;
+
+  if (action === "LONG") {
+    // Entry sedikit di atas harga terendah 40×5m (contoh 0.04867 → ~0.04870)
+    entry = low40 + pad;
+    // Jika harga pasar sudah jauh di atas zona, pakai entry pasar tapi SL tetap struktur
+    const distAtr = (mark - entry) / Math.max(atrV, 1e-12);
+    if (distAtr > 2.4) {
+      return {
+        entry: mark,
+        sl: mark,
+        tp1: mark,
+        tp2: mark,
+        tp3: mark,
+        rr: 0,
+        mode: "WAIT",
+        reason: "jauh dari low40 (chase)",
+        mark,
+        meta: { low40, high40, high15, low15 },
+      };
+    }
+    if (distAtr > 0.85) {
+      entry = mark;
+      mode = "SWING40_MKT";
+    } else {
+      mode = "SWING40_ZONE";
+    }
+    // SL minimal di bawah low40
+    sl = low40 - Math.max(pad * 1.2, atrV * 0.2);
+    let risk = entry - sl;
+    const riskCap = Math.min(entry * 0.008, atrV * 1.15);
+    const riskFloor = Math.max(entry * 0.0012, atrV * 0.35);
+    if (risk > riskCap) {
+      sl = entry - riskCap;
+      risk = riskCap;
+    }
+    if (risk < riskFloor) {
+      sl = entry - riskFloor;
+      risk = riskFloor;
+    }
+    // TP potensial di bawah high 15m (contoh 0.05411 → 0.05311)
+    const tpCeil = high15 - Math.max(pad, atrV * 0.12, (high15 - entry) * 0.08);
+    tp1 = Math.min(entry + risk * 2.0, tpCeil);
+    tp2 = Math.min(entry + risk * 2.8, high15 - pad);
+    tp3 = Math.min(entry + risk * 3.6, high15 - tick);
+    if (tp1 <= entry) tp1 = entry + risk * 1.6;
+    if (tp2 <= tp1) tp2 = tp1 + risk * 0.45;
+    if (tp3 <= tp2) tp3 = tp2 + risk * 0.45;
+  } else {
+    // SHORT: entry sedikit di bawah high40
+    entry = high40 - pad;
+    const distAtr = (entry - mark) / Math.max(atrV, 1e-12);
+    if (distAtr > 2.4) {
+      return {
+        entry: mark,
+        sl: mark,
+        tp1: mark,
+        tp2: mark,
+        tp3: mark,
+        rr: 0,
+        mode: "WAIT",
+        reason: "jauh dari high40 (chase)",
+        mark,
+        meta: { low40, high40, high15, low15 },
+      };
+    }
+    if (distAtr > 0.85) {
+      entry = mark;
+      mode = "SWING40_MKT";
+    } else {
+      mode = "SWING40_ZONE";
+    }
+    sl = high40 + Math.max(pad * 1.2, atrV * 0.2);
+    let risk = sl - entry;
+    const riskCap = Math.min(entry * 0.008, atrV * 1.15);
+    const riskFloor = Math.max(entry * 0.0012, atrV * 0.35);
+    if (risk > riskCap) {
+      sl = entry + riskCap;
+      risk = riskCap;
+    }
+    if (risk < riskFloor) {
+      sl = entry + riskFloor;
+      risk = riskFloor;
+    }
+    const tpFloor = low15 + Math.max(pad, atrV * 0.12, (entry - low15) * 0.08);
+    tp1 = Math.max(entry - risk * 2.0, tpFloor);
+    tp2 = Math.max(entry - risk * 2.8, low15 + pad);
+    tp3 = Math.max(entry - risk * 3.6, low15 + tick);
+    if (tp1 >= entry) tp1 = entry - risk * 1.6;
+    if (tp2 >= tp1) tp2 = tp1 - risk * 0.45;
+    if (tp3 >= tp2) tp3 = tp2 - risk * 0.45;
+  }
+
+  const risk = Math.abs(entry - sl);
+  if (!(risk > 0)) return null;
+  const rr = Math.abs(tp1 - entry) / risk;
+  if (rr < 1.35) {
+    return {
+      entry,
+      sl,
+      tp1,
+      tp2,
+      tp3,
+      rr,
+      mode: "WAIT",
+      reason: "swing40 rr<" + rr.toFixed(2),
+      mark,
+      meta: { low40, high40, high15, low15 },
+    };
+  }
+  // validasi arah level
+  if (action === "LONG" && !(sl < entry && entry < tp1)) {
+    return { mode: "WAIT", reason: "swing40 long level invalid", rr: 0, entry, sl, tp1, tp2, tp3, mark };
+  }
+  if (action === "SHORT" && !(sl > entry && entry > tp1)) {
+    return { mode: "WAIT", reason: "swing40 short level invalid", rr: 0, entry, sl, tp1, tp2, tp3, mark };
+  }
+  return {
+    entry,
+    sl,
+    tp1,
+    tp2,
+    tp3,
+    rr,
+    mode,
+    mark,
+    meta: { low40, high40, high15, low15, pad },
+  };
+}
+
 function buildLevelsExtreme(candles5, candles1h, action, mark, regime) {
   if (!candles5 || candles5.length < 5) return null;
   const last = candles5[candles5.length - 1];
@@ -2406,7 +2560,7 @@ const ADAPTIVE_LOOKBACK = 20;
 const ADAPTIVE_MIN_WR = 35;
 const ADAPTIVE_CONF_BUMP = 3;
 const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
-const STRATEGY_ID = "zorath-core-v3.11.2"; // identifier seperti FreqAI model id
+const STRATEGY_ID = "zorath-core-v3.12.0"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2759,9 +2913,9 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.11.2 | Fast scan · phase2 lazy · 48 pairs ===");
+  console.log("=== Strict Core v3.12.0 | Entry 40×5m swing · SL ketat · TP under 15m high ===");
   console.log(new Date().toISOString());
-  console.log("Primary: LONG VALID | anti-chase RSI/pos | SL cap 1.2% both paths");
+  console.log("Primary: arah MTF/trend | entry low40/high40 5m | TP near 15m extreme");
   console.log("Secondary: SHORT=WATCH | equity filtered | Discord+TG+Square | id=" + STRATEGY_ID);
   console.log(
     "Discord:", DISCORD_WEBHOOK ? "YES" : "NO",
@@ -2844,7 +2998,7 @@ async function main() {
 
   for (const c of candidates) {
     try {
-      // v3.11.2 Phase-1: candle only (cepat). Phase-2: book+positioning hanya jika lolos skor kasar
+      // v3.12.0 Phase-1: candle only (cepat). Phase-2: book+positioning hanya jika lolos skor kasar
       const [h1c, m15c, m5c] = await Promise.all([
         fetchBitgetCandles(c.instId, "1H", 80),
         fetchBitgetCandles(c.instId, "15m", 80),
@@ -3073,22 +3227,26 @@ async function main() {
       }
 
       let levels = null;
-      if (useExtremeLevels) {
-        levels = buildLevelsExtreme(m5x, h1x, scored.action, c.mark, regime);
-        if (levels && levels.mode === "WAIT") {
-          watches.push({
-            base: c.base,
-            action: scored.action,
-            score: scored.probability,
-            setup: "POTENSI",
-            reason: levels.reason || "early risk band fail",
-          });
-          funnel.levelsFail++;
-          continue;
-        }
+      // v3.12: entry utama dari low/high 40×5m (arah tetap dari scored.action)
+      levels = buildLevels40Swing(m5x, m15x, scored.action, c.mark, regime);
+      if (levels && levels.mode === "WAIT") {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: scored.probability,
+          setup: scored.setup || "POTENSI",
+          reason: levels.reason || "swing40 WAIT",
+        });
+        funnel.levelsFail++;
+        continue;
       }
       if (!levels) {
-        levels = buildLevels(m5x, scored, c.mark, regime);
+        if (useExtremeLevels) {
+          levels = buildLevelsExtreme(m5x, h1x, scored.action, c.mark, regime);
+        }
+        if (!levels || levels.mode === "WAIT") {
+          levels = buildLevels(m5x, scored, c.mark, regime);
+        }
       }
       if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < (useExtremeLevels ? 1.5 : MIN_RR)) {
         watches.push({
