@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.12.1 — MTF scalp + LOC + Positioning Layer
+ * Strict Core Scanner v3.12.2 — MTF scalp + LOC + Positioning Layer
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -33,7 +33,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 48; // v3.12.1 speed: top liquidity only
+const CANDIDATE_LIMIT = 56; // v3.12.2 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
@@ -701,7 +701,7 @@ function mtfScalpAction(h4, h1, m30, m15, m5, book, regime) {
   const best = L.conf >= S.conf ? L : S;
   // v3.3.1: regime high butuh conf lebih tinggi (audit INJ false positive)
   const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
-  const needConf = isHigh ? 86 : 76;
+  const needConf = isHigh ? 82 : 72;
   const needAlign = isHigh ? 3 : 3;
   if (best.conf >= needConf && best.align >= needAlign && best.loc >= 0.35) {
     return {
@@ -942,7 +942,7 @@ function buildLevels40Swing(candles5, candles15, action, mark, regime) {
   const pad = Math.max(tick, atrV * 0.06);
 
   // Ekstrem harus "segar": terbentuk di 15 bar terakhir window 40
-  const FRESH_BARS = 15;
+  const FRESH_BARS = 28; // v3.12.2 longgar: ekstrem masih relevan
   const barsFromEndLow = n - 1 - lowIdx;
   const barsFromEndHigh = n - 1 - highIdx;
 
@@ -975,7 +975,7 @@ function buildLevels40Swing(candles5, candles15, action, mark, regime) {
     }
     // Harga harus dekat zona low (bukan chase)
     const distAtr = (mark - low40) / Math.max(atrV, 1e-12);
-    if (distAtr > 1.2) {
+    if (distAtr > 2.0) {
       return wait("belum di zona low40 (dist " + distAtr.toFixed(2) + " ATR) — pantau", {
         distAtr,
       });
@@ -1015,7 +1015,7 @@ function buildLevels40Swing(candles5, candles15, action, mark, regime) {
       });
     }
     const distAtr = (high40 - mark) / Math.max(atrV, 1e-12);
-    if (distAtr > 1.2) {
+    if (distAtr > 2.0) {
       return wait("belum di zona high40 (dist " + distAtr.toFixed(2) + " ATR) — pantau", {
         distAtr,
       });
@@ -1051,7 +1051,7 @@ function buildLevels40Swing(candles5, candles15, action, mark, regime) {
   const risk = Math.abs(entry - sl);
   if (!(risk > 0)) return null;
   const rr = Math.abs(tp1 - entry) / risk;
-  if (rr < 1.35) {
+  if (rr < 1.2) {
     return wait("swing40 rr<" + rr.toFixed(2) + " — pantau", { rr, entry, sl, tp1 });
   }
   if (action === "LONG" && !(sl < entry && entry < tp1)) {
@@ -2578,8 +2578,8 @@ const HORIZON_MIN = [15, 60]; // H15 / H60 forward R
 const ADAPTIVE_LOOKBACK = 20;
 const ADAPTIVE_MIN_WR = 35;
 const ADAPTIVE_CONF_BUMP = 3;
-const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
-const STRATEGY_ID = "zorath-core-v3.12.1"; // identifier seperti FreqAI model id
+const ADAPTIVE_FLOOR_CAP = 80; // jangan naikkan conf sampai 85+ (bunuh potensi)
+const STRATEGY_ID = "zorath-core-v3.12.2"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2932,7 +2932,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.12.1 | Swing40 fresh≤15bar · near zone only · else WATCH ===");
+  console.log("=== Strict Core v3.12.2 | Looser swing40 · fresh≤28 · dist≤2ATR · conf72 ===");
   console.log(new Date().toISOString());
   console.log("Primary: arah MTF/trend | entry low40/high40 5m | TP near 15m extreme");
   console.log("Secondary: SHORT=WATCH | equity filtered | Discord+TG+Square | id=" + STRATEGY_ID);
@@ -2994,7 +2994,7 @@ async function main() {
   console.log(`Candidates (${candidates.length}): ${candidates.map((c) => c.base).join(", ")}`);
   // Outcome log early for adaptive conf (FreqAI self-adapt idea)
   let outcomeLogEarly = loadOutcomeLog();
-  const adapt = adaptiveConfFloor(outcomeLogEarly, 76);
+  const adapt = adaptiveConfFloor(outcomeLogEarly, 72);
   if (adapt.bumped) {
     console.log(`Adaptive conf: WR ${adapt.wr}% on last ${adapt.n} → floor ${adapt.floor} (was 80)`);
   } else if (adapt.wr != null) {
@@ -3017,7 +3017,7 @@ async function main() {
 
   for (const c of candidates) {
     try {
-      // v3.12.1 Phase-1: candle only (cepat). Phase-2: book+positioning hanya jika lolos skor kasar
+      // v3.12.2 Phase-1: candle only (cepat). Phase-2: book+positioning hanya jika lolos skor kasar
       const [h1c, m15c, m5c] = await Promise.all([
         fetchBitgetCandles(c.instId, "1H", 80),
         fetchBitgetCandles(c.instId, "15m", 80),
@@ -3049,7 +3049,7 @@ async function main() {
         m5 && m5.position != null ? (m5.position <= 30 || m5.position >= 70 ? 66 : 50) : 50
       );
       let funding = 0, rawBook = null, oiSize = null, lsRatio = null, book = null;
-      if (rough >= 58) {
+      if (rough >= 50) {
         await new Promise((r) => setTimeout(r, 50));
         const pack = await Promise.all([
           positioning.fetchFunding(c.instId),
@@ -3081,7 +3081,7 @@ async function main() {
         const conf = Math.min(92, Math.round(erInf.detail.score * 100));
         // high-vol: tetap butuh conf tinggi
         const isHigh = regime && (regime.regime === "high" || regime.regime === "extreme");
-        const needConf = isHigh ? Math.max(84, adapt.floor) : adapt.floor;
+        const needConf = isHigh ? Math.max(80, adapt.floor) : Math.max(70, adapt.floor - 2);
         if (conf >= needConf) {
           scored = {
             action: erInf.direction,
@@ -3301,7 +3301,7 @@ async function main() {
       const pos15 = scored.m15 && scored.m15.position != null ? scored.m15.position : 50;
       const rsi15 = scored.m15 && scored.m15.rsi != null ? scored.m15.rsi : 50;
       const pos5 = scored.m5 && scored.m5.position != null ? scored.m5.position : 50;
-      if (scored.action === "LONG" && (pos15 >= 88 || rsi15 >= 72 || pos5 >= 92)) {
+      if (scored.action === "LONG" && (pos15 >= 95 || rsi15 >= 78 || pos5 >= 97)) {
         watches.push({
           base: c.base,
           action: scored.action,
@@ -3471,7 +3471,7 @@ async function main() {
         if (b.action === "LONG" && a.action !== "LONG") return 1;
         return 0;
       });
-      let keep = ranked.filter((s) => (s.probability || 0) >= 88 && s.action === "LONG").slice(0, 1);
+      let keep = ranked.filter((s) => (s.probability || 0) >= 84 && s.action === "LONG").slice(0, 1);
       if (!keep.length) keep = ranked.filter((s) => (s.probability || 0) >= 90).slice(0, 1);
       const drop = postSignals.filter((s) => !keep.includes(s));
       for (const s of drop) {
