@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.11.1 — MTF scalp + LOC + Positioning Layer
+ * Strict Core Scanner v3.11.2 — MTF scalp + LOC + Positioning Layer
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -33,7 +33,7 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
 const MIN_RR = 1.5;
-const CANDIDATE_LIMIT = 80; // A+B+C: broader scan + safer inter-coin delay
+const CANDIDATE_LIMIT = 48; // v3.11.2 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
 const FEE_RATE_RT = 0.001;      // 0.10% round-turn notional ≈ 0.05%*2
@@ -61,7 +61,7 @@ async function getJson(url, retries = 3) {
         headers: { Accept: "application/json", "User-Agent": "StrictCore/2.13.0" },
       });
       if (res.status === 429) {
-        const wait = 800 * (attempt + 1) + Math.floor(Math.random() * 400);
+        const wait = 450 * (attempt + 1) + Math.floor(Math.random() * 150);
         await new Promise((r) => setTimeout(r, wait));
         lastErr = new Error("API 429");
         continue;
@@ -76,7 +76,7 @@ async function getJson(url, retries = 3) {
     } catch (e) {
       lastErr = e;
       if (attempt < retries && /429|fetch|network/i.test(String(e.message || e))) {
-        await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+        await new Promise((r) => setTimeout(r, 320 * (attempt + 1)));
         continue;
       }
       throw e;
@@ -976,6 +976,25 @@ function dropIncompleteCandle(candles, intervalMin) {
   // masih dalam interval bar ini → incomplete
   if (ageMs < intervalMs - 3000) return candles.slice(0, -1);
   return candles;
+}
+
+
+/** Agregasi candle TF lebih tinggi dari base (n bar → 1). Hemat request 4H. */
+function aggregateTF(candles, n) {
+  if (!candles || candles.length < n * 5) return null;
+  const out = [];
+  for (let i = 0; i + n <= candles.length; i += n) {
+    const chunk = candles.slice(i, i + n);
+    out.push({
+      ts: chunk[0].ts,
+      open: chunk[0].open,
+      high: Math.max(...chunk.map((c) => c.high)),
+      low: Math.min(...chunk.map((c) => c.low)),
+      close: chunk[n - 1].close,
+      volume: chunk.reduce((s, c) => s + (c.volume || 0), 0),
+    });
+  }
+  return out.length >= 15 ? out : null;
 }
 
 function candlesTo2H(h1Candles) {
@@ -2387,7 +2406,7 @@ const ADAPTIVE_LOOKBACK = 20;
 const ADAPTIVE_MIN_WR = 35;
 const ADAPTIVE_CONF_BUMP = 3;
 const ADAPTIVE_FLOOR_CAP = 82; // jangan naikkan conf sampai 85+ (bunuh potensi)
-const STRATEGY_ID = "zorath-core-v3.11.1"; // identifier seperti FreqAI model id
+const STRATEGY_ID = "zorath-core-v3.11.2"; // identifier seperti FreqAI model id
 
 function loadOutcomeLog() {
   try {
@@ -2740,7 +2759,7 @@ function printOutcomeSummary(log, newlyClosed) {
 // ========== END CLODDS MODULES ==========
 
 async function main() {
-  console.log("=== Strict Core v3.11.1 | FIX candidates=0 + Positioning · Anti-chase ===");
+  console.log("=== Strict Core v3.11.2 | Fast scan · phase2 lazy · 48 pairs ===");
   console.log(new Date().toISOString());
   console.log("Primary: LONG VALID | anti-chase RSI/pos | SL cap 1.2% both paths");
   console.log("Secondary: SHORT=WATCH | equity filtered | Discord+TG+Square | id=" + STRATEGY_ID);
@@ -2825,39 +2844,55 @@ async function main() {
 
   for (const c of candidates) {
     try {
-      // Anti-429: 2 gelombang request, bukan 6 paralel sekaligus
+      // v3.11.2 Phase-1: candle only (cepat). Phase-2: book+positioning hanya jika lolos skor kasar
       const [h1c, m15c, m5c] = await Promise.all([
-        fetchBitgetCandles(c.instId, "1H", 100),
-        fetchBitgetCandles(c.instId, "15m", 100),
-        fetchBitgetCandles(c.instId, "5m", 100),
-      ]);
-      await new Promise((r) => setTimeout(r, 170));
-      const [h4c, m30c, funding, rawBook, oiSize, lsRatio] = await Promise.all([
-        fetchBitgetCandles(c.instId, "4H", 100),
-        fetchBitgetCandles(c.instId, "30m", 100),
-        positioning.fetchFunding(c.instId),
-        fetchOrderBook(c.instId, 20),
-        positioning.fetchOpenInterest(c.instId),
-        positioning.fetchLongShortRatio(c.instId),
+        fetchBitgetCandles(c.instId, "1H", 80),
+        fetchBitgetCandles(c.instId, "15m", 80),
+        fetchBitgetCandles(c.instId, "5m", 80),
       ]);
       funnel.scanned++;
-      // Closed-candle only: buang bar forming, bukan skip pair (perbaiki stale 69/80)
       let m5x = dropIncompleteCandle(m5c, 5);
       let m15x = dropIncompleteCandle(m15c, 15);
       let h1x = dropIncompleteCandle(h1c, 60);
-      let h4x = dropIncompleteCandle(h4c, 240);
-      let m30x = m30c && m30c.length ? dropIncompleteCandle(m30c, 30) : m30c;
-      if (!isCandleFresh(m15x, 55) || !isCandleFresh(m5x, 25) || m5x.length < 60 || m15x.length < 60) {
+      // 4H dari agregasi 1H — hemat 1 request/pair
+      const h4x = aggregateTF(h1x, 4) || h1x;
+      const m30x = null;
+      if (!isCandleFresh(m15x, 55) || !isCandleFresh(m5x, 25) || m5x.length < 50 || m15x.length < 50) {
         funnel.stale++;
+        await new Promise((r) => setTimeout(r, 40));
         continue;
       }
       const h1 = analyzeTF(h1x, "1H");
       const m15 = analyzeTF(m15x, "15M");
       const m5 = analyzeTF(m5x, "5M");
       const h4 = analyzeTF(h4x, "4H");
-      const m30 = m30x && m30x.length >= 40 ? analyzeTF(m30x, "30M") : null;
-      const book = analyzeOrderBook(rawBook);
+      const m30 = null;
       const early = earlyReversalDiag(m15, m5, m15x, m5x);
+      // skor kasar: skip dead pairs sebelum book/OI (hemat API)
+      const rough = Math.max(
+        early && early.longScore != null ? early.longScore : 0,
+        early && early.shortScore != null ? early.shortScore : 0,
+        m15 && m15.rsi != null ? (m15.rsi < 38 || m15.rsi > 62 ? 68 : 52) : 52,
+        m5 && m5.position != null ? (m5.position <= 30 || m5.position >= 70 ? 66 : 50) : 50
+      );
+      let funding = 0, rawBook = null, oiSize = null, lsRatio = null, book = null;
+      if (rough >= 58) {
+        await new Promise((r) => setTimeout(r, 50));
+        const pack = await Promise.all([
+          positioning.fetchFunding(c.instId),
+          fetchOrderBook(c.instId, 15),
+          positioning.fetchOpenInterest(c.instId),
+          positioning.fetchLongShortRatio(c.instId),
+        ]);
+        funding = pack[0];
+        rawBook = pack[1];
+        oiSize = pack[2];
+        lsRatio = pack[3];
+        book = analyzeOrderBook(rawBook);
+      } else {
+        book = analyzeOrderBook(null);
+        await new Promise((r) => setTimeout(r, 35));
+      }
 
       // === Primary: Early reversal Reversal → MTF → LOC fallback ===
       const regime = getVolatilityRegime(m15x);
@@ -3133,7 +3168,7 @@ async function main() {
         confluence: scored.confluence,
         pillars: scored.pillars,
       });
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 80));
     } catch (e) {
       console.warn(`Skip ${c.base}:`, e.message);
     }
