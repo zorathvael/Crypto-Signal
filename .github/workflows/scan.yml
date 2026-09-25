@@ -28,6 +28,7 @@ jobs:
           node --check positioning.js
           node --check traderspy.js
           node --check scanner.js
+          npm test
 
       - name: Install SVG renderer (Square card)
         continue-on-error: true
