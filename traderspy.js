@@ -305,7 +305,7 @@ async function getTraderSpySignals() {
 
 async function runTraderSpyScan() {
   const tokenValue = process.env.TRADERSPY_MCP_TOKEN || "";
-  if (!process.env.TRADERSPY_MCP_URL && !/^https?:\\/\\//i.test(tokenValue)) {
+  if (!process.env.TRADERSPY_MCP_URL && !/^https?:\/\//i.test(tokenValue)) {
     throw new Error("TraderSpy MCP URL is missing. Put the personal TraderSpy MCP connection URL in TRADERSPY_MCP_TOKEN or configure TRADERSPY_MCP_URL.");
   }
   const result = await getTraderSpySignals();
