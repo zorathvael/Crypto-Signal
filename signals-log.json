@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ETC_LONG_1790300718962",
+      "ts": 1790300718962,
+      "base": "ETC",
+      "instId": "ETCUSDT",
+      "action": "LONG",
+      "setup": "SCALP_MTF",
+      "mode": "SWING40_MKT",
+      "probability": 82,
+      "entry": 9.371,
+      "sl": 9.320361407593218,
+      "tp1": 9.472277184813565,
+      "tp2": 9.624192962033911,
+      "tp3": 9.776108739254258,
+      "rr": 2,
+      "regime": "normal",
+      "validUntil": "2026-09-25T01:58:25.146Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "ZEC_LONG_1790174102191",
