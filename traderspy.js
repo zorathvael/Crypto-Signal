@@ -101,6 +101,7 @@ async function postMcp(url, body, sessionId) {
   const headers = {
     Accept: "application/json, text/event-stream",
     "Content-Type": "application/json",
+    "MCP-Protocol-Version": "2025-11-25",
   };
   const token = process.env.TRADERSPY_MCP_TOKEN || "";
   // TraderSpy personal MCP URLs embed the credential and must be used with
