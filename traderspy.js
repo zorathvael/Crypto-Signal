@@ -105,7 +105,10 @@ async function postMcp(url, body, sessionId) {
   };
   const token = process.env.TRADERSPY_MCP_TOKEN;
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (sessionId) headers["Mcp-Session-Id"] = sessionId;
+  if (sessionId) {
+    headers["Mcp-Session-Id"] = sessionId;
+    headers["MCP-Protocol-Version"] = "2025-11-25";
+  }
 
   const res = await fetch(url, {
     method: "POST",
