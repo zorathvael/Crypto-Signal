@@ -284,7 +284,7 @@ async function getTraderSpySignals() {
   // contains an https:// MCP connection URL. Raw bearer tokens are supported
   // only when TRADERSPY_MCP_URL is also configured.
   const tokenValue = process.env.TRADERSPY_MCP_TOKEN || "";
-  const url = process.env.TRADERSPY_MCP_URL || (/^https?:\\/\\//i.test(tokenValue) ? tokenValue : "");
+  const url = process.env.TRADERSPY_MCP_URL || (/^https?:\/\//i.test(tokenValue) ? tokenValue : "");
   const limit = clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT || DEFAULT_SIGNAL_LIMIT), 1, 50);
   const sessionId = await initializeMcp(url);
   const payload = await callTool(url, sessionId, 2, "get_signals", {
