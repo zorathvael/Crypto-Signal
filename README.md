@@ -150,19 +150,9 @@ Secret lama tetap digunakan:
 
 ## TraderSpy authentication
 
-TraderSpy menyediakan remote MCP server. Gunakan **personal MCP URL** dari akun TraderSpy sebagai GitHub Actions secret:
+TraderSpy menyediakan **personal MCP connection URL** yang membawa credential di dalam URL. Secret yang digunakan repository ini adalah `TRADERSPY_MCP_TOKEN`; adapter otomatis memperlakukannya sebagai MCP URL bila nilainya diawali `http://` atau `https://`.
 
-```
-TRADERSPY_MCP_URL
-```
-
-Alternatifnya, jika memakai endpoint standar:
-
-```
-TRADERSPY_MCP_TOKEN
-```
-
-Adapter mendukung keduanya.
+Jika menggunakan raw bearer token terpisah, gunakan `TRADERSPY_MCP_URL` sebagai endpoint dan `TRADERSPY_MCP_TOKEN` sebagai token.
 
 **Jangan commit URL/token TraderSpy ke repository.**
 
