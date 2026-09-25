@@ -138,12 +138,20 @@ async function postMcp(url, body, sessionId) {
     const suffix = text ? `: ${text.slice(0, 300)}` : "";
     throw new Error(`TraderSpy MCP HTTP ${res.status}${suffix}`);
   }
+  const contentType = res.headers.get("content-type") || "";
+  const bodyLines = text.split(/\r?\n/);
+  const dataFrames = bodyLines.filter((line) => line.trimStart().startsWith("data:")).length;
+  const preview = text.slice(0, 240)
+    .replace(/mcp_[A-Za-z0-9_-]+/g, "[REDACTED]")
+    .replace(/https?:\\/\\/[^\\s"]+/g, "[URL]");
   return {
-    payload: parseMcpBody(text, res.headers.get("content-type") || ""),
+    payload: parseMcpBody(text, contentType),
     sessionId: res.headers.get("mcp-session-id") || sessionId || null,
     status: res.status,
-    contentType: res.headers.get("content-type") || "",
+    contentType,
     bodyLength: text.length,
+    dataFrames,
+    preview,
   };
 }
 
@@ -161,7 +169,7 @@ async function initializeMcp(url) {
 
   if (!response.payload?.result) {
     throw new Error(
-      `TraderSpy MCP initialize failed: status=${response.status} content-type=${response.contentType || "unknown"} body-length=${response.bodyLength} payload=${JSON.stringify(response.payload).slice(0, 300)}`
+      `TraderSpy MCP initialize failed: status=${response.status} content-type=${response.contentType || "unknown"} body-length=${response.bodyLength} data-frames=${response.dataFrames} preview=${response.preview} payload=${JSON.stringify(response.payload).slice(0, 200)}`
     );
   }
 
