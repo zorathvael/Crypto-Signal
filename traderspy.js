@@ -143,7 +143,7 @@ async function postMcp(url, body, sessionId) {
   const dataFrames = bodyLines.filter((line) => line.trimStart().startsWith("data:")).length;
   const preview = text.slice(0, 240)
     .replace(/mcp_[A-Za-z0-9_-]+/g, "[REDACTED]")
-    .replace(/https?:\\/\\/[^\\s"]+/g, "[URL]");
+    .replace(/https?:\/\/[^\s"]+/g, "[URL]");
   return {
     payload: parseMcpBody(text, contentType),
     sessionId: res.headers.get("mcp-session-id") || sessionId || null,
