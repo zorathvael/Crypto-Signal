@@ -16,7 +16,6 @@
  *   TRADERSPY_MIN_SCORE Derived delivery quality floor (default 80)
  */
 
-const DEFAULT_MCP_URL = "https://mcp.traderspy.app/mcp";
 const DEFAULT_SIGNAL_LIMIT = 20;
 const DEFAULT_MAX_AGE_MIN = 120;
 const DEFAULT_MIN_SCORE = 80;
@@ -276,7 +275,12 @@ function normalizeSignal(raw, now = Date.now()) {
 }
 
 async function getTraderSpySignals() {
-  const url = process.env.TRADERSPY_MCP_URL || DEFAULT_MCP_URL;
+  // TraderSpy personal MCP URLs embed the private key. The repository secret
+  // may be named TRADERSPY_MCP_TOKEN, so accept that secret as a URL when it
+  // contains an https:// MCP connection URL. Raw bearer tokens are supported
+  // only when TRADERSPY_MCP_URL is also configured.
+  const tokenValue = process.env.TRADERSPY_MCP_TOKEN || "";
+  const url = process.env.TRADERSPY_MCP_URL || (/^https?:\\/\\//i.test(tokenValue) ? tokenValue : "");
   const limit = clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT || DEFAULT_SIGNAL_LIMIT), 1, 50);
   const sessionId = await initializeMcp(url);
   const payload = await callTool(url, sessionId, 2, "get_signals", {
@@ -296,8 +300,9 @@ async function getTraderSpySignals() {
 }
 
 async function runTraderSpyScan() {
-  if (!process.env.TRADERSPY_MCP_URL && !process.env.TRADERSPY_MCP_TOKEN) {
-    throw new Error("TraderSpy integration is not configured. Set TRADERSPY_MCP_URL (recommended) or TRADERSPY_MCP_TOKEN.");
+  const tokenValue = process.env.TRADERSPY_MCP_TOKEN || "";
+  if (!process.env.TRADERSPY_MCP_URL && !/^https?:\\/\\//i.test(tokenValue)) {
+    throw new Error("TraderSpy MCP URL is missing. Put the personal TraderSpy MCP connection URL in TRADERSPY_MCP_TOKEN or configure TRADERSPY_MCP_URL.");
   }
   const result = await getTraderSpySignals();
   console.log(`TraderSpy: fetched=${result.fetched} valid=${result.signals.length} (one get_signals call)`);
