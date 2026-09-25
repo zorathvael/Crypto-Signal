@@ -135,6 +135,9 @@ async function postMcp(url, body, sessionId) {
   return {
     payload: parseMcpBody(text, res.headers.get("content-type") || ""),
     sessionId: res.headers.get("mcp-session-id") || sessionId || null,
+    status: res.status,
+    contentType: res.headers.get("content-type") || "",
+    bodyLength: text.length,
   };
 }
 
@@ -151,7 +154,9 @@ async function initializeMcp(url) {
   });
 
   if (!response.payload?.result) {
-    throw new Error(`TraderSpy MCP initialize failed: ${JSON.stringify(response.payload).slice(0, 500)}`);
+    throw new Error(
+      `TraderSpy MCP initialize failed: status=${response.status} content-type=${response.contentType || "unknown"} body-length=${response.bodyLength} payload=${JSON.stringify(response.payload).slice(0, 300)}`
+    );
   }
 
   const sessionId = response.sessionId;
