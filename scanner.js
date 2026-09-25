@@ -2815,7 +2815,7 @@ function resolveOutcome(sig, candles) {
   return null;
 }
 
-async async function evaluateOpenOutcomes(log) {
+async function evaluateOpenOutcomes(log) {
   const stillOpen = [];
   const newlyClosed = [];
   const now = Date.now();
