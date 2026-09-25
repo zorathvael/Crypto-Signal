@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "ETC_LONG_1790300718962",
       "ts": 1790300718962,
@@ -17,10 +18,19 @@
       "rr": 2,
       "regime": "normal",
       "validUntil": "2026-09-25T01:58:25.146Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 1.688,
+          "price": 9.456499999999998,
+          "at": 1790302500000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.74,
+      "exit": 9.472277184813565,
+      "closedAt": 1790302500000,
+      "costR": 0.259
+    },
     {
       "id": "ZEC_LONG_1790174102191",
       "ts": 1790174102191,
@@ -2355,19 +2365,19 @@
     }
   ],
   "stats": {
-    "total": 29,
-    "wins": 12,
+    "total": 30,
+    "wins": 13,
     "losses": 13,
     "expired": 4,
-    "sumR": -1.3400000000000003,
+    "sumR": 0.39999999999999925,
     "bySetup": {
       "SCALP_MTF": {
-        "n": 28,
-        "wins": 12,
+        "n": 29,
+        "wins": 13,
         "losses": 13,
-        "sumR": -1.3400000000000003,
-        "winrate": 48,
-        "avgR": -0.05
+        "sumR": 0.39999999999999925,
+        "winrate": 50,
+        "avgR": 0.02
       },
       "KIKIK_MTF": {
         "n": 1,
@@ -2380,12 +2390,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 26,
-        "wins": 12,
+        "n": 27,
+        "wins": 13,
         "losses": 10,
-        "sumR": 2.04,
-        "winrate": 54.5,
-        "avgR": 0.09
+        "sumR": 3.7799999999999994,
+        "winrate": 56.5,
+        "avgR": 0.16
       },
       "SHORT": {
         "n": 3,
@@ -2398,7 +2408,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 48,
-    "avgR": -0.05
+    "winrate": 50,
+    "avgR": 0.02
   }
 }
