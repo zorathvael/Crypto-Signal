@@ -72,34 +72,23 @@ function targetPct(targets, names) {
 }
 
 function parseMcpBody(text, contentType) {
-  const raw = String(text || "").trim();
+  const raw = String(text || "").replace(/^\uFEFF/, "").trim();
   if (!raw) return null;
 
-  if (contentType && contentType.includes("text/event-stream")) {
-    let last = null;
-    let eventData = [];
-    for (const line of raw.split(/\\r?\\n/)) {
-      if (line.startsWith("data:")) {
-        eventData.push(line.slice(5).trimStart());
-      } else if (!line.trim() && eventData.length) {
-        const joined = eventData.join("\\n");
-        try { last = JSON.parse(joined); } catch {}
-        eventData = [];
-      }
-    }
-    if (eventData.length) {
-      try { last = JSON.parse(eventData.join("\\n")); } catch {}
-    }
-    return last;
+  const lines = raw.split(/\r?\n/);
+  const dataLines = lines
+    .map((line) => line.trimStart())
+    .filter((line) => line.startsWith("data:"));
+
+  // TraderSpy returns one JSON-RPC message in the SSE data frame.
+  // Parse each data frame directly, matching the MCP SDK's framing behavior.
+  for (let i = dataLines.length - 1; i >= 0; i--) {
+    const data = dataLines[i].slice(5).trim();
+    if (!data || data === "[DONE]") continue;
+    try { return JSON.parse(data); } catch {}
   }
 
   try { return JSON.parse(raw); } catch {}
-  // Last-resort extraction for SSE/proxy wrappers that add non-JSON framing.
-  const firstJson = raw.indexOf("{");
-  const lastJson = raw.lastIndexOf("}");
-  if (firstJson >= 0 && lastJson > firstJson) {
-    try { return JSON.parse(raw.slice(firstJson, lastJson + 1)); } catch {}
-  }
   return null;
 }
 
