@@ -94,6 +94,12 @@ function parseMcpBody(text, contentType) {
   }
 
   try { return JSON.parse(raw); } catch {}
+  // Last-resort extraction for SSE/proxy wrappers that add non-JSON framing.
+  const firstJson = raw.indexOf("{");
+  const lastJson = raw.lastIndexOf("}");
+  if (firstJson >= 0 && lastJson > firstJson) {
+    try { return JSON.parse(raw.slice(firstJson, lastJson + 1)); } catch {}
+  }
   return null;
 }
 
