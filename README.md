@@ -1,175 +1,270 @@
-# Crypto-Signal · Strict Core v3.11
+# Crypto-Signal · TraderSpy Intelligence v4.0
 
-Scanner otomatis **Strict Quality** untuk **Bitget USDT-M Perpetual**.
+Crypto-Signal adalah pipeline publikasi signal futures yang menggunakan **TraderSpy sebagai intelligence engine** dan mempertahankan delivery flow yang sudah ada:
 
-Dirancang untuk scalping **15 menit – 1 jam** dengan modal minim: filter ketat, risk adaptif, kualitas orderbook, positioning layer, dan proteksi overtrade.
+**TraderSpy → validation/normalization → dedup & outcome tracking → Discord + Telegram + Binance Square**
 
----
+> Crypto-Signal tidak mengeksekusi order. Signal adalah informasi untuk validasi manual.
 
-## Fitur Utama (v3.11)
+## Perubahan inti v4.0
 
-| Fitur | Keterangan |
-|-------|------------|
-| **Multi-Timeframe** | 1H bias + 15M setup + 5M trigger + 4H gate |
-| **Setup Path** | TREND · MEAN_REV · SQUEEZE · Early Reversal |
-| **Council Consensus** | Voting multi-modul (trend, slope, EMA, volume, structure) |
-| **Volatility Regime** | `low / normal / high / extreme` (dari 15m ATR) |
-| **Orderbook Quality** | Score + kualitas (`poor / medium / good / excellent`) |
-| **Hard Liquidity Filter** | Skip otomatis jika orderbook poor atau spread > 0.12% |
-| **Positioning Layer** | Funding ekstrem + Open Interest + Long/Short account ratio (crowding) |
-| **Volume Confirm** | Boost conf jika volume/momentum mendukung arah |
-| **Adaptive SL/TP** | Lebar SL & rasio TP menyesuaikan regime volatilitas |
-| **Adaptive Risk** | Saran risk 0.25% – 0.85% equity (disesuaikan regime) |
-| **Soft Overtrade Guard** | Potong saran risk jika terlalu banyak signal fresh dalam 1 run |
-| **Persistence** | Soft filter + tag 🔁 jika signal berulang |
-| **BTC Soft Bias** | Penyesuaian kecil confidence (±), **bukan** hard force arah |
-| **Quality Gate** | Valid ≥ 76% · SNIPER ≥ 82% (lebih ketat di high vol) |
-| **R:R minimum** | 1.5 (TP1 / TP2 / TP3 runner) |
-| **Output** | Discord · Telegram · Binance Square (text + card image) |
+### Intelligence engine
+Mulai v4.0, workflow aktif tidak lagi membuat signal dari scanner Bitget lokal.
 
----
+Signal aktif berasal dari TraderSpy MCP `get_signals`, kemudian dinormalisasi oleh `traderspy.js`.
 
-## Positioning Layer (baru di v3.11)
+Yang tetap dipertahankan:
+- `signals-log.json`
+- outcome tracking
+- dedup 90 menit
+- maksimum 3 signal per run
+- safety cap saat loss streak
+- format dan destination posting
+- GitHub Actions
+- Discord
+- Telegram
+- Binance Square
 
-Layer ini menyesuaikan confidence berdasarkan **positioning pasar**, bukan price action saja:
+Yang tidak lagi menjadi sumber signal pada mode aktif:
+- local MTF scoring
+- local orderbook scoring
+- local funding/OI/L/S scoring
+- local BTC-bias signal generation
+- local probability heuristics
+- legacy SHORT/LONG direction bias
 
-| Input | Sumber | Efek |
-|-------|--------|------|
-| **Funding Rate** | Bitget current-fund-rate | +3…+5 jika ekstrem searah mean-reversion; −3…−6 jika overcrowded |
-| **Open Interest** | Bitget open-interest | Tag `oi_ok` jika data valid |
-| **Long/Short Ratio** | Bitget account-long-short (1h) | −5 jika crowded searah trade; +3 jika lawan crowded |
-| **Reject gate** | Gabungan delta | Signal dibuang jika `delta ≤ −8` dan conf < SNIPER |
+File scanner lama masih berada di `scanner.js` sebagai rollback reference, tetapi **workflow aktif memakai `TRADERSPY_ONLY=true`** sehingga jalur lama tidak dieksekusi.
 
-Implementasi: `positioning.js` + hook di `scanner.js`.
+## TraderSpy adapter
 
-Detail: lihat [`POSITIONING_V311.md`](./POSITIONING_V311.md).
+File:
+- `traderspy.js` — remote MCP client + signal normalization
+- `traderspy.test.js` — unit tests untuk normalisasi
+- `scanner.js` — pipeline dan delivery
+- `signals-log.json` — outcome tracker
+- `.github/workflows/scan.yml` — scheduled runtime
 
----
+Adapter memakai **satu tool call TraderSpy per scan**:
 
-## Indikator & Filter
+```
+initialize MCP
+    ↓
+notifications/initialized
+    ↓
+tools/call → get_signals
+    ↓
+normalize + validate
+    ↓
+dedup / safety
+    ↓
+Discord
+Telegram
+Binance Square
+```
 
-- Bollinger Bands, EMA (9/21/50), RSI, MACD histogram, ADX
-- Volume pressure + spike detection
-- Candle reversal (Engulfing, Hammer, Shooting Star, Pin Bar)
-- Market structure (HH/HL vs LH/LL)
-- Slope lock (anti-chase & anti-invert)
-- Funding rate bias (diperkuat di v3.11)
-- Open Interest + Long/Short account ratio (crowding)
-- BTC soft bias (hanya geser skor, tidak memaksa arah koin)
-- Orderbook imbalance + spread + depth + quality score
+Tidak ada fallback diam-diam ke data sintetis atau signal acak.
 
----
+Jika TraderSpy gagal, authentication gagal, data kosong, level tidak lengkap, signal sudah resolved, atau signal sudah terlalu tua, pipeline tidak membuat signal pengganti.
 
-## Jadwal
+## Signal normalization
 
-Scanner jalan **otomatis setiap jam** (UTC) via GitHub Actions.
+TraderSpy memberikan:
+- action: buy/sell
+- symbol
+- timeframe
+- trigger price
+- TP1/TP2/TP3 percentage
+- SL percentage
+- signal strength
+- importance
+- resolution status
+- createdAt
+- triggered conditions
+
+Crypto-Signal mengubah persentase level tersebut menjadi level absolut:
+
+- LONG: SL di bawah entry, TP di atas entry
+- SHORT: SL di atas entry, TP di bawah entry
+
+R:R dihitung dari TP1 terhadap jarak SL.
+
+### Quality score
+
+Field lama `probability` tetap dipertahankan di internal schema agar outcome/delivery layer kompatibel.
+
+**Penting:** nilai tersebut bukan probabilitas statistik terkalibrasi.
+
+Ia adalah **derived quality score** dari:
+- TraderSpy signal strength
+- TraderSpy importance
+
+Mapping:
+- very_strong → 96
+- strong → 90
+- moderate → 84
+- weak → 76
+- high importance mendapat bonus +3
+- medium importance mendapat bonus +1
+
+Default delivery floor: **80**.
+
+Dengan demikian repository tidak mengklaim bahwa score tersebut adalah win probability.
+
+## Signal freshness
+
+Default:
+- maximum signal age: 120 menit
+- hanya `resolutionStatus=pending`
+- signal dengan timestamp masa depan yang tidak wajar ditolak
+- valid-until mengikuti timeframe TraderSpy dan freshness window
+
+Environment variables dapat mengubah:
+- `TRADERSPY_SIGNAL_LIMIT`
+- `TRADERSPY_MAX_AGE_MIN`
+- `TRADERSPY_MIN_SCORE`
+
+## Delivery — tidak diubah
+
+Destination tetap:
+
+1. **Telegram**
+2. **Binance Square**
+3. **Discord**
+
+Urutan pemanggilan di scanner tetap:
+
+```js
+await sendDiscord(postSignals);
+await sendTelegram(postSignals);
+await sendBinanceSquare(postSignals);
+```
+
+Secret lama tetap digunakan:
+
+| Secret | Fungsi |
+|---|---|
+| `DISCORD_WEBHOOK` | Discord |
+| `TELEGRAM_BOT_TOKEN` | Telegram |
+| `TELEGRAM_CHAT_ID` | Telegram |
+| `BINANCE_SQUARE_OPENAPI_KEY` | Binance Square |
+
+## TraderSpy authentication
+
+TraderSpy menyediakan remote MCP server. Gunakan **personal MCP URL** dari akun TraderSpy sebagai GitHub Actions secret:
+
+```
+TRADERSPY_MCP_URL
+```
+
+Alternatifnya, jika memakai endpoint standar:
+
+```
+TRADERSPY_MCP_TOKEN
+```
+
+Adapter mendukung keduanya.
+
+**Jangan commit URL/token TraderSpy ke repository.**
+
+TraderSpy MCP bersifat read-only; Crypto-Signal hanya membaca signal/data dan tidak memiliki tool untuk membuka atau mengubah order.
+
+## GitHub Actions
+
+Workflow:
+`.github/workflows/scan.yml`
+
+Schedule tetap **setiap jam UTC**.
+
+Runtime environment:
 
 ```yaml
-# .github/workflows/scan.yml
-- cron: "0 * * * *"
+TRADERSPY_ONLY: "true"
+TRADERSPY_SIGNAL_LIMIT: "20"
+TRADERSPY_MAX_AGE_MIN: "120"
+TRADERSPY_MIN_SCORE: "80"
 ```
 
-Bisa dijalankan manual lewat tab **Actions → Strict Crypto Scanner → Run workflow**.
-
----
-
-## Setup Secrets
-
-Repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
-
-| Secret | Wajib? | Keterangan |
-|--------|--------|------------|
-| `DISCORD_WEBHOOK` | Direkomendasikan | URL webhook Discord |
-| `TELEGRAM_BOT_TOKEN` | Opsional | Token bot Telegram |
-| `TELEGRAM_CHAT_ID` | Opsional | Chat ID tujuan |
-| `BINANCE_SQUARE_OPENAPI_KEY` | Opsional | Untuk post ke Binance Square |
-
-Tanpa secret, scanner tetap jalan dan hanya menampilkan hasil di log Actions.
-
----
-
-## File Penting
-
-| File | Fungsi |
-|------|--------|
-| `scanner.js` | Logika utama (v3.11.0) |
-| `positioning.js` | Positioning layer (Funding, OI, L/S ratio) |
-| `POSITIONING_V311.md` | Dokumentasi integrasi positioning |
-| `.github/workflows/scan.yml` | Jadwal cron tiap jam |
-| `package.json` | Metadata Node.js (≥18) |
-| `signals-log.json` | Outcome tracker (TP/SL live) |
-
----
-
-## Contoh Output Signal
+Secret yang perlu ditambahkan:
 
 ```
-🎯 SNIPER · BTC 🔴 SHORT · 🔁 Persistent · 📈 VolOK
-
-📊 Score: 87 · Vol LOW (0.85%)
-🧩 Setup: TREND
-🎯 Entry: 78450.5 · PULLBACK
-🛑 SL: 78920.0
-🎯 TP1: 77645.0
-🎯 TP2: 76840.0
-🚀 TP3: 75250.0
-📈 R:R 1:2.3
-⚠️ Risk saran: 0.55% equity
-
-1H bearish · 15M bearish · 4H neutral
-Vol SELL · Book ASK (−14.2) · good · RSI 48
+TRADERSPY_MCP_URL
 ```
 
----
+atau:
 
-## Catatan tentang BTC Bias
-
-BTC soft bias **bukan** perintah “semua koin harus ikut BTC”.
-
-- Hanya menyesuaikan confidence sedikit (+3 searah / −6 lawan) jika bias BTC kuat
-- Signal tetap harus lahir dari struktur koin itu sendiri
-- Banyak alt tidak selalu berkorelasi penuh dengan BTC — itu normal
-
----
-
-## Cara Ubah Frekuensi
-
-Edit `.github/workflows/scan.yml`:
-
-```yaml
-# Setiap 30 menit
-- cron: "*/30 * * * *"
-
-# Setiap 2 jam
-- cron: "0 */2 * * *"
+```
+TRADERSPY_MCP_TOKEN
 ```
 
----
+Secret delivery tetap sama.
 
-## Catatan Teknis
+## Testing
 
-- Data dari **Bitget USDT-M API** (public). Level entry bersifat zona — sesuaikan jika trading di exchange lain.
-- `signals-log.json` dipakai untuk soft persistence & outcome tracking.
-- Risk suggestion & Adaptive SL/TP hanya **saran**. Sesuaikan dengan modal dan risk tolerance sendiri.
-- Regime `extreme` → signal di-skip untuk melindungi modal minim.
-- Positioning layer tidak mengganti price-action gate; ia **menyesuaikan** confidence setelah setup terbentuk.
-
----
-
-## Local run
+Sebelum runtime:
 
 ```bash
-node --check positioning.js
+node --check traderspy.js
 node --check scanner.js
-node scanner.js
+node --check positioning.js
+npm test
 ```
 
----
+Test adapter mencakup:
+- LONG normalization
+- SHORT normalization
+- TP/SL conversion
+- R:R calculation
+- quality score
+- stale signal rejection
+- resolved signal rejection
+- non-crypto instrument rejection
+- incomplete target rejection
+
+## Cost / call discipline
+
+Pipeline sengaja tidak memanggil seluruh tool TraderSpy pada setiap coin.
+
+Mode v4.0 menggunakan:
+
+**1 `get_signals` call per scheduled scan**
+
+Tujuannya:
+- mengurangi MCP credits
+- mengurangi latency
+- menghindari rate-limit
+- menghindari pemanggilan data redundan
+- menggunakan signal engine TraderSpy langsung sebagai source of truth
+
+TraderSpy MCP memiliki daily tool-call allowance berdasarkan plan akun. Karena itu adapter tidak melakukan `get_candles`, `get_derivatives`, `get_positions`, atau `get_signal_details` secara otomatis pada setiap signal.
+
+## Outcome tracker
+
+`signals-log.json` tetap dipertahankan agar repository mempunyai audit trail lokal.
+
+Signal baru yang berhasil melewati delivery filter diregistrasikan sebagai open outcome.
+
+Outcome lama tetap dievaluasi oleh tracker yang sudah ada. Jika market-data provider outcome gagal, tracker tidak mengubah signal menjadi WIN/LOSS secara paksa.
+
+## Operational safety
+
+Pipeline fail-closed:
+
+```
+TraderSpy unavailable
+        ↓
+NO VALID SIGNAL
+        ↓
+NO synthetic fallback
+        ↓
+NO post
+```
+
+Kesalahan authentication, malformed response, missing entry/SL/TP, expired signal, resolved signal, dan symbol non-crypto tidak boleh berubah menjadi signal valid.
 
 ## Disclaimer
 
-Ini alat informasi / edukasi chart saja.  
-**Bukan saran keuangan.**  
+Crypto-Signal adalah alat informasi/edukasi untuk analisis pasar.
 
-Selalu validasi manual sebelum entry.  
-Risk management adalah tanggung jawab penuh trader.
+Bukan nasihat keuangan dan bukan sistem eksekusi order.
+
+Selalu validasi level, kondisi pasar, leverage, biaya, slippage, dan risiko sebelum mengambil keputusan trading.
