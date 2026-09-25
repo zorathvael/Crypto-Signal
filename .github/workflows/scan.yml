@@ -26,6 +26,7 @@ jobs:
       - name: Verify modules
         run: |
           node --check positioning.js
+          node --check traderspy.js
           node --check scanner.js
 
       - name: Install SVG renderer (Square card)
@@ -40,6 +41,12 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
+          TRADERSPY_ONLY: "true"
+          TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL }}
+          TRADERSPY_MCP_TOKEN: ${{ secrets.TRADERSPY_MCP_TOKEN }}
+          TRADERSPY_SIGNAL_LIMIT: "20"
+          TRADERSPY_MAX_AGE_MIN: "120"
+          TRADERSPY_MIN_SCORE: "80"
         run: node scanner.js
 
       - name: Commit signals-log.json
