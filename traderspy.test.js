@@ -52,7 +52,7 @@ test("normalizes a SHORT signal with mirrored levels", () => {
     action: "sell",
     coin: "SOLUSDT",
     price: 200,
-  }));
+  }), NOW);
   assert.ok(out);
   assert.equal(out.action, "SHORT");
   assert.equal(out.sl, 202);
