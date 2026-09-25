@@ -34,6 +34,7 @@ jobs:
           npm test
 
       - name: Install SVG renderer (Square card)
+        if: github.event_name != 'pull_request'
         continue-on-error: true
         run: |
           sudo apt-get update -qq || true
