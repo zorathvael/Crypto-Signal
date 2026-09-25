@@ -102,8 +102,12 @@ async function postMcp(url, body, sessionId) {
     Accept: "application/json, text/event-stream",
     "Content-Type": "application/json",
   };
-  const token = process.env.TRADERSPY_MCP_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const token = process.env.TRADERSPY_MCP_TOKEN || "";
+  // TraderSpy personal MCP URLs embed the credential and must be used with
+  // "No authentication". Never send the URL itself as a Bearer token.
+  if (token && !/^https?:\\/\\//i.test(token)) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   if (sessionId) {
     headers["Mcp-Session-Id"] = sessionId;
     headers["MCP-Protocol-Version"] = "2025-11-25";
