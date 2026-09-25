@@ -105,7 +105,7 @@ async function postMcp(url, body, sessionId) {
   const token = process.env.TRADERSPY_MCP_TOKEN || "";
   // TraderSpy personal MCP URLs embed the credential and must be used with
   // "No authentication". Never send the URL itself as a Bearer token.
-  if (token && !/^https?:\\/\\//i.test(token)) {
+  if (token && !/^https?:\/\//i.test(token)) {
     headers.Authorization = `Bearer ${token}`;
   }
   if (sessionId) {
