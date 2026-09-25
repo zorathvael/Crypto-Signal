@@ -33,7 +33,7 @@ test("quality score is derived from TraderSpy strength and importance", () => {
 });
 
 test("normalizes a LONG signal without inventing probability", () => {
-  const out = normalizeSignal(sample());
+  const out = normalizeSignal(sample(), NOW);
   assert.ok(out);
   assert.equal(out.action, "LONG");
   assert.equal(out.entry, 100);
