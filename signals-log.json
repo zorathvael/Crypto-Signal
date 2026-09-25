@@ -1,5 +1,25 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "DJT_LONG_1790369694360",
+      "ts": 1790369694360,
+      "base": "DJT",
+      "instId": "DJTUSDT",
+      "action": "LONG",
+      "setup": "TRADERSPY · Pullback Trend Continuation Buy (1H)",
+      "mode": "TRADERSPY_1H",
+      "probability": 90,
+      "entry": 9.151,
+      "sl": 9.022886,
+      "tp1": 9.2251231,
+      "tp2": 9.3285294,
+      "tp3": 9.3285294,
+      "rr": 0.58,
+      "regime": null,
+      "validUntil": "2026-09-25T21:00:44.351Z",
+      "horizons": {}
+    }
+  ],
   "closed": [
     {
       "id": "ETC_LONG_1790300718962",
