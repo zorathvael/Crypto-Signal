@@ -23,6 +23,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const positioning = require("./positioning");
+const { runTraderSpyScan } = require("./traderspy");
 
 const BITGET = "https://api.bitget.com";
 const BG_PRODUCT = "USDT-FUTURES";
@@ -2932,7 +2933,85 @@ function printOutcomeSummary(log, newlyClosed) {
 
 // ========== END CLODDS MODULES ==========
 
+async function runTraderSpyPipeline() {
+  console.log("=== Crypto-Signal v4.0 | TraderSpy Intelligence ===");
+  console.log(new Date().toISOString());
+  console.log("Intelligence source: TraderSpy MCP / get_signals");
+  console.log("Delivery: Discord + Telegram + Binance Square (unchanged)");
+
+  // Outcome tracking remains local to preserve the existing audit trail.
+  // Market-data fallback is deliberately NOT used for signal generation.
+  let outcomeLog = loadOutcomeLog();
+  try {
+    const evaluated = await evaluateOpenOutcomes(outcomeLog);
+    outcomeLog = evaluated.log;
+    printOutcomeSummary(outcomeLog, evaluated.newlyClosed);
+  } catch (e) {
+    console.warn("Outcome tracker error:", e.message);
+  }
+
+  const signals = await runTraderSpyScan();
+  let postSignals = filterSignalsForDelivery(
+    signals.slice(),
+    outcomeLog || { open: [], closed: [] }
+  );
+
+  // Preserve the existing maximum of three posts, but remove the old
+  // direction-specific LONG/SHORT intelligence bias from the TraderSpy path.
+  postSignals.sort(
+    (a, b) => (b.qualityScore || b.probability || 0) - (a.qualityScore || a.probability || 0)
+  );
+  postSignals = postSignals.slice(0, 3);
+
+  const watches = [];
+  const streak = consecutiveLossStreak(outcomeLog);
+  if (streak >= 3 && postSignals.length > 1) {
+    // Safety breaker is direction-neutral: keep the strongest TraderSpy signal.
+    const keep = postSignals.slice(0, 1);
+    for (const s of postSignals.slice(1)) {
+      watches.push({
+        base: s.base,
+        action: s.action,
+        score: s.probability,
+        setup: s.setup,
+        reason: "loss-streak safety cap=" + streak,
+      });
+    }
+    postSignals = keep;
+    console.log("TraderSpy safety breaker: loss streak " + streak + " → 1 strongest signal");
+  }
+
+  console.log("TraderSpy VALID:", postSignals.length);
+  for (const s of postSignals) {
+    console.log(
+      `  ${s.base} ${s.action} quality=${s.qualityScore} ${s.signalStrength}/${s.importance} ${s.timeframe} R:R 1:${s.rr}`
+    );
+  }
+
+  await sendDiscord(postSignals);
+  await sendTelegram(postSignals);
+  await sendBinanceSquare(postSignals);
+  if (typeof sendWatchDiscord === "function") await sendWatchDiscord(watches);
+
+  try {
+    outcomeLog = registerNewSignals(outcomeLog || loadOutcomeLog(), postSignals);
+    outcomeLog.stats = recomputeStats(outcomeLog.closed, OUTCOME_STATS_AFTER_TS);
+    saveOutcomeLog(outcomeLog);
+  } catch (e) {
+    console.warn("Outcome register error:", e.message);
+  }
+
+  console.log("TraderSpy pipeline done.");
+}
+
 async function main() {
+  // TraderSpy is the active intelligence engine. The legacy scanner remains below
+  // only as a rollback reference; the workflow never enters it while this gate is on.
+  const traderSpyOnly = String(process.env.TRADERSPY_ONLY || "true").toLowerCase() !== "false";
+  if (traderSpyOnly) {
+    await runTraderSpyPipeline();
+    return;
+  }
   console.log("=== Strict Core v3.12.3 | Entry40 5m · TP 2R/5R/8R · gates looser ===");
   console.log(new Date().toISOString());
   console.log("Primary: entry timing 40×5m | TP ladder 2R-5R-8R | arah dari MTF");

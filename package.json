@@ -1,10 +1,11 @@
 {
   "name": "crypto-strict-scanner",
-  "version": "1.0.0",
-  "description": "Strict Quality Crypto Futures Scanner - GitHub Actions",
+  "version": "4.0.0",
+  "description": "Crypto-Signal — TraderSpy intelligence + Discord/Telegram/Binance Square delivery",
   "main": "scanner.js",
   "scripts": {
-    "scan": "node scanner.js"
+    "scan": "node scanner.js",
+    "test": "node --test traderspy.test.js"
   },
   "engines": {
     "node": ">=18"
