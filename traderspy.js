@@ -124,7 +124,7 @@ async function postMcp(url, body, sessionId) {
   const text = await res.text();
   if (!res.ok) {
     const suffix = text ? `: ${text.slice(0, 300)}` : "";
-    throw new Error(`TraderSpy MCP HTTP ${res.status}${suffix}`);
+    const err=new Error(`TraderSpy MCP HTTP ${res.status}${suffix}`); err.code=`HTTP_${res.status}`; if(res.status===429) err.quota=true; throw err;
   }
   const contentType = res.headers.get("content-type") || "";
   return {
@@ -572,7 +572,7 @@ async function getTraderSpyIntelligence(){
     return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};
   }).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
 
-  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||50),1,50);
+  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||10),1,20);
   const targets=[];
   const used=new Set();
 

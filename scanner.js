@@ -3014,7 +3014,16 @@ async function runTraderSpyPipeline() {
     console.warn("Outcome tracker error:", e.message);
   }
 
-  const signals = await runTraderSpyScan();
+  let signals;
+  try {
+    signals = await runTraderSpyScan();
+  } catch (e) {
+    if (e?.quota || e?.code === "HTTP_429") {
+      console.warn("TraderSpy quota exhausted — scan skipped safely; no external posts or outcome mutations.");
+      return;
+    }
+    throw e;
+  }
   console.log("TraderSpy delivery gate: only tier-validated signals can be published.");
   let postSignals = filterSignalsForDelivery(
     signals.slice(),
