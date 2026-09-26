@@ -41,14 +41,12 @@ function empiricalEvidence(history,signal){
   const minSetup=12,minAction=12;
   const sample=setupRows.length>=minSetup?setupRows:actionRows.length>=minAction?actionRows:[];
   if(sample.length<minAction){
-    return {sampleSize:sample.length,winRate:null,avgR:null,source:"insufficient",edge:"unknown",scoreDelta:0};
+    return {sampleSize:sample.length,winRate:null,avgR:null,source:"insufficient",edge:"insufficient",scoreDelta:0};
   }
   const wins=sample.filter(x=>String(x.outcome||"").startsWith("WIN")).length;
   const rs=sample.map(x=>n(x.rMultiple)).filter(Number.isFinite);
   const winRate=wins/sample.length;
   const avgR=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:null;
-  // Conservative empirical edge gate: require both positive average net-R and
-  // a win-rate margin before awarding alpha points.
   let scoreDelta=0,edge="neutral";
   if(avgR!=null&&avgR>0.10&&winRate>=0.52){scoreDelta=6;edge="positive";}
   else if(avgR!=null&&avgR<-0.10&&winRate<0.48){scoreDelta=-8;edge="negative";}
@@ -134,7 +132,6 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   if(rr3<5||rr3>6.5)hardReject.push("TP3 not approximately 6R");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
-  // Only veto on historical evidence when the sample is materially larger.
   if(evidence.sampleSize>=20&&evidence.edge==="negative")hardReject.push("historical edge negative with >=20 outcomes");
 
   const alphaScore=clamp(Math.round(50+score),0,99);
