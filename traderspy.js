@@ -18,7 +18,8 @@
 
 const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
-const DEFAULT_MIN_SCORE = 80;\nconst { calculateAlpha } = require("./alpha_hunter");\nconst { calculateAlpha } = require("./alpha_hunter");
+const DEFAULT_MIN_SCORE = 80;
+const { calculateAlpha } = require("./alpha_hunter");
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
