@@ -407,6 +407,18 @@ function buildScreenCandidate(discovery, technicalPayload, now) {
     if (longVotes.length >= 2 && longVotes.length > shortVotes.length) action = "LONG";
     else if (shortVotes.length >= 2 && shortVotes.length > longVotes.length) action = "SHORT";
   }
+  // Some TraderSpy responses omit the summary/confluence fields entirely.
+  // In that case use the primary 1h/4h trend fields as a final discovery
+  // handoff fallback. This does not publish anything; technicalValidation()
+  // still requires two aligned timeframes before a candidate can pass.
+  if (!action) {
+    const primary = ["1h", "4h"]
+      .map(interval => tfs.get(interval))
+      .filter(Boolean)
+      .map(tf => String(tf?.summary?.trend?.direction || "").toLowerCase());
+    if (primary.filter(x => x === "up").length >= 2) action = "LONG";
+    else if (primary.filter(x => x === "down").length >= 2) action = "SHORT";
+  }
   if (!action) return null;
 
   const entry = Number(technicalPayload.price);
