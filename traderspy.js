@@ -19,7 +19,6 @@
 const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
 const DEFAULT_MIN_SCORE = 80;
-const MAX_POST = 3;
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
@@ -569,7 +568,7 @@ async function getTraderSpyIntelligence(){
     return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};
   }).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
 
-  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||3),1,5);
+  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||50),1,50);
   const targets=[];
   const used=new Set();
 
@@ -661,7 +660,7 @@ async function getTraderSpyIntelligence(){
 
   validated.sort((a,b)=>b.qualityScore-a.qualityScore||b.ts-a.ts);
   return {
-    signals:validated.slice(0,MAX_POST),
+    signals:validated,
     fetched:rows.length,
     discovered:discovery.length,
     validated:validated.length,
