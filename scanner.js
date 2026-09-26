@@ -1961,7 +1961,7 @@ function formatTelegramMessage(s) {
   const persist = s.persistent ? " · 🔁 Persistent" : "";
   const volOk = s.volConfirm ? " · 📈 VolOK" : "";
   const regimeTxt = s.regime
-    ? ` · Vol ${s.regime.regime.toUpperCase()} (${s.regime.atrPct}%)`
+    ? ` · Vol ${String(s.regime.regime ?? "NORMAL").toUpperCase()} (${s.regime.atrPct ?? "n/a"}%)`
     : "";
   const riskTxt = s.riskPct ? `\\n⚠️ Risk saran: <b>${s.riskPct}%</b> equity` : "";
   const bookTxt = s.book
