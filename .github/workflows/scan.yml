@@ -47,7 +47,7 @@ jobs:
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
           TRADERSPY_ONLY: "true"
           TRADERSPY_DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
-          TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL || 'https://mcp.traderspy.app/mcp' }}
+          TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL }}
           TRADERSPY_MCP_TOKEN: ${{ secrets.TRADERSPY_MCP_TOKEN }}
           TRADERSPY_SIGNAL_LIMIT: "50"
           TRADERSPY_MAX_AGE_MIN: "120"
@@ -59,6 +59,7 @@ jobs:
           TRADERSPY_STALE_MIN_SCORE: "90"
           TRADERSPY_MIN_SCORE: "80"
           ALPHA_MIN_SCORE: "72"
+          ALPHA_HISTORY_AFTER_TS: "2026-09-18T00:00:00Z"
         run: node scanner.js
 
       - name: Commit signals-log.json

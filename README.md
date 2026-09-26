@@ -184,49 +184,26 @@ Public trade geometry is normalized to:
 
 The repository keeps the internal sizing/risk gate for validation safety, but those sizing values are not part of the public signal message.
 
-## Alpha Hunter
+## Alpha Hunter v3 — conditional edge selection
 
-v4.0 now includes a deterministic alpha-selection layer after TraderSpy market validation and before publication. v2 also consumes the repository's resolved outcome history as an empirical prior when enough observations exist.
+Alpha Hunter memakai conditional empirical evidence dari outcome tracker, bukan hanya score teknikal.
 
-Pipeline:
-```
-TraderSpy candidate
-    ↓
-MTF technical validation
-    ↓
-derivatives validation
-    ↓
-Alpha Hunter
-    ├─ MTF alignment
-    ├─ trend strength / momentum
-    ├─ entry distance vs ATR
-    ├─ 2R / 4R / 6R geometry
-    ├─ funding / OI / taker-flow confirmation
-    ├─ signal freshness
-    └─ empirical outcome evidence (sample-gated)
-    ↓
-hard veto + alpha threshold
-    ↓
-dedup
-    ↓
-Telegram / Discord / Binance Square
-```
+Evidence historis dikondisikan secara bertingkat: action; setup + action; symbol + action; quality bucket + action; dan 15M follow-through sebagai secondary edge component.
 
-Alpha Hunter is a selection score, not a calibrated win probability. It uses already-fetched validation data and does not add provider calls.
+Historical evidence dibatasi ke active crypto-signal era (`ALPHA_HISTORY_AFTER_TS`, default `2026-09-18T00:00:00Z`) dan mengecualikan instrumen non-crypto/legacy yang diketahui. Cohort kecil hanya menjadi diagnostik dan tidak melakukan veto.
 
 Default:
-- ALPHA_MIN_SCORE=72
-- hard veto if MTF alignment is below 2/3
-- hard veto if TP1 is outside 2R–6R
-- hard veto if TP2 is not approximately 4R
-- hard veto if TP3 is not approximately 6R
-- hard veto if the entry is more than 2 ATR from live price
-- hard veto if the signal is older than 120 minutes
-- historical evidence is only used after at least 12 resolved outcomes for the selected setup/action
-- negative historical edge becomes a hard veto only at >=20 resolved outcomes
+- `ALPHA_MIN_SCORE=72`
+- `ALPHA_HISTORY_AFTER_TS=2026-09-18T00:00:00Z`
+- hard veto jika MTF alignment < 2/3
+- hard veto jika TP1 di luar 2R–6R
+- hard veto jika TP2 tidak sekitar 4R
+- hard veto jika TP3 tidak sekitar 6R
+- hard veto jika entry > 2 ATR dari live price
+- hard veto jika signal > 120 menit
+- empirical edge negatif menjadi hard veto hanya setelah cohort stabil minimal 20 outcome
 
-TraderSpy target percentages are preserved in the internal audit field, while public trade levels are normalized from the actual Entry→SL risk into 2R/4R/6R.
-
+Scanner sekarang meneruskan `signals-log.json` ke Alpha Hunter pada jalur published signal maupun discovery candidate.
 Destination tetap:
 
 1. **Discord** — semua signal baru yang lolos dedup
@@ -269,14 +246,16 @@ TRADERSPY_STALE_MIN_SCORE: "90"
 
 ## TraderSpy authentication
 
-TraderSpy menyediakan endpoint MCP resmi `https://mcp.traderspy.app/mcp` dan personal connection URL yang dapat membawa credential. Repository memakai `TRADERSPY_MCP_TOKEN`; workflow memiliki fallback endpoint resmi tersebut bila `TRADERSPY_MCP_URL` tidak diset.
+TraderSpy mendukung personal key `mcp_…` sebagai Bearer token pada endpoint MCP resmi, dan juga personal connection URL yang menanamkan key sebagai `?token=mcp_…`. citeturn3search0turn3search1
 
-Jika menggunakan raw bearer token terpisah, gunakan `TRADERSPY_MCP_URL` sebagai endpoint dan `TRADERSPY_MCP_TOKEN` sebagai token.
+Runtime mendukung keduanya:
+- `TRADERSPY_MCP_URL` bila endpoint/personal URL ingin ditentukan secara eksplisit.
+- `TRADERSPY_MCP_TOKEN` untuk raw `mcp_…` Bearer token atau personal URL yang berisi credential.
+- Jika `TRADERSPY_MCP_URL` kosong, raw token memakai `https://mcp.traderspy.app/mcp`; jika token sendiri berupa URL, URL tersebut dipakai langsung.
 
-**Jangan commit URL/token TraderSpy ke repository.**
+Run 36272996060 gagal HTTP 401. Workflow sebelumnya selalu menyuntikkan endpoint publik ke `TRADERSPY_MCP_URL`, sehingga bila `TRADERSPY_MCP_TOKEN` berisi personal URL, URL credential tersebut tidak pernah dipakai. Workflow sekarang membiarkan `TRADERSPY_MCP_URL` kosong dan adapter memilih endpoint dari secret yang tersedia.
 
-TraderSpy MCP bersifat read-only; Crypto-Signal hanya membaca signal/data dan tidak memiliki tool untuk membuka atau mengubah order.
-
+Jangan commit URL/token TraderSpy ke repository.
 ## GitHub Actions
 
 Workflow:
