@@ -5,7 +5,7 @@
   "main": "scanner.js",
   "scripts": {
     "scan": "node scanner.js",
-    "test": "node --test traderspy.test.js trade_plan.test.js"
+    "test": "node --test traderspy.test.js trade_plan.test.js traderspy_fallback.test.js"
   },
   "engines": {
     "node": ">=18"
