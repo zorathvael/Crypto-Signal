@@ -572,7 +572,7 @@ async function getTraderSpyIntelligence(){
     return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};
   }).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
 
-  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||50),1,50);
+  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||10),1,20);
   const targets=[];
   const used=new Set();
 
