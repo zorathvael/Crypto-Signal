@@ -1989,6 +1989,293 @@ function formatTelegramMessage(s) {
     `<i>Crypto-Signal v4.0 · information only · NFA</i>`
   );
 }
+
+function formatSquareCoinBlock(s) {
+function formatSquareCoinBlock(s) {
+  const isSniper = s.probability >= MIN_PROB_SNIPER;
+  const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
+  const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
+  const mode = displayMode(s.mode) ? ` · ${displayMode(s.mode)}` : "";
+  const persist = s.persistent ? " · 🔁" : "";
+  const book =
+    s.book && s.book.side && s.book.side !== "FLAT"
+      ? `\nBook ${s.book.side} (${s.book.imbalance})${s.book.quality ? " · " + s.book.quality : ""}`
+      : "";
+  const regime = s.regime ? `\nVol regime: ${s.regime.regime} (${s.regime.atrPct}%)` : "";
+  const risk = s.riskPct ? ` · Risk ${s.riskPct}%` : "";
+  const tf = s.trends
+    ? `1H ${s.trends.h1} · 15M ${s.trends.m15} · 4H ${s.trends.h4}`
+    : `1H ${s.h1?.bias || "—"} · 15M ${s.m15?.bias || "—"}`;
+  const rsi = s.m5?.rsi != null ? Number(s.m5.rsi).toFixed(0) : "—";
+  const vol = s.m5?.volume?.side || "—";
+  return (
+    `${tag} · ${s.base} ${arrow}${persist}\n` +
+    `\n` +
+    `📊 Score: ${s.probability}\n` +
+    `🧩 Setup: ${displaySetup(s.setup)}\n` +
+    `🎯 Entry: ${formatPrice(s.entry)}${mode}\n` +
+    `🛑 SL: ${formatPrice(s.sl)}\n` +
+    `🎯 TP1: ${formatPrice(s.tp1)}\n` +
+    `🎯 TP2: ${formatPrice(s.tp2)}\n` +
+    `🚀 TP3: ${formatPrice(s.tp3 || s.tp2)}\n` +
+    `📈 R:R 1:${s.rr.toFixed(1)}${risk}` +
+    (s.ev && s.ev.netRr != null ? `\nNet R~${s.ev.netRr}` : "") +
+    `\n` +
+    `\n` +
+    `${tf}\n` +
+    `Vol ${vol} · RSI ${rsi}` +
+    book +
+    regime
+  );
+}
+
+function formatSquareBatchMessage(coins) {
+  const footers = [
+    "Risk kecil saja. Jangan FOMO — invalid levelnya jelas di atas.",
+    "Selalu pakai SL. Ini edukasi chart, bukan saran keuangan.",
+    "Kelola risiko sendiri ya. Pasar bisa berubah kapan saja.",
+    "Kalau belum yakin, skip saja. Masih banyak setup lain nanti.",
+    "Catatan pribadi untuk referensi. NFA.",
+  ];
+  const fo = footers[Math.floor(Date.now() / 900000) % footers.length];
+
+  // Header: Hasil scanner (hari, tanggal, bulan, tahun, jam) + tagar
+  const hari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const bulan = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  ];
+  const now = new Date();
+  // WIB = UTC+7
+  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const h = String(wib.getUTCHours()).padStart(2, "0");
+  const m = String(wib.getUTCMinutes()).padStart(2, "0");
+  const hi =
+    `Hasil scanner (${hari[wib.getUTCDay()]}, ${wib.getUTCDate()} ${bulan[wib.getUTCMonth()]} ${wib.getUTCFullYear()}, ${h}:${m})`;
+
+  const lines = [hi, ""];
+  coins.forEach((s, i) => {
+    if (i > 0) lines.push("", "────────────", "");
+    lines.push(formatSquareCoinBlock(s));
+  });
+  lines.push("");
+  lines.push("Strict Core v2.12 · potensi + proteksi · NFA");
+  lines.push("");
+  lines.push(fo);
+  lines.push("");
+  lines.push("#PintarPakaiBinanceEarn");
+  return lines.join("\n").trim();
+}
+
+function buildSquareCardSvg(coins) {
+  // Portrait mobile 720×1520 — readable on phone without zoom
+  const W = 720;
+  const rows = coins.slice(0, 3);
+  const pad = 28;
+  const headerH = 130;
+  const footerH = 64;
+  const gap = 18;
+  // Auto height so 3 cards never crush text (TP1-3 + meta)
+  const minRow = 340;
+  const H = Math.max(1520, headerH + footerH + gap * (rows.length + 1) + minRow * Math.max(rows.length, 1));
+  const usable = H - headerH - footerH - gap * (rows.length + 1);
+  const rowH = Math.max(340, Math.floor(usable / Math.max(rows.length, 1)));
+
+  const esc = (x) =>
+    String(x ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  let cards = "";
+  rows.forEach((s, i) => {
+    const y = headerH + gap + i * (rowH + gap);
+    const isLong = s.action === "LONG";
+    const accent = isLong ? "#059669" : "#e11d48";
+    const soft = isLong ? "#ecfdf5" : "#fff1f2";
+    const grade = s.probability >= MIN_PROB_SNIPER ? "SNIPER" : "VALID";
+    const side = isLong ? "LONG" : "SHORT";
+    const trendLine = s.trends
+      ? `1H ${esc(s.trends.h1)}  ·  15M ${esc(s.trends.m15)}  ·  4H ${esc(s.trends.h4)}`
+      : `1H ${esc(s.h1.structure)}  ·  15M ${esc(s.m15.bias)}`;
+
+    cards += `
+    <rect x="${pad}" y="${y}" width="${W - pad * 2}" height="${rowH}" rx="20" fill="${soft}" stroke="${accent}" stroke-width="3"/>
+    <rect x="${pad}" y="${y}" width="12" height="${rowH}" rx="6" fill="${accent}"/>
+    <text x="${pad + 28}" y="${y + 42}" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#0f172a">${esc(s.base)}</text>
+    <text x="${W - pad - 24}" y="${y + 42}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="${accent}">${isLong ? "▲" : "▼"} ${side}</text>
+    <text x="${pad + 28}" y="${y + 78}" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="${accent}">${grade}  ·  ${s.probability}%</text>
+    <text x="${pad + 28}" y="${y + 114}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">Entry   ${esc(formatPrice(s.entry))}</text>
+    <text x="${pad + 28}" y="${y + 146}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">SL        ${esc(formatPrice(s.sl))}</text>
+    <text x="${pad + 28}" y="${y + 178}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
+    <text x="${pad + 28}" y="${y + 210}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
+    <text x="${pad + 28}" y="${y + 242}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
+    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(displaySetup(s.setup))}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}${s.book ? " · Book " + esc(s.book.side) : ""}</text>
+    <text x="${pad + 28}" y="${y + 312}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
+  });
+
+  const now = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#ffffff"/>
+  <rect x="0" y="0" width="${W}" height="${headerH}" fill="#0f172a"/>
+  <text x="${pad}" y="48" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">STRICT CORE v2.9</text>
+  <text x="${pad}" y="84" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#94a3b8">Regime · OB Quality · 1H+15M lock</text>
+  <text x="${pad}" y="110" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">${esc(now)} WIB</text>
+  <text x="${W - pad}" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600" fill="#38bdf8">Top ${rows.length}</text>
+  ${cards}
+  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Risk max 0.75%  ·  Educational only  ·  NFA</text>
+</svg>`;
+}
+
+function renderSquareCardPng(coins) {
+  const dir = "/tmp/square-card";
+  fs.mkdirSync(dir, { recursive: true });
+  const svgPath = path.join(dir, "card.svg");
+  const pngPath = path.join(dir, "card.png");
+  fs.writeFileSync(svgPath, buildSquareCardSvg(coins), "utf8");
+  try {
+    execFileSync("rsvg-convert", ["-w", "720", "-h", "1520", svgPath, "-o", pngPath], { stdio: "pipe" });
+  } catch (e) {
+    console.warn("rsvg-convert failed, Square visual post cannot be published:", e.message);
+    return null;
+  }
+  if (!fs.existsSync(pngPath)) return null;
+  return pngPath;
+}
+async function squareApi(endpoint, apiKey, body, useV2 = true) {
+  const base = useV2
+    ? "https://www.binance.com/bapi/composite/v2/public/pgc/openApi"
+    : "https://www.binance.com/bapi/composite/v1/public/pgc/openApi";
+  const res = await fetch(`${base}${endpoint}`, {
+    method: "POST",
+    headers: {
+      "X-Square-OpenAPI-Key": apiKey,
+      "Content-Type": "application/json",
+      clienttype: "binanceSkill",
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (String(json.code) !== "000000") {
+    throw new Error(`Square API ${endpoint} [${json.code}]: ${json.message || res.status}`);
+  }
+  return json.data;
+}
+async function uploadSquareImage(apiKey, pngPath) {
+  const imageName = path.basename(pngPath);
+  const { presignedUrl, fileTicket } = await squareApi("/image/presignedUrl", apiKey, { imageName }, true);
+  const buf = fs.readFileSync(pngPath);
+  const put = await fetch(presignedUrl, { method: "PUT", headers: { "Content-Type": "image/png" }, body: buf });
+  if (!put.ok) throw new Error(`S3 upload failed: ${put.status}`);
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const st = await squareApi("/image/imageStatus", apiKey, { fileTicket }, true);
+    if (st.status === 1 && st.imageUrl) return st.imageUrl;
+    if (st.status === 2) throw new Error(`Image process failed: ${st.failedReason || "unknown"}`);
+    console.log(`  Square image processing... (${i + 1}/10)`);
+  }
+  throw new Error("Square image poll timeout");
+}
+async function sendBinanceSquare(signals) {
+  if (!BINANCE_SQUARE_KEY) {
+    console.log("Binance Square: skip (no BINANCE_SQUARE_OPENAPI_KEY)");
+    return;
+  }
+  const ranked = [...signals]
+    .filter((s) => s.probability >= MIN_PROB_VALID)
+    .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
+  if (!ranked.length) {
+    console.log("Binance Square: no new Valid signals this run");
+    return;
+  }
+
+  // Square is the only channel with a per-post capacity. Never truncate the
+  // shared delivery list: Telegram/Discord receive every new signal. Square
+  // publishes the same complete set in sequential batches of up to 3 coins.
+  const batches = [];
+  for (let i = 0; i < ranked.length; i += SQUARE_POST_COUNT) {
+    batches.push(ranked.slice(i, i + SQUARE_POST_COUNT));
+  }
+
+  console.log(
+    `Binance Square: ${batches.length} post batch(es) · ` +
+      `${ranked.length} coin(s) total · max ${SQUARE_POST_COUNT}/post`
+  );
+
+  for (let index = 0; index < batches.length; index++) {
+    const batch = batches[index];
+    console.log(
+      `Binance Square batch ${index + 1}/${batches.length} · ${batch.length} coin(s) → ` +
+        batch.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")
+    );
+
+    const text = formatSquareBatchMessage(batch);
+    const body = { contentType: 1, bodyTextOnly: text };
+
+    // The visual is generated from the exact same batch sent in bodyTextOnly.
+    // If rendering/upload fails, abort this Square batch rather than posting
+    // a text-only fallback or a mismatched visual.
+    try {
+      const pngPath = renderSquareCardPng(batch);
+      if (!pngPath) {
+        throw new Error("Square visual card could not be rendered");
+      }
+      console.log("Square: uploading professional card image...");
+      const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
+      if (!imageUrl) {
+        throw new Error("Square visual card upload returned no image URL");
+      }
+      body.imageList = [imageUrl];
+      console.log("Square: image ready");
+    } catch (e) {
+      console.error(
+        `Binance Square visual required — batch ${index + 1} aborted:`,
+        e.message
+      );
+      continue;
+    }
+
+    try {
+      const res = await fetch("https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add", {
+        method: "POST",
+        headers: {
+          "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
+          "Content-Type": "application/json",
+          clienttype: "binanceSkill",
+        },
+        body: JSON.stringify(body),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || String(payload.code) !== "000000") {
+        console.error(
+          `Binance Square batch ${index + 1} failed:`,
+          res.status,
+          payload.code,
+          payload.message || JSON.stringify(payload)
+        );
+      } else {
+        const id = payload.data?.id;
+        console.log(
+          `Binance Square sent batch ${index + 1}/${batches.length} (${batch.length} coins + image)` +
+            (id ? ` → https://www.binance.com/square/post/${id}` : "")
+        );
+      }
+    } catch (e) {
+      console.error(`Binance Square batch ${index + 1} error:`, e.message);
+    }
+  }
+}
 async function sendTelegram(signals) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram: skip (no secrets)");
