@@ -379,7 +379,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const tfs = timeframeMap(technicalPayload);
   const h1 = tfs.get("1h") || tfs.get("15m");
   const h4 = tfs.get("4h");
-  if (!h1 || !h4 || !Number.isFinite(Number(technicalPayload?.price))) return null;
+  if (!h1 || !Number.isFinite(Number(technicalPayload?.price))) return null;
 
   // Candidate discovery must not depend on a single optional confluence field.
   // TraderSpy's MTF payload can expose direction in bias, trend, EMA stack, or
