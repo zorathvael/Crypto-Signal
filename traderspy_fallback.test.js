@@ -64,3 +64,24 @@ test("fallback request fails over from HTTP 451 to the next configured endpoint"
     await new Promise((resolve) => second.close(resolve));
   }
 });
+
+
+test("binance request fails over after a 200 empty JSON response", async () => {
+  const first = http.createServer((req, res) => { res.writeHead(200, {"content-type":"application/json"}); res.end(); });
+  const second = http.createServer((req, res) => { res.writeHead(200, {"content-type":"application/json"}); res.end(JSON.stringify({ok:true, endpoint:"second-empty"})); });
+  await new Promise(r=>first.listen(0,"127.0.0.1",r)); await new Promise(r=>second.listen(0,"127.0.0.1",r));
+  const prev=process.env.BINANCE_FUTURES_BASE_URLS;
+  process.env.BINANCE_FUTURES_BASE_URLS="http://127.0.0.1:"+first.address().port+",http://127.0.0.1:"+second.address().port;
+  try { assert.deepEqual(await binance("/fapi/v1/ping"),{ok:true,endpoint:"second-empty"}); }
+  finally { if(prev==null) delete process.env.BINANCE_FUTURES_BASE_URLS; else process.env.BINANCE_FUTURES_BASE_URLS=prev; await new Promise(r=>first.close(r)); await new Promise(r=>second.close(r)); }
+});
+
+test("binance request fails over after a 200 malformed JSON response", async () => {
+  const first = http.createServer((req, res) => { res.writeHead(200, {"content-type":"application/json"}); res.end("{"); });
+  const second = http.createServer((req, res) => { res.writeHead(200, {"content-type":"application/json"}); res.end(JSON.stringify({ok:true, endpoint:"second-malformed"})); });
+  await new Promise(r=>first.listen(0,"127.0.0.1",r)); await new Promise(r=>second.listen(0,"127.0.0.1",r));
+  const prev=process.env.BINANCE_FUTURES_BASE_URLS;
+  process.env.BINANCE_FUTURES_BASE_URLS="http://127.0.0.1:"+first.address().port+",http://127.0.0.1:"+second.address().port;
+  try { assert.deepEqual(await binance("/fapi/v1/ping"),{ok:true,endpoint:"second-malformed"}); }
+  finally { if(prev==null) delete process.env.BINANCE_FUTURES_BASE_URLS; else process.env.BINANCE_FUTURES_BASE_URLS=prev; await new Promise(r=>first.close(r)); await new Promise(r=>second.close(r)); }
+});
