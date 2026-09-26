@@ -114,6 +114,25 @@
           "at": 1790442000000
         }
       }
+    },
+    {
+      "id": "BTC_LONG_1790444702843",
+      "ts": 1790444702843,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "LONG",
+      "fingerprint": "BTC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.13|1.69|2.82|3.95",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 89,
+      "entry": 84069,
+      "sl": 83121.1,
+      "tp1": 85490.84999999999,
+      "tp2": 86438.74999999999,
+      "tp3": 87386.64999999998,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T18:44:55.641Z",
+      "horizons": {}
     }
   ],
   "closed": [
