@@ -29,7 +29,7 @@ test("alpha hunter vetoes weak MTF alignment",()=>{
 });
 
 test("alpha hunter vetoes non-2R/4R/6R geometry",()=>{
-  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99,tp1:101.5,tp2:103,tp3:105,ts:Date.now()},payload(),deriv());
+  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99,tp1:101.5,tp2:103,tp3:104.5,ts:Date.now()},payload(),deriv());
   assert.equal(out.pass,false);
   assert.ok(out.hardReject.some(x=>x.includes("TP1 R:R")));
   assert.ok(out.hardReject.some(x=>x.includes("TP2")));
