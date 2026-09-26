@@ -170,12 +170,12 @@ function levels(c, side, a) {
     const structural=Math.min(low,entry-minRisk*0.75);
     const sl=Math.min(entry-minRisk,structural);
     const risk=Math.max(entry-sl,minRisk);
-    return {entry,sl:entry-risk,tp1:entry+risk*1.5,tp2:entry+risk*2.5,tp3:entry+risk*3.5};
+    return {entry,sl:entry-risk,tp1:entry+risk*2,tp2:entry+risk*4,tp3:entry+risk*6};
   }
   const structural=Math.max(high,entry+minRisk*0.75);
   const sl=Math.max(entry+minRisk,structural);
   const risk=Math.max(sl-entry,minRisk);
-  return {entry,sl:entry+risk,tp1:entry-risk*1.5,tp2:entry-risk*2.5,tp3:entry-risk*3.5};
+  return {entry,sl:entry+risk,tp1:entry-risk*2,tp2:entry-risk*4,tp3:entry-risk*6};
 }
 
 function derivativeScore(side, oi, funding, depth) {
@@ -220,7 +220,7 @@ async function buildSignals(snapshot,provider,marketLoader) {
     const dirs=tfs.map(x=>x.direction),longN=dirs.filter(x=>x==="LONG").length,shortN=dirs.filter(x=>x==="SHORT").length,side=longN>=2?"LONG":shortN>=2?"SHORT":null;
     if(!side) continue;
     const lv=levels(market.k1h,side,tfs[1].atr),risk=Math.abs(lv.entry-lv.sl),rr=risk?Math.abs(lv.tp1-lv.entry)/risk:0;
-    if(!Number.isFinite(rr)||rr<1.5) continue;
+    if(!Number.isFinite(rr)||rr<2) continue;
     const ds=derivativeScore(side,market.oi,market.funding,market.depth); if(ds.adverse) continue;
     const disc=Math.min(10,Math.round(Math.log10(Math.max(d.quoteVolume,1))-6)),cs=candidateScore(disc,tfs,ds.score,rr);
     if(cs.side!==side) continue;
