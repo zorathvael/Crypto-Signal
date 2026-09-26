@@ -17,7 +17,18 @@
       "tp3": 79559.45000000003,
       "rr": 1.5,
       "validUntil": "2026-09-26T08:06:08.772Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.023,
+          "price": 83991.35,
+          "at": 1790407800000
+        },
+        "h60": {
+          "r": -0.073,
+          "price": 84053.45000000001,
+          "at": 1790410500000
+        }
+      }
     },
     {
       "id": "SOL_SHORT_1790406380582",
@@ -36,7 +47,18 @@
       "tp3": 111.50599999999996,
       "rr": 1.5,
       "validUntil": "2026-09-26T08:06:09.025Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.059,
+          "price": 120.51650000000001,
+          "at": 1790407800000
+        },
+        "h60": {
+          "r": -0.049,
+          "price": 120.4925,
+          "at": 1790410500000
+        }
+      }
     },
     {
       "id": "NEAR_LONG_1790406380582",
@@ -55,7 +77,18 @@
       "tp3": 6.707750000000002,
       "rr": 1.5,
       "validUntil": "2026-09-26T08:06:09.410Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.068,
+          "price": 4.89975,
+          "at": 1790407800000
+        },
+        "h60": {
+          "r": -0.166,
+          "price": 4.84995,
+          "at": 1790410500000
+        }
+      }
     },
     {
       "id": "ZEC_LONG_1790407530362",
@@ -74,7 +107,18 @@
       "tp3": 1662.5050000000008,
       "rr": 1.5,
       "validUntil": "2026-09-26T08:25:21.946Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.092,
+          "price": 1533.075,
+          "at": 1790408700000
+        },
+        "h60": {
+          "r": 0.007,
+          "price": 1536.645,
+          "at": 1790411400000
+        }
+      }
     },
     {
       "id": "XRP_SHORT_1790407530362",
@@ -93,6 +137,93 @@
       "tp3": 1.2801500000000003,
       "rr": 1.5,
       "validUntil": "2026-09-26T08:25:21.789Z",
+      "horizons": {
+        "h15": {
+          "r": -0.004,
+          "price": 1.5524,
+          "at": 1790408700000
+        },
+        "h60": {
+          "r": -0.004,
+          "price": 1.5524,
+          "at": 1790411400000
+        }
+      }
+    },
+    {
+      "id": "ETH_LONG_1790411715464",
+      "ts": 1790411715464,
+      "base": "ETH",
+      "instId": "ETHUSDT",
+      "action": "LONG",
+      "fingerprint": "ETH|LONG|TRADERSPY_COMPATIBLE_MTF|-1.38|2.07|3.45|4.83",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 97,
+      "entry": 2695.59,
+      "sl": 2658.36,
+      "tp1": 2751.4350000000004,
+      "tp2": 2788.665,
+      "tp3": 2825.8950000000004,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T09:35:00.442Z",
+      "horizons": {}
+    },
+    {
+      "id": "BTC_LONG_1790411715464",
+      "ts": 1790411715464,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "LONG",
+      "fingerprint": "BTC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.33|1.99|3.32|4.65",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 94,
+      "entry": 84240,
+      "sl": 83121.1,
+      "tp1": 85918.34999999999,
+      "tp2": 87037.24999999999,
+      "tp3": 88156.14999999998,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T09:35:00.311Z",
+      "horizons": {}
+    },
+    {
+      "id": "NEAR_SHORT_1790411715464",
+      "ts": 1790411715464,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "SHORT",
+      "fingerprint": "NEAR|SHORT|TRADERSPY_COMPATIBLE_MTF|7.08|-10.62|-17.69|-24.77",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 93,
+      "entry": 4.8674,
+      "sl": 5.2119,
+      "tp1": 4.35065,
+      "tp2": 4.00615,
+      "tp3": 3.66165,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T09:35:01.041Z",
+      "horizons": {}
+    },
+    {
+      "id": "SOL_LONG_1790411715464",
+      "ts": 1790411715464,
+      "base": "SOL",
+      "instId": "SOLUSDT",
+      "action": "LONG",
+      "fingerprint": "SOL|LONG|TRADERSPY_COMPATIBLE_MTF|-4.26|6.38|10.64|14.90",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 91,
+      "entry": 120.914,
+      "sl": 115.768,
+      "tp1": 128.633,
+      "tp2": 133.779,
+      "tp3": 138.925,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T09:35:00.607Z",
       "horizons": {}
     }
   ],
