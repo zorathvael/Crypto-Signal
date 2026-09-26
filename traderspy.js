@@ -419,6 +419,16 @@ function buildScreenCandidate(discovery, technicalPayload, now) {
     if (primary.filter(x => x === "up").length >= 2) action = "LONG";
     else if (primary.filter(x => x === "down").length >= 2) action = "SHORT";
   }
+  // screen_symbols is the discovery source. If the technical payload omits
+  // optional directional summaries, preserve the screener's direction as the
+  // candidate seed. It is NOT a validation pass: technicalValidation() below
+  // still requires multi-timeframe agreement before publication.
+  if (!action) {
+    const discoveryBias = String(discovery?.bias || "").toLowerCase();
+    const discoveryTrend = String(discovery?.trend || "").toLowerCase();
+    if (discoveryBias === "bullish" || discoveryTrend === "up") action = "LONG";
+    else if (discoveryBias === "bearish" || discoveryTrend === "down") action = "SHORT";
+  }
   if (!action) return null;
 
   const entry = Number(technicalPayload.price);
