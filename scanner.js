@@ -2055,7 +2055,7 @@ function formatSquareBatchMessage(coins) {
   lines.push("");
   lines.push(fo);
   lines.push("");
-  lines.push("#CPIWatch");
+  lines.push("#PintarPakaiBinanceEarn");
   return lines.join("\n").trim();
 }
 
@@ -2198,16 +2198,24 @@ async function sendBinanceSquare(signals) {
   );
   const text = formatSquareBatchMessage(batch);
   const body = { contentType: 1, bodyTextOnly: text };
+  // Binance Square posts must keep the visual card. Do not silently
+  // downgrade to text-only: if the image cannot be rendered/uploaded,
+  // abort this Square post so the required visual format is preserved.
   try {
     const pngPath = renderSquareCardPng(batch);
-    if (pngPath) {
-      console.log("Square: uploading professional card image...");
-      const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
-      body.imageList = [imageUrl];
-      console.log("Square: image ready");
+    if (!pngPath) {
+      throw new Error("Square visual card could not be rendered");
     }
+    console.log("Square: uploading professional card image...");
+    const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
+    if (!imageUrl) {
+      throw new Error("Square visual card upload returned no image URL");
+    }
+    body.imageList = [imageUrl];
+    console.log("Square: image ready");
   } catch (e) {
-    console.warn("Square image skip (text-only fallback):", e.message);
+    console.error("Binance Square visual required — post aborted:", e.message);
+    return;
   }
   try {
     const res = await fetch("https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add", {
