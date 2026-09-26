@@ -6,7 +6,7 @@
 const MARGIN_USDT = 5;
 const RISK_FRACTION = 0.10;
 const MAX_LEVERAGE = 20;
-const MIN_LEVERAGE = 1;
+const MIN_LEVERAGE = 5;
 
 function finitePositive(value) {
   const n = Number(value);
@@ -26,7 +26,7 @@ function calculateTradePlan(signal, options = {}) {
 
   const riskBudgetUsdt = marginUsdt * riskFraction;
   const rawLeverage = riskBudgetUsdt / (marginUsdt * slDistancePct);
-  const leverage = Math.max(MIN_LEVERAGE, Math.min(maxLeverage, Math.floor(rawLeverage)));
+  const leverage = Math.max(MIN_LEVERAGE, Math.min(maxLeverage, Math.round(rawLeverage)));
   const notionalUsdt = marginUsdt * leverage;
   const slLossUsdt = notionalUsdt * slDistancePct;
   const quantity = notionalUsdt / entry;
