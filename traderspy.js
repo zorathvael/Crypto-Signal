@@ -214,16 +214,14 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
 
   const isLong = action === "buy";
   const sl = isLong ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100);
-  const tp1 = isLong ? entry * (1 + tp1Pct / 100) : entry * (1 - tp1Pct / 100);
-  const tp2 = tp2Pct != null
-    ? (isLong ? entry * (1 + tp2Pct / 100) : entry * (1 - tp2Pct / 100))
-    : tp1;
-  const tp3 = tp3Pct != null
-    ? (isLong ? entry * (1 + tp3Pct / 100) : entry * (1 - tp3Pct / 100))
-    : tp2;
-
+  // Public trade geometry is normalized to the repository's R-multiple model.
+  // TraderSpy target percentages remain preserved in traderSpy.targetPct for audit.
   const risk = Math.abs(entry - sl);
-  const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
+  if (!(risk > 0)) return null;
+  const tp1 = isLong ? entry + risk * 2 : entry - risk * 2;
+  const tp2 = isLong ? entry + risk * 4 : entry - risk * 4;
+  const tp3 = isLong ? entry + risk * 6 : entry - risk * 6;
+  const rr = 2;
   if (![sl, tp1, tp2, tp3, rr].every(Number.isFinite) || rr <= 0) return null;
 
   const createdMs = Date.parse(String(raw?.createdAt || ""));
