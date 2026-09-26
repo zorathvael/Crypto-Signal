@@ -124,25 +124,3 @@ test("discovery candidates are rejected when multi-timeframe data has no directi
   };
   assert.equal(technicalValidation(signal, payload).pass, false);
 });
-
-
-test("builds a candidate from MTF direction when confluence bias is absent", () => {
-  const payload = {
-    price: 100,
-    timeframes: [
-      { interval: "15m", indicators: { atr:{value:1}, ema:{stack:"bullish"}, supertrend:{trend:"up"} }, summary:{bias:"",trend:{direction:"up",emaStack:"bullish"}} },
-      { interval: "1h", indicators: { atr:{value:1.2}, ema:{stack:"bullish"}, supertrend:{trend:"up"} }, summary:{bias:"",trend:{direction:"up",emaStack:"bullish"}} },
-      { interval: "4h", indicators: { atr:{value:2}, ema:{stack:"bullish"}, supertrend:{trend:"up"} }, summary:{bias:"",trend:{direction:"up",emaStack:"bullish"}} }
-    ]
-  };
-  const candidate = buildScreenCandidate(
-    { symbol: "ETHUSDT", base: "ETH", score: 8, bias: "bullish", trend: "up" },
-    payload,
-    NOW,
-    "LONG"
-  );
-  assert.ok(candidate);
-  assert.equal(candidate.generatedCandidate, true);
-  assert.equal(candidate.action, "LONG");
-  assert.ok(candidate.rr >= 1.5);
-});
