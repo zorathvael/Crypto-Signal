@@ -3028,6 +3028,12 @@ async function runTraderSpyPipeline() {
     );
   }
 
+  const dryRun = String(process.env.TRADERSPY_DRY_RUN || "false").toLowerCase() === "true";
+  if (dryRun) {
+    console.log("Delivery dry-run: scan/validation completed; external posts and outcome registration skipped.");
+    return;
+  }
+
   await sendDiscord(postSignals);
   await sendTelegram(postSignals);
   await sendBinanceSquare(postSignals);
