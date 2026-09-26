@@ -17,8 +17,9 @@ Yang tetap dipertahankan:
 - `signals-log.json`
 - outcome tracking
 - persistent duplicate-result fingerprint + legacy dedup window
-- maksimum 3 signal per run
-- safety cap saat loss streak
+- semua signal baru yang lolos validasi dan dedup
+- tidak ada suppression delivery berdasarkan loss streak
+- Binance Square batch maksimal 3 coin per post
 - format dan destination posting
 - GitHub Actions
 - Discord
@@ -237,7 +238,7 @@ Test adapter mencakup:
 
 ## Cost / call discipline
 
-Pipeline sengaja tidak memanggil seluruh tool TraderSpy pada setiap coin. Discovery and validation are bounded:
+Pipeline tidak memanggil tool detail yang tidak diperlukan. Discovery dan validation tetap bounded pada maksimal 50 target:
 
 - 1 `get_tracked_symbols`
 - 1 `screen_symbols` across up to 100 high-volume futures
