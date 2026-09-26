@@ -186,7 +186,7 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   if(aligned<2)hardReject.push("MTF alignment <2/3");
   if(rr1<2||rr1>6)hardReject.push("TP1 R:R outside 2R-6R");
   if(rr2<3.5||rr2>4.5)hardReject.push("TP2 not approximately 4R");
-  if(rr3<5||rr3>6.5)hardReject.push("TP3 not approximately 6R");
+  if(rr3<5.5||rr3>6.5)hardReject.push("TP3 not approximately 6R");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
 
