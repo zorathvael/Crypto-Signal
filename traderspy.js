@@ -665,7 +665,9 @@ async function getTraderSpyIntelligence(){
     fetched:rows.length,
     discovered:discovery.length,
     validated:validated.length,
-    validationCalls:callId-2
+    validationCalls:callId-2,
+    candidatesBuilt,
+    candidateBuildRejected
   };
 }
 
