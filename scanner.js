@@ -3050,6 +3050,24 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
+  // Hard execution gate: every published trade must have a valid 5x–20x plan.
+  // Signals whose SL is too wide for the 5x minimum are NO-TRADE and are not
+  // sent to any delivery channel. This prevents runtime failures and prevents
+  // accidental publication of sub-5x leverage.
+  postSignals = postSignals.filter((s) => {
+    try {
+      const plan = calculateTradePlan(s);
+      if (plan.leverage < 5 || plan.leverage > 20) {
+        console.warn(`Skip ${s.base} ${s.action}: invalid leverage ${plan.leverage}x`);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn(`NO TRADE ${s.base} ${s.action}: ${e.message}`);
+      return false;
+    }
+  });
+
   // Delivery policy: dedup is the only cross-scan suppression rule.
   // Do not truncate the validated set here and do not let loss streaks suppress
   // newly validated signals. Channel-specific capacity is handled by Square only.
