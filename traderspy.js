@@ -421,4 +421,7 @@ module.exports = {
   signalQualityScore,
   runTraderSpyScan,
   getTraderSpySignals,
+  normalizeDiscoveryRows,
+  technicalValidation,
+  derivativesValidation,
 };
