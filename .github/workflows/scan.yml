@@ -30,6 +30,7 @@ jobs:
         run: |
           node --check positioning.js
           node --check traderspy.js
+          node --check alpha_hunter.js
           node --check scanner.js
           npm test
 
