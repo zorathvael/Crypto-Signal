@@ -172,28 +172,57 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
-## Telegram trade plan — 5 USDT margin
+## Telegram trade geometry
 
-Telegram signal output now includes a deterministic manual-futures sizing plan. It does **not** execute orders.
+Telegram does not display margin, leverage, position notional, or USDT risk suggestions.
 
-Default rules:
-- margin: **5 USDT**
-- estimated SL-loss budget: **10% of margin = 0.50 USDT**, before fees/slippage
-- leverage is derived from the entry-to-SL distance and rounded down
-- maximum displayed leverage: **20x**
-- minimum leverage: **1x**
-- position notional = margin × leverage
-- quantity = position notional ÷ entry price
+Public trade geometry is normalized to:
+- **TP1 = 2R**
+- **TP2 = 4R**
+- **TP3 = 6R**
+- R is the distance between Entry and SL.
 
-Example: a 1% SL distance produces **10x** leverage and about **50 USDT** notional; a 2% SL distance produces **5x**. Tight SLs are capped at 20x. This is a sizing suggestion, not an execution instruction; exchange-specific leverage limits, fees, slippage, funding and liquidation rules still apply.
+The repository keeps the internal sizing/risk gate for validation safety, but those sizing values are not part of the public signal message.
 
-Environment overrides:
-- `TELEGRAM_MARGIN_USDT` (default `5`)
-- `TELEGRAM_MARGIN_RISK_FRACTION` (default `0.10`)
-- `TELEGRAM_MAX_LEVERAGE` (default `20`)
+## Alpha Hunter
 
-Telegram now shows Margin, Leverage, Position notional, Entry, SL, TP1/TP2/TP3, R:R and estimated SL loss.
+v4.0 now includes a deterministic alpha-selection layer after TraderSpy market validation and before publication.
 
+Pipeline:
+```
+TraderSpy candidate
+    ↓
+MTF technical validation
+    ↓
+derivatives validation
+    ↓
+Alpha Hunter
+    ├─ MTF alignment
+    ├─ trend strength / momentum
+    ├─ entry distance vs ATR
+    ├─ 2R / 4R / 6R geometry
+    ├─ funding / OI / taker-flow confirmation
+    └─ signal freshness
+    ↓
+hard veto + alpha threshold
+    ↓
+dedup
+    ↓
+Telegram / Discord / Binance Square
+```
+
+Alpha Hunter is a selection score, not a calibrated win probability. It uses already-fetched validation data and does not add provider calls.
+
+Default:
+- ALPHA_MIN_SCORE=72
+- hard veto if MTF alignment is below 2/3
+- hard veto if TP1 is outside 2R–6R
+- hard veto if TP2 is not approximately 4R
+- hard veto if TP3 is not approximately 6R
+- hard veto if the entry is more than 2 ATR from live price
+- hard veto if the signal is older than 120 minutes
+
+TraderSpy target percentages are preserved in the internal audit field, while public trade levels are normalized from the actual Entry→SL risk into 2R/4R/6R.
 
 Destination tetap:
 
