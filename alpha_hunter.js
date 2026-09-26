@@ -1,12 +1,19 @@
 /**
- * Crypto-Signal Alpha Hunter v2
- * Deterministic edge-selection layer using live validation + empirical outcome evidence.
+ * Crypto-Signal Alpha Hunter v3
+ * Empirical edge-selection layer using live validation + sample-gated historical evidence.
  *
- * This is NOT a calibrated probability model. Historical evidence is only used
- * when the sample is large enough to reduce overreaction to noise.
+ * This is a selection model, not a calibrated probability model. Historical evidence
+ * is filtered to the active crypto-signal era and is never treated as proof of future
+ * returns. Small samples are reported but do not veto a setup.
  */
 const clamp=(v,lo,hi)=>Math.min(Math.max(v,lo),hi);
 const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null;};
+
+const HISTORY_AFTER_TS=Date.parse(process.env.ALPHA_HISTORY_AFTER_TS||"2026-09-18T00:00:00Z");
+const NON_CRYPTO_BASES=new Set([
+  "AAPL","AMZN","AMD","COIN","GOOG","GOOGL","META","MSFT","MSTR","NFLX",
+  "NVDA","PLTR","TSLA","SOXL","CRCL","XAU","XAG","DJT","SKHYNIX","CL","MU","CP"
+]);
 
 function direction(s){
   const a=String(s?.action||"").toUpperCase();
@@ -26,33 +33,79 @@ function timeframeFeatures(payload){
   const by=new Map(rows.map(x=>[String(x?.interval||"").toLowerCase(),x]));
   return ["15m","1h","4h"].map(k=>({interval:k,tf:by.get(k)||null,direction:tfDirection(by.get(k))}));
 }
-
 function closedRows(history){
-  return Array.isArray(history?.closed)?history.closed.filter(x=>x&&(
-    String(x.outcome||"").startsWith("WIN")||x.outcome==="LOSS_SL"
-  )):[];
+  return Array.isArray(history?.closed)?history.closed.filter(x=>{
+    const base=String(x?.base||"").toUpperCase();
+    const ts=n(x?.ts);
+    return x&&ts!=null&&ts>=HISTORY_AFTER_TS&&!NON_CRYPTO_BASES.has(base)&&(
+      String(x.outcome||"").startsWith("WIN")||x.outcome==="LOSS_SL"
+    );
+  }):[];
+}
+function summarize(rows){
+  const rs=rows.map(x=>n(x.rMultiple)).filter(Number.isFinite);
+  const h15=rows.map(x=>n(x?.horizons?.h15?.r)).filter(Number.isFinite);
+  const wins=rows.filter(x=>String(x.outcome||"").startsWith("WIN")).length;
+  return {
+    sampleSize:rows.length,
+    winRate:rows.length?+(wins/rows.length*100).toFixed(1):null,
+    avgR:rs.length?+((rs.reduce((a,b)=>a+b,0)/rs.length)).toFixed(2):null,
+    avgH15:h15.length?+((h15.reduce((a,b)=>a+b,0)/h15.length)).toFixed(2):null
+  };
+}
+function qualityBucket(score){
+  const q=n(score);
+  if(q==null)return "unknown";
+  if(q<80)return "lt80";
+  if(q<90)return "80_89";
+  return "90_plus";
 }
 function empiricalEvidence(history,signal){
   const rows=closedRows(history);
   const action=String(signal?.action||"").toUpperCase();
   const setup=String(signal?.setup||"");
+  const base=String(signal?.base||signal?.instId||"").toUpperCase().replace(/USDT$/,"");
+  const bucket=qualityBucket(signal?.qualityScore??signal?.probability);
   const actionRows=rows.filter(x=>String(x.action||"").toUpperCase()===action);
-  const setupRows=setup?rows.filter(x=>String(x.setup||"")===setup):[];
-  const minSetup=12,minAction=12;
-  const sample=setupRows.length>=minSetup?setupRows:actionRows.length>=minAction?actionRows:[];
+  const setupRows=setup?rows.filter(x=>String(x.setup||"")===setup&&String(x.action||"").toUpperCase()===action):[];
+  const symbolRows=base?rows.filter(x=>String(x.base||"").toUpperCase()===base&&String(x.action||"").toUpperCase()===action):[];
+  const bucketRows=bucket!=="unknown"?rows.filter(x=>qualityBucket(x.probability??x.qualityScore)===bucket&&String(x.action||"").toUpperCase()===action):[];
+
+  // Prefer the most specific stable cohort, then fall back to the action cohort.
+  // The thresholds are deliberately conservative to avoid overfitting a tiny symbol sample.
+  let sample=actionRows, source="action";
+  if(setupRows.length>=12){sample=setupRows;source="setup";}
+  else if(symbolRows.length>=8){sample=symbolRows;source="symbol_action";}
+  else if(bucketRows.length>=8){sample=bucketRows;source="quality_bucket_action";}
+
+  const minAction=12;
   if(sample.length<minAction){
-    return {sampleSize:sample.length,winRate:null,avgR:null,source:"insufficient",edge:"unknown",scoreDelta:0};
+    return {
+      sampleSize:sample.length,winRate:null,avgR:null,avgH15:null,
+      source:"insufficient",edge:"insufficient",scoreDelta:0,
+      cohort:source,bucket,actionSample:actionRows.length,setupSample:setupRows.length,
+      symbolActionSample:symbolRows.length,qualityBucketSample:bucketRows.length
+    };
   }
-  const wins=sample.filter(x=>String(x.outcome||"").startsWith("WIN")).length;
-  const rs=sample.map(x=>n(x.rMultiple)).filter(Number.isFinite);
-  const winRate=wins/sample.length;
-  const avgR=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:null;
-  // Conservative empirical edge gate: require both positive average net-R and
-  // a win-rate margin before awarding alpha points.
+
+  const s=summarize(sample);
   let scoreDelta=0,edge="neutral";
-  if(avgR!=null&&avgR>0.10&&winRate>=0.52){scoreDelta=6;edge="positive";}
-  else if(avgR!=null&&avgR<-0.10&&winRate<0.48){scoreDelta=-8;edge="negative";}
-  return {sampleSize:sample.length,winRate:+(winRate*100).toFixed(1),avgR:+avgR.toFixed(2),source:setupRows.length>=minSetup?"setup":"action",edge,scoreDelta};
+  if(s.avgR!=null&&s.avgR>0.10&&s.winRate>=52){scoreDelta=6;edge="positive";}
+  else if(s.avgR!=null&&s.avgR<-0.10&&s.winRate<48){scoreDelta=-8;edge="negative";}
+
+  // For 15m scalping, early follow-through is a secondary edge signal. It can
+  // strengthen a validated setup but never overturns a materially negative R edge.
+  let flowDelta=0;
+  if(s.avgH15!=null&&s.avgH15>=0.20)flowDelta=3;
+  else if(s.avgH15!=null&&s.avgH15<=-0.20)flowDelta=-3;
+
+  return {
+    sampleSize:s.sampleSize,winRate:s.winRate,avgR:s.avgR,avgH15:s.avgH15,
+    source,edge,scoreDelta:scoreDelta+flowDelta,
+    baseScoreDelta:scoreDelta,flowDelta,cohort:source,bucket,
+    actionSample:actionRows.length,setupSample:setupRows.length,
+    symbolActionSample:symbolRows.length,qualityBucketSample:bucketRows.length
+  };
 }
 
 function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(),history=null){
@@ -123,8 +176,10 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const evidence=empiricalEvidence(history,signal);
   score+=evidence.scoreDelta;
-  if(evidence.edge==="positive")reasons.push("historical edge positive");
-  if(evidence.edge==="negative")reasons.push("historical edge negative");
+  if(evidence.edge==="positive")reasons.push("historical conditional edge positive");
+  if(evidence.edge==="negative")reasons.push("historical conditional edge negative");
+  if(evidence.flowDelta>0)reasons.push("historical H15 follow-through positive");
+  if(evidence.flowDelta<0)reasons.push("historical H15 follow-through weak");
   if(evidence.source==="insufficient")reasons.push("historical evidence insufficient");
 
   const hardReject=[];
@@ -134,8 +189,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   if(rr3<5||rr3>6.5)hardReject.push("TP3 not approximately 6R");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
-  // Only veto on historical evidence when the sample is materially larger.
-  if(evidence.sampleSize>=20&&evidence.edge==="negative")hardReject.push("historical edge negative with >=20 outcomes");
+
+  // Materially negative conditional evidence is a veto once the cohort is stable.
+  // This is intentionally stricter than the positive-edge gate.
+  if(evidence.sampleSize>=20&&evidence.edge==="negative")
+    hardReject.push("historical edge negative with >=20 outcomes");
 
   const alphaScore=clamp(Math.round(50+score),0,99);
   const threshold=Number(process.env.ALPHA_MIN_SCORE||72);
@@ -152,4 +210,4 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
     reasons,hardReject
   };
 }
-module.exports={calculateAlpha,timeframeFeatures,empiricalEvidence};
+module.exports={calculateAlpha,timeframeFeatures,empiricalEvidence,closedRows,summarize};
