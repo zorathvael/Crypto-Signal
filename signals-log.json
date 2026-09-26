@@ -77,6 +77,31 @@
       "tp3": 79646.75,
       "rr": 1.5,
       "validUntil": "2026-09-26T16:14:02.784Z",
+      "horizons": {
+        "h15": {
+          "r": -0.061,
+          "price": 84057.65,
+          "at": 1790436600000
+        }
+      }
+    },
+    {
+      "id": "ETH_LONG_1790437868044",
+      "ts": 1790437868044,
+      "base": "ETH",
+      "instId": "ETHUSDT",
+      "action": "LONG",
+      "fingerprint": "ETH|LONG|TRADERSPY_COMPATIBLE_MTF|-0.86|1.29|2.14|3.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 94,
+      "entry": 2689.28,
+      "sl": 2666.23,
+      "tp1": 2723.8550000000005,
+      "tp2": 2746.9050000000007,
+      "tp3": 2769.955000000001,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T16:50:59.640Z",
       "horizons": {}
     }
   ],
