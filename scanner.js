@@ -1970,7 +1970,7 @@ function formatTelegramMessage(s) {
     `${tag} · <b>${s.base}</b> ${arrow}${persist}${volOk}\n\n` +
     `📊 Score: <b>${s.probability}</b>${regimeTxt}\n` +
     `🧩 Setup: <b>${displaySetup(s.setup)}</b>\n` +
-    `🎯 Entry: <code>${formatPrice(s.entry)}</code>${s.mode ? " · " + s.mode : ""}\n` +
+    `🎯 Entry: <code>${formatPrice(s.entry)}</code>${displayMode(s.mode) ? " · " + displayMode(s.mode) : ""}\n` +
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
     `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
@@ -1987,7 +1987,7 @@ function formatSquareCoinBlock(s) {
   const isSniper = s.probability >= MIN_PROB_SNIPER;
   const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
   const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
-  const mode = s.mode ? ` · ${s.mode}` : "";
+  const mode = displayMode(s.mode) ? ` · ${displayMode(s.mode)}` : "";
   const persist = s.persistent ? " · 🔁" : "";
   const book =
     s.book && s.book.side && s.book.side !== "FLAT"
@@ -2308,11 +2308,19 @@ function consecutiveLossStreak(log) {
 }
 
 
-/** Label setup untuk postingan publik — tanpa nama internal engine */
+/** Public labels must not expose internal intelligence-provider names. */
 function displaySetup(setup) {
   const s = String(setup || "");
+  if (/TRADERSPY/i.test(s)) return "Scalp MTF";
   if (/SCALP|POTENSI|LOC|SCALP|TREND|PRE_|EARLY|MEAN|SQUEEZE/i.test(s)) return "Scalp MTF";
   return s || "Scalp MTF";
+}
+
+function displayMode(mode) {
+  const s = String(mode || "");
+  if (!s) return "";
+  if (/TRADERSPY/i.test(s)) return "MTF";
+  return s;
 }
 
 async function sendDiscord(signals) {
@@ -2614,11 +2622,33 @@ function saveOutcomeLog(log) {
   }
 }
 
-function isDuplicateSignal(log, base, action, now = Date.now()) {
-  const hit = (o) =>
-    o && o.base === base && o.action === action && now - (o.ts || 0) < DEDUP_WINDOW_MS;
+function signalFingerprint(signal) {
+  const entry = Number(signal?.entry);
+  const rel = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || !Number.isFinite(entry) || entry === 0) return "na";
+    return ((n - entry) / entry * 100).toFixed(2);
+  };
+  return [
+    String(signal?.base || "").toUpperCase(),
+    String(signal?.action || "").toUpperCase(),
+    String(signal?.setup || "").toUpperCase(),
+    rel(signal?.sl),
+    rel(signal?.tp1),
+    rel(signal?.tp2),
+    rel(signal?.tp3),
+  ].join("|");
+}
+
+function isDuplicateSignal(log, base, action, now = Date.now(), signal = null) {
+  const fingerprint = signal ? signalFingerprint(signal) : null;
+  const hit = (o) => {
+    if (!o || o.base !== base || o.action !== action) return false;
+    if (fingerprint && o.fingerprint && o.fingerprint === fingerprint) return true;
+    return now - (o.ts || 0) < DEDUP_WINDOW_MS;
+  };
   if ((log.open || []).some(hit)) return true;
-  if ((log.closed || []).slice(0, 80).some(hit)) return true;
+  if ((log.closed || []).some(hit)) return true;
   return false;
 }
 
@@ -2633,8 +2663,8 @@ function filterSignalsForDelivery(signals, log) {
         continue;
       }
     }
-    if (isDuplicateSignal(log, s.base, s.action, now)) {
-      console.log("Skip post " + s.base + " " + s.action + ": dedup 90m");
+    if (isDuplicateSignal(log, s.base, s.action, now, s)) {
+      console.log("Skip post " + s.base + " " + s.action + ": duplicate scan result");
       continue;
     }
     out.push(s);
@@ -2866,7 +2896,7 @@ async function evaluateOpenOutcomes(log) {
 function registerNewSignals(log, signals) {
   const now = Date.now();
   for (const s of signals) {
-    if (isDuplicateSignal(log, s.base, s.action, now)) continue;
+    if (isDuplicateSignal(log, s.base, s.action, now, s)) continue;
     const id = `${s.base}_${s.action}_${now}`;
     log.open.push({
       id,
@@ -2874,6 +2904,7 @@ function registerNewSignals(log, signals) {
       base: s.base,
       instId: s.instId || `${s.base}USDT`,
       action: s.action,
+      fingerprint: signalFingerprint(s),
       setup: s.setup,
       mode: s.mode,
       probability: s.probability,
