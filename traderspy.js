@@ -22,7 +22,7 @@ const DEFAULT_MIN_SCORE = 80;
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
-  "NVDA", "PLTR", "TSLA",
+  "NVDA", "PLTR", "TSLA", "SOXL", "CRCL", "XAU", "XAG",
 ]);
 
 function finiteNumber(value) {
