@@ -1,156 +1,6 @@
 {
   "open": [
     {
-      "id": "BTC_SHORT_1790406380582",
-      "ts": 1790406380582,
-      "base": "BTC",
-      "instId": "BTCUSDT",
-      "action": "SHORT",
-      "fingerprint": "BTC|SHORT|TRADERSPY_COMPATIBLE_MTF|1.50|-2.25|-3.75|-5.24",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 97,
-      "entry": 83962.1,
-      "sl": 85220,
-      "tp1": 82075.25000000001,
-      "tp2": 80817.35000000002,
-      "tp3": 79559.45000000003,
-      "rr": 1.5,
-      "validUntil": "2026-09-26T08:06:08.772Z",
-      "horizons": {
-        "h15": {
-          "r": -0.023,
-          "price": 83991.35,
-          "at": 1790407800000
-        },
-        "h60": {
-          "r": -0.073,
-          "price": 84053.45000000001,
-          "at": 1790410500000
-        }
-      }
-    },
-    {
-      "id": "SOL_SHORT_1790406380582",
-      "ts": 1790406380582,
-      "base": "SOL",
-      "instId": "SOLUSDT",
-      "action": "SHORT",
-      "fingerprint": "SOL|SHORT|TRADERSPY_COMPATIBLE_MTF|2.10|-3.16|-5.26|-7.36",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 94,
-      "entry": 120.368,
-      "sl": 122.9,
-      "tp1": 116.56999999999998,
-      "tp2": 114.03799999999997,
-      "tp3": 111.50599999999996,
-      "rr": 1.5,
-      "validUntil": "2026-09-26T08:06:09.025Z",
-      "horizons": {
-        "h15": {
-          "r": -0.059,
-          "price": 120.51650000000001,
-          "at": 1790407800000
-        },
-        "h60": {
-          "r": -0.049,
-          "price": 120.4925,
-          "at": 1790410500000
-        }
-      }
-    },
-    {
-      "id": "NEAR_LONG_1790406380582",
-      "ts": 1790406380582,
-      "base": "NEAR",
-      "instId": "NEARUSDT",
-      "action": "LONG",
-      "fingerprint": "NEAR|LONG|TRADERSPY_COMPATIBLE_MTF|-10.27|15.40|25.67|35.94",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 93,
-      "entry": 4.9343,
-      "sl": 4.4276,
-      "tp1": 5.694350000000001,
-      "tp2": 6.201050000000001,
-      "tp3": 6.707750000000002,
-      "rr": 1.5,
-      "validUntil": "2026-09-26T08:06:09.410Z",
-      "horizons": {
-        "h15": {
-          "r": -0.068,
-          "price": 4.89975,
-          "at": 1790407800000
-        },
-        "h60": {
-          "r": -0.166,
-          "price": 4.84995,
-          "at": 1790410500000
-        }
-      }
-    },
-    {
-      "id": "ZEC_LONG_1790407530362",
-      "ts": 1790407530362,
-      "base": "ZEC",
-      "instId": "ZECUSDT",
-      "action": "LONG",
-      "fingerprint": "ZEC|LONG|TRADERSPY_COMPATIBLE_MTF|-2.35|3.52|5.86|8.21",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 88,
-      "entry": 1536.4,
-      "sl": 1500.37,
-      "tp1": 1590.4450000000004,
-      "tp2": 1626.4750000000006,
-      "tp3": 1662.5050000000008,
-      "rr": 1.5,
-      "validUntil": "2026-09-26T08:25:21.946Z",
-      "horizons": {
-        "h15": {
-          "r": -0.092,
-          "price": 1533.075,
-          "at": 1790408700000
-        },
-        "h60": {
-          "r": 0.007,
-          "price": 1536.645,
-          "at": 1790411400000
-        }
-      }
-    },
-    {
-      "id": "XRP_SHORT_1790407530362",
-      "ts": 1790407530362,
-      "base": "XRP",
-      "instId": "XRPUSDT",
-      "action": "SHORT",
-      "fingerprint": "XRP|SHORT|TRADERSPY_COMPATIBLE_MTF|5.01|-7.51|-12.52|-17.52",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 88,
-      "entry": 1.5521,
-      "sl": 1.6298,
-      "tp1": 1.43555,
-      "tp2": 1.3578500000000004,
-      "tp3": 1.2801500000000003,
-      "rr": 1.5,
-      "validUntil": "2026-09-26T08:25:21.789Z",
-      "horizons": {
-        "h15": {
-          "r": -0.004,
-          "price": 1.5524,
-          "at": 1790408700000
-        },
-        "h60": {
-          "r": -0.004,
-          "price": 1.5524,
-          "at": 1790411400000
-        }
-      }
-    },
-    {
       "id": "ETH_LONG_1790411715464",
       "ts": 1790411715464,
       "base": "ETH",
@@ -269,9 +119,212 @@
           "at": 1790415900000
         }
       }
+    },
+    {
+      "id": "BTC_SHORT_1790429477770",
+      "ts": 1790429477770,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "SHORT",
+      "fingerprint": "BTC|SHORT|TRADERSPY_COMPATIBLE_MTF|1.63|-2.44|-4.07|-5.70",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 97,
+      "entry": 83855.1,
+      "sl": 85220,
+      "tp1": 81807.75000000001,
+      "tp2": 80442.85000000002,
+      "tp3": 79077.95000000003,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T14:31:09.856Z",
+      "horizons": {}
+    },
+    {
+      "id": "ZEC_LONG_1790429477770",
+      "ts": 1790429477770,
+      "base": "ZEC",
+      "instId": "ZECUSDT",
+      "action": "LONG",
+      "fingerprint": "ZEC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.51|2.27|3.78|5.29",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 91,
+      "entry": 1537.44,
+      "sl": 1514.2,
+      "tp1": 1572.3000000000002,
+      "tp2": 1595.54,
+      "tp3": 1618.7800000000002,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T14:31:10.371Z",
+      "horizons": {}
     }
   ],
   "closed": [
+    {
+      "id": "BTC_SHORT_1790406380582",
+      "ts": 1790406380582,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "SHORT",
+      "fingerprint": "BTC|SHORT|TRADERSPY_COMPATIBLE_MTF|1.50|-2.25|-3.75|-5.24",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 97,
+      "entry": 83962.1,
+      "sl": 85220,
+      "tp1": 82075.25000000001,
+      "tp2": 80817.35000000002,
+      "tp3": 79559.45000000003,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T08:06:08.772Z",
+      "horizons": {
+        "h15": {
+          "r": -0.023,
+          "price": 83991.35,
+          "at": 1790407800000
+        },
+        "h60": {
+          "r": -0.073,
+          "price": 84053.45000000001,
+          "at": 1790410500000
+        }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790429466812
+    },
+    {
+      "id": "SOL_SHORT_1790406380582",
+      "ts": 1790406380582,
+      "base": "SOL",
+      "instId": "SOLUSDT",
+      "action": "SHORT",
+      "fingerprint": "SOL|SHORT|TRADERSPY_COMPATIBLE_MTF|2.10|-3.16|-5.26|-7.36",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 94,
+      "entry": 120.368,
+      "sl": 122.9,
+      "tp1": 116.56999999999998,
+      "tp2": 114.03799999999997,
+      "tp3": 111.50599999999996,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T08:06:09.025Z",
+      "horizons": {
+        "h15": {
+          "r": -0.059,
+          "price": 120.51650000000001,
+          "at": 1790407800000
+        },
+        "h60": {
+          "r": -0.049,
+          "price": 120.4925,
+          "at": 1790410500000
+        }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790429466812
+    },
+    {
+      "id": "NEAR_LONG_1790406380582",
+      "ts": 1790406380582,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "LONG",
+      "fingerprint": "NEAR|LONG|TRADERSPY_COMPATIBLE_MTF|-10.27|15.40|25.67|35.94",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 93,
+      "entry": 4.9343,
+      "sl": 4.4276,
+      "tp1": 5.694350000000001,
+      "tp2": 6.201050000000001,
+      "tp3": 6.707750000000002,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T08:06:09.410Z",
+      "horizons": {
+        "h15": {
+          "r": -0.068,
+          "price": 4.89975,
+          "at": 1790407800000
+        },
+        "h60": {
+          "r": -0.166,
+          "price": 4.84995,
+          "at": 1790410500000
+        }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790429466812
+    },
+    {
+      "id": "ZEC_LONG_1790407530362",
+      "ts": 1790407530362,
+      "base": "ZEC",
+      "instId": "ZECUSDT",
+      "action": "LONG",
+      "fingerprint": "ZEC|LONG|TRADERSPY_COMPATIBLE_MTF|-2.35|3.52|5.86|8.21",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 88,
+      "entry": 1536.4,
+      "sl": 1500.37,
+      "tp1": 1590.4450000000004,
+      "tp2": 1626.4750000000006,
+      "tp3": 1662.5050000000008,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T08:25:21.946Z",
+      "horizons": {
+        "h15": {
+          "r": -0.092,
+          "price": 1533.075,
+          "at": 1790408700000
+        },
+        "h60": {
+          "r": 0.007,
+          "price": 1536.645,
+          "at": 1790411400000
+        }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790429466812
+    },
+    {
+      "id": "XRP_SHORT_1790407530362",
+      "ts": 1790407530362,
+      "base": "XRP",
+      "instId": "XRPUSDT",
+      "action": "SHORT",
+      "fingerprint": "XRP|SHORT|TRADERSPY_COMPATIBLE_MTF|5.01|-7.51|-12.52|-17.52",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 88,
+      "entry": 1.5521,
+      "sl": 1.6298,
+      "tp1": 1.43555,
+      "tp2": 1.3578500000000004,
+      "tp3": 1.2801500000000003,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T08:25:21.789Z",
+      "horizons": {
+        "h15": {
+          "r": -0.004,
+          "price": 1.5524,
+          "at": 1790408700000
+        },
+        "h60": {
+          "r": -0.004,
+          "price": 1.5524,
+          "at": 1790411400000
+        }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790429466812
+    },
     {
       "id": "DJT_LONG_1790369694360",
       "ts": 1790369694360,
@@ -2669,12 +2722,20 @@
     }
   ],
   "stats": {
-    "total": 31,
+    "total": 36,
     "wins": 13,
     "losses": 13,
-    "expired": 5,
+    "expired": 10,
     "sumR": 0.39999999999999925,
     "bySetup": {
+      "TRADERSPY_COMPATIBLE_MTF": {
+        "n": 5,
+        "wins": 0,
+        "losses": 0,
+        "sumR": 0,
+        "winrate": null,
+        "avgR": null
+      },
       "TRADERSPY · Pullback Trend Continuation Buy (1H)": {
         "n": 1,
         "wins": 0,
@@ -2701,21 +2762,21 @@
       }
     },
     "byAction": {
-      "LONG": {
-        "n": 28,
-        "wins": 13,
-        "losses": 10,
-        "sumR": 3.7799999999999994,
-        "winrate": 56.5,
-        "avgR": 0.16
-      },
       "SHORT": {
-        "n": 3,
+        "n": 6,
         "wins": 0,
         "losses": 3,
         "sumR": -3.38,
         "winrate": 0,
         "avgR": -1.13
+      },
+      "LONG": {
+        "n": 30,
+        "wins": 13,
+        "losses": 10,
+        "sumR": 3.7799999999999994,
+        "winrate": 56.5,
+        "avgR": 0.16
       }
     },
     "afterTs": 1789689600000,
