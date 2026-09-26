@@ -1991,7 +1991,6 @@ function formatTelegramMessage(s) {
 }
 
 function formatSquareCoinBlock(s) {
-function formatSquareCoinBlock(s) {
   const isSniper = s.probability >= MIN_PROB_SNIPER;
   const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
   const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
