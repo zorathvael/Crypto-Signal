@@ -25,3 +25,8 @@ test("narrow SL respects 20x leverage cap", () => {
 test("invalid levels are rejected", () => {
   assert.throws(() => calculateTradePlan({ entry: 100, sl: 100 }), /non-zero/);
 });
+
+
+test("SL wider than 2% is rejected because it cannot keep 0.50 USDT risk at 5x", () => {
+  assert.throws(() => calculateTradePlan({ entry: 100, sl: 97 }), /exceeds risk budget at 5x/);
+});
