@@ -3451,6 +3451,21 @@ async function main() {
         funnel.levelsFail++;
         continue;
       }
+      // $5 margin + 5x minimum with $0.50 risk budget means the stop distance
+      // must not exceed 2% (0.50 / (5 * 5.00)). Reject wider stops rather than
+      // silently violating the per-trade risk budget.
+      const slDistancePct = Math.abs(levels.entry - levels.sl) / levels.entry;
+      if (!(slDistancePct > 0) || slDistancePct > (TRADE_RISK_USDT / (TRADE_MARGIN_USDT * MIN_LEVERAGE))) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: scored.probability,
+          setup: "SCALP_15M",
+          reason: "SL distance > 2% — exceeds $0.50 risk at 5x minimum"
+        });
+        funnel.levelsFail++;
+        continue;
+      }
       const modeStr = String(levels.mode || "");
       if (!modeStr.includes("_ZONE") && !modeStr.includes("_MKT")) {
         watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: "SCALP_15M", reason: "mode entry tidak valid" });
