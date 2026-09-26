@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "DJT_LONG_1790369694360",
       "ts": 1790369694360,
@@ -28,10 +29,11 @@
           "price": 9.126,
           "at": 1790373600000
         }
-      }
-    }
-  ],
-  "closed": [
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790393057187
+    },
     {
       "id": "ETC_LONG_1790300718962",
       "ts": 1790300718962,
@@ -2396,12 +2398,20 @@
     }
   ],
   "stats": {
-    "total": 30,
+    "total": 31,
     "wins": 13,
     "losses": 13,
-    "expired": 4,
+    "expired": 5,
     "sumR": 0.39999999999999925,
     "bySetup": {
+      "TRADERSPY · Pullback Trend Continuation Buy (1H)": {
+        "n": 1,
+        "wins": 0,
+        "losses": 0,
+        "sumR": 0,
+        "winrate": null,
+        "avgR": null
+      },
       "SCALP_MTF": {
         "n": 29,
         "wins": 13,
@@ -2421,7 +2431,7 @@
     },
     "byAction": {
       "LONG": {
-        "n": 27,
+        "n": 28,
         "wins": 13,
         "losses": 10,
         "sumR": 3.7799999999999994,
