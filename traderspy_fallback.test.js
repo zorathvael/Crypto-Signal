@@ -35,7 +35,9 @@ test("fallback levels preserve directional geometry and R:R",()=>{
   assert.ok(lv.tp1>lv.entry);
   assert.ok(lv.tp2>lv.tp1);
   assert.ok(lv.tp3>lv.tp2);
-  assert.equal(Number(((lv.tp1-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),2);\n  assert.equal(Number(((lv.tp2-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),4);\n  assert.equal(Number(((lv.tp3-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),6);
+  assert.equal(Number(((lv.tp1-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),2);
+  assert.equal(Number(((lv.tp2-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),4);
+  assert.equal(Number(((lv.tp3-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),6);
 });
 
 
