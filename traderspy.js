@@ -445,7 +445,7 @@ function buildScreenCandidate(discovery, technicalPayload, now) {
     tp3,
     rr: +rr.toFixed(2),
     riskPct: +(risk / entry * 100).toFixed(3),
-    regime: h4?.summary?.volatility?.state || null,
+    regime: h4?.summary?.volatility ? { regime: h4.summary.volatility.state || "normal", atrPct: Number(h4.summary.volatility.atrPct || 0) } : null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
     trends: {
