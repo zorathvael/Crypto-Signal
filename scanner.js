@@ -35,7 +35,12 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 1.5;
+const MIN_RR = 2.0;
+const MAX_RR = 6.0;
+const MIN_LEVERAGE = 5;
+const MAX_LEVERAGE = 20;
+const TRADE_MARGIN_USDT = 5;
+const TRADE_RISK_USDT = 0.5;
 const CANDIDATE_LIMIT = 60; // v3.12.3 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
@@ -1756,20 +1761,20 @@ function buildLevels(candles, signal, mark, regime = null) {
   let slBuf = 0.48;
   let slMinMult = 0.9, slMaxMult = 2.2, slDefault = 1.15;
   let mktSlMin = 1.1, mktSlMax = 2.6, mktSlDef = 1.35;
-  let tp1R = 1.7, tp2R = 2.5, tp3R = 3.5;
+  let tp1R = 2.0, tp2R = 4.0, tp3R = 6.0;
   const reg = regime && regime.regime ? regime.regime : "normal";
   if (reg === "low") {
     slBuf = 0.55; slMinMult = 0.95; slMaxMult = 2.5; slDefault = 1.2;
     mktSlMin = 1.2; mktSlMax = 2.8; mktSlDef = 1.35;
-    tp1R = 1.5; tp2R = 2.4; tp3R = 3.8;
+    tp1R = 2.0; tp2R = 4.0; tp3R = 6.0;
   } else if (reg === "high") {
     slBuf = 0.78; slMinMult = 1.35; slMaxMult = 3.4; slDefault = 1.65;
     mktSlMin = 1.6; mktSlMax = 3.6; mktSlDef = 1.85;
-    tp1R = 1.7; tp2R = 2.8; tp3R = 4.2;
+    tp1R = 2.0; tp2R = 4.0; tp3R = 6.0;
   } else if (reg === "extreme") {
     slBuf = 0.95; slMinMult = 1.5; slMaxMult = 3.8; slDefault = 1.85;
     mktSlMin = 1.8; mktSlMax = 4.0; mktSlDef = 2.0;
-    tp1R = 1.8; tp2R = 2.9; tp3R = 4.0;
+    tp1R = 2.0; tp2R = 4.0; tp3R = 6.0;
   }
   let liveBuf = mark * 0.0012 + atrV * 0.18;
   if (regime && regime.regime === "high") liveBuf = mark * 0.0022 + atrV * 0.32; // audit INJ
@@ -1844,9 +1849,9 @@ function buildLevels(candles, signal, mark, regime = null) {
     }
 
     const risk = entry - sl;
-    tp1 = entry + risk * tp1R;
-    tp2 = entry + risk * tp2R;
-    tp3 = entry + risk * tp3R;
+    tp1 = entry + risk * 2.0;
+    tp2 = entry + risk * 4.0;
+    tp3 = entry + risk * 6.0;
     if (m5.middle != null && m5.middle > tp1) tp1 = m5.middle;
     if (m5.upper != null && m5.upper > tp2) tp2 = Math.max(tp2, m5.upper);
     if (tp1 <= entry) tp1 = entry + risk * tp1R;
@@ -1910,9 +1915,9 @@ function buildLevels(candles, signal, mark, regime = null) {
     }
 
     const risk = sl - entry;
-    tp1 = entry - risk * tp1R;
-    tp2 = entry - risk * tp2R;
-    tp3 = entry - risk * tp3R;
+    tp1 = entry - risk * 2.0;
+    tp2 = entry - risk * 4.0;
+    tp3 = entry - risk * 6.0;
     if (m5.middle != null && m5.middle < tp1) tp1 = m5.middle;
     if (m5.lower != null && m5.lower < tp2) tp2 = Math.min(tp2, m5.lower);
     if (tp1 >= entry) tp1 = entry - risk * tp1R;
@@ -3435,13 +3440,13 @@ async function main() {
           levels = buildLevels(m5x, scored, c.mark, regime);
         }
       }
-      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < (useExtremeLevels ? 1.5 : MIN_RR)) {
+      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR || levels.rr > MAX_RR) {
         watches.push({
           base: c.base,
           action: scored.action,
           score: scored.probability,
           setup: "SCALP_15M",
-          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr<" + MIN_RR + " (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
+          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("R:R di luar 2R-6R (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
         });
         funnel.levelsFail++;
         continue;
