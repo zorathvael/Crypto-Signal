@@ -521,7 +521,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   };
 }
 
-async function getTraderSpyIntelligence(){
+async function getTraderSpyIntelligence(options = {}){
   const tokenValue=process.env.TRADERSPY_MCP_TOKEN||"";
   const url=process.env.TRADERSPY_MCP_URL||(/^https?:\/\//i.test(tokenValue)?tokenValue:"");
   if(!url)throw new Error("TraderSpy MCP URL is missing.");
@@ -646,7 +646,7 @@ async function getTraderSpyIntelligence(){
     }
 
     if(signal.generatedCandidate){
-      const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now);
+      const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now, options.history);
       const baseScore=Number(target.discovery.score||0)*2;
       const finalScore=Math.min(99,Math.round(72+baseScore+technical.score+derivatives.score+(detail?.aiReview?.score||0)*0.5));
       signal.qualityScore=finalScore;
@@ -688,10 +688,10 @@ async function getTraderSpyIntelligence(){
   };
 }
 
-async function getTraderSpySignals(){ const result=await getTraderSpyIntelligence(); return result.signals; }
+async function getTraderSpySignals(options = {}){ const result=await getTraderSpyIntelligence(options); return result.signals; }
 
-async function runTraderSpyScan(){
-  const result=await getTraderSpyIntelligence();
+async function runTraderSpyScan(options = {}){
+  const result=await getTraderSpyIntelligence(options);
   console.log('TraderSpy funnel: discovered='+result.discovered+' fetched='+result.fetched+' built='+result.candidatesBuilt+' buildRejected='+result.candidateBuildRejected+' validated='+result.validated+' calls='+result.validationCalls);
   for(const s of result.signals)console.log('  '+s.base+' '+s.action+' quality='+s.qualityScore+' '+s.signalStrength+'/'+s.importance+' '+s.timeframe+' R:R 1:'+s.rr);
   return result.signals;
