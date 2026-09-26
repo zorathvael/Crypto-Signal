@@ -352,7 +352,11 @@ function technicalValidation(signal, payload) {
 }
 
 function derivativesValidation(signal,payload){
-  const row=Array.isArray(payload?.data)?payload.data.find(x=>String(x?.symbol||'').toUpperCase()===signal.instId):null;
+  const row=payload instanceof Map
+    ? payload.get(String(signal.instId||"").toUpperCase())
+    : Array.isArray(payload?.data)
+      ? payload.data.find(x=>String(x?.symbol||'').toUpperCase()===signal.instId)
+      : null;
   if(!row||row.error)return {pass:false,score:0,reasons:['derivatives data unavailable']};
   const side=signal.action, funding=Number(row?.funding?.ratePct), longPct=Number(row?.positioning?.globalLongPct), taker=Number(row?.positioning?.takerBuySellRatio), regime=String(row?.openInterest?.regime||'').toLowerCase();
   let score=0,adverse=false;const reasons=[];
@@ -590,9 +594,18 @@ async function getTraderSpyIntelligence(){
   }
 
   const symbols=targets.map(x=>x.published?.instId||x.discovery.symbol);
-  let derivativesPayload;
+  // TraderSpy get_derivatives accepts at most 5 symbols per request. Batch the
+  // complete validation target set instead of silently dropping targets.
+  const derivativesBySymbol=new Map();
   try{
-    derivativesPayload=await callTool(url,sessionId,callId++,"get_derivatives",{symbols});
+    for(let i=0;i<symbols.length;i+=5){
+      const chunk=symbols.slice(i,i+5);
+      const payload=await callTool(url,sessionId,callId++,"get_derivatives",{symbols:chunk});
+      for(const row of Array.isArray(payload?.data)?payload.data:[]){
+        const key=String(row?.symbol||"").toUpperCase();
+        if(key) derivativesBySymbol.set(key,row);
+      }
+    }
   }catch(e){
     console.warn("TraderSpy derivatives validation failed: "+e.message);
     return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:callId-2};
@@ -622,7 +635,7 @@ async function getTraderSpyIntelligence(){
     }
 
     const technical=technicalValidation(signal,technicalPayload);
-    const derivatives=derivativesValidation(signal,derivativesPayload);
+    const derivatives=derivativesValidation(signal,derivativesBySymbol);
 
     let detail=null;
     if(target.published && validated.length<2){
