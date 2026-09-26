@@ -2139,7 +2139,7 @@ function renderSquareCardPng(coins) {
   try {
     execFileSync("rsvg-convert", ["-w", "720", "-h", "1520", svgPath, "-o", pngPath], { stdio: "pipe" });
   } catch (e) {
-    console.warn("rsvg-convert failed, Square will post text only:", e.message);
+    console.warn("rsvg-convert failed, Square visual post cannot be published:", e.message);
     return null;
   }
   if (!fs.existsSync(pngPath)) return null;
