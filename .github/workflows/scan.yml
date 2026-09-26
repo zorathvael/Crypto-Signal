@@ -49,12 +49,19 @@ jobs:
           TRADERSPY_ONLY: "true"
           TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL }}
           TRADERSPY_MCP_TOKEN: ${{ secrets.TRADERSPY_MCP_TOKEN }}
-          TRADERSPY_SIGNAL_LIMIT: "20"
+          TRADERSPY_SIGNAL_LIMIT: "50"
           TRADERSPY_MAX_AGE_MIN: "120"
+          TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
+          TRADERSPY_DISCOVERY_UNIVERSE: "100"
+          TRADERSPY_DISCOVERY_LIMIT: "50"
+          TRADERSPY_VALIDATION_TARGETS: "3"
+          TRADERSPY_VALIDATION_MIN_SCORE: "88"
+          TRADERSPY_STALE_MIN_SCORE: "90"
           TRADERSPY_MIN_SCORE: "80"
         run: node scanner.js
 
       - name: Commit signals-log.json
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

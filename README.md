@@ -44,16 +44,26 @@ File:
 - `signals-log.json` — outcome tracker
 - `.github/workflows/scan.yml` — scheduled runtime
 
-Adapter memakai **satu tool call TraderSpy per scan**:
+Adapter memakai **bounded tiered validation** per scan:
 
 ```
-initialize MCP
+get_tracked_symbols
     ↓
-notifications/initialized
+screen_symbols (4H, top-volume universe)
     ↓
-tools/call → get_signals
+get_signals (up to 50 recent candidates)
     ↓
-normalize + validate
+age/status/level/crypto validation
+    ↓
+top 3 candidates
+    ↓
+get_derivatives (batched)
+    ↓
+get_technical_indicators (15M + 1H + 4H)
+    ↓
+get_signal_details (deep-check for strongest candidates)
+    ↓
+final validation score
     ↓
 dedup / safety
     ↓
@@ -62,9 +72,7 @@ Telegram
 Binance Square
 ```
 
-Tidak ada fallback diam-diam ke data sintetis atau signal acak.
-
-Jika TraderSpy gagal, authentication gagal, data kosong, level tidak lengkap, signal sudah resolved, atau signal sudah terlalu tua, pipeline tidak membuat signal pengganti.
+The pipeline deliberately uses TraderSpy's screener and tracked-symbol universe before signal validation. A stale signal is never accepted merely because its timestamp is present: signals older than the normal delivery window can survive candidate selection only when current multi-timeframe technical and derivatives data still validate the setup. The tracked-symbol check prevents tokenized equities/metals and other non-crypto instruments from entering the crypto delivery path.
 
 ## Signal normalization
 
@@ -148,6 +156,23 @@ Secret lama tetap digunakan:
 | `TELEGRAM_CHAT_ID` | Telegram |
 | `BINANCE_SQUARE_OPENAPI_KEY` | Binance Square |
 
+## Tiered validation configuration
+
+Default workflow settings:
+
+```yaml
+TRADERSPY_SIGNAL_LIMIT: "50"
+TRADERSPY_MAX_AGE_MIN: "120"
+TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
+TRADERSPY_DISCOVERY_UNIVERSE: "100"
+TRADERSPY_DISCOVERY_LIMIT: "50"
+TRADERSPY_VALIDATION_TARGETS: "3"
+TRADERSPY_VALIDATION_MIN_SCORE: "88"
+TRADERSPY_STALE_MIN_SCORE: "90"
+```
+
+`TRADERSPY_MAX_AGE_MIN` remains the normal freshness gate. `TRADERSPY_CANDIDATE_MAX_AGE_MIN` is only a wider candidate window; it does not bypass live validation. The final gate requires multi-timeframe technical agreement, derivatives sanity checks, and the bounded validation score.
+
 ## TraderSpy authentication
 
 TraderSpy menyediakan **personal MCP connection URL** yang membawa credential di dalam URL. Secret yang digunakan repository ini adalah `TRADERSPY_MCP_TOKEN`; adapter otomatis memperlakukannya sebagai MCP URL bila nilainya diawali `http://` atau `https://`.
@@ -212,11 +237,16 @@ Test adapter mencakup:
 
 ## Cost / call discipline
 
-Pipeline sengaja tidak memanggil seluruh tool TraderSpy pada setiap coin.
+Pipeline sengaja tidak memanggil seluruh tool TraderSpy pada setiap coin. Discovery and validation are bounded:
 
-Mode v4.0 menggunakan:
+- 1 `get_tracked_symbols`
+- 1 `screen_symbols` across up to 100 high-volume futures
+- 1 `get_signals` request for up to 50 recent candidates
+- 1 batched `get_derivatives` request for the top validation targets
+- up to 3 `get_technical_indicators` calls
+- up to 2 `get_signal_details` calls
 
-**1 `get_signals` call per scheduled scan**
+This keeps the deep validation stage small while making the candidate universe substantially broader than the previous 20-signal-only importer.
 
 Tujuannya:
 - mengurangi MCP credits

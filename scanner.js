@@ -2936,7 +2936,7 @@ function printOutcomeSummary(log, newlyClosed) {
 async function runTraderSpyPipeline() {
   console.log("=== Crypto-Signal v4.0 | TraderSpy Intelligence ===");
   console.log(new Date().toISOString());
-  console.log("Intelligence source: TraderSpy MCP / get_signals");
+  console.log("Intelligence source: TraderSpy MCP / tiered discovery + validation");
   console.log("Delivery: Discord + Telegram + Binance Square (unchanged)");
 
   // Outcome tracking remains local to preserve the existing audit trail.
@@ -2951,6 +2951,7 @@ async function runTraderSpyPipeline() {
   }
 
   const signals = await runTraderSpyScan();
+  console.log("TraderSpy delivery gate: only tier-validated signals can be published.");
   let postSignals = filterSignalsForDelivery(
     signals.slice(),
     outcomeLog || { open: [], closed: [] }
