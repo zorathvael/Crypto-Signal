@@ -25,6 +25,10 @@ function calculateTradePlan(signal, options = {}) {
   if (!(slDistancePct > 0)) throw new Error("Trade plan requires non-zero entry-to-SL distance");
 
   const riskBudgetUsdt = marginUsdt * riskFraction;
+  const maxSlDistancePct = riskBudgetUsdt / (marginUsdt * MIN_LEVERAGE);
+  if (slDistancePct > maxSlDistancePct) {
+    throw new Error(`SL distance ${(slDistancePct * 100).toFixed(3)}% exceeds risk budget at ${MIN_LEVERAGE}x`);
+  }
   const rawLeverage = riskBudgetUsdt / (marginUsdt * slDistancePct);
   const leverage = Math.max(MIN_LEVERAGE, Math.min(maxLeverage, Math.floor(rawLeverage)));
   const notionalUsdt = marginUsdt * leverage;
