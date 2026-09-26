@@ -22,6 +22,11 @@
           "r": -0.047,
           "price": 83919.3,
           "at": 1790431200000
+        },
+        "h60": {
+          "r": -0.095,
+          "price": 83984.95,
+          "at": 1790433900000
         }
       }
     },
@@ -47,8 +52,32 @@
           "r": 0.076,
           "price": 1539.2,
           "at": 1790431200000
+        },
+        "h60": {
+          "r": 0.292,
+          "price": 1544.2199999999998,
+          "at": 1790433900000
         }
       }
+    },
+    {
+      "id": "BTC_SHORT_1790435649056",
+      "ts": 1790435649056,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "SHORT",
+      "fingerprint": "BTC|SHORT|TRADERSPY_COMPATIBLE_MTF|1.47|-2.21|-3.69|-5.16",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 97,
+      "entry": 83981.5,
+      "sl": 85220,
+      "tp1": 82123.75,
+      "tp2": 80885.25,
+      "tp3": 79646.75,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T16:14:02.784Z",
+      "horizons": {}
     }
   ],
   "closed": [
