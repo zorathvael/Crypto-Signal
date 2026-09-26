@@ -656,6 +656,7 @@ module.exports = {
   runTraderSpyScan,
   getTraderSpySignals,
   normalizeDiscoveryRows,
+  buildScreenCandidate,
   technicalValidation,
   derivativesValidation,
 };
