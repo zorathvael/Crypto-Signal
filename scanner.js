@@ -24,6 +24,7 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 const positioning = require("./positioning");
 const { runTraderSpyScan } = require("./traderspy");
+const { getFallbackIntelligence } = require("./traderspy_fallback");
 const { calculateTradePlan } = require("./trade_plan");
 
 const BITGET = "https://api.bitget.com";
@@ -3022,16 +3023,28 @@ async function runTraderSpyPipeline() {
   }
 
   let signals;
+  let intelligenceSource = "TraderSpy";
   try {
     signals = await runTraderSpyScan();
   } catch (e) {
     if (e?.quota || e?.code === "HTTP_429") {
-      console.warn("TraderSpy quota exhausted — scan skipped safely; no external posts or outcome mutations.");
-      return;
+      console.warn("TraderSpy daily quota exhausted — activating TraderSpy-compatible Binance fallback.");
+      try {
+        const fallback = await getFallbackIntelligence();
+        signals = fallback.signals;
+        intelligenceSource = "TraderSpy-compatible fallback";
+        console.log(
+          `Fallback funnel: discovered=${fallback.discovered} validated=${fallback.validated} calls=${fallback.validationCalls}`
+        );
+      } catch (fallbackError) {
+        console.warn("TraderSpy-compatible fallback failed — no signals published:", fallbackError.message);
+        return;
+      }
+    } else {
+      throw e;
     }
-    throw e;
   }
-  console.log("TraderSpy delivery gate: only tier-validated signals can be published.");
+  console.log(`${intelligenceSource} delivery gate: only tier-validated signals can be published.`);
   let postSignals = filterSignalsForDelivery(
     signals.slice(),
     outcomeLog || { open: [], closed: [] }
@@ -3050,7 +3063,7 @@ async function runTraderSpyPipeline() {
     console.log("Loss streak (informational only): " + streak + " — no delivery suppression");
   }
 
-  console.log("TraderSpy VALID / NEW:", postSignals.length);
+  console.log(`${intelligenceSource} VALID / NEW:`, postSignals.length);
   for (const s of postSignals) {
     console.log(
       `  ${s.base} ${s.action} quality=${s.qualityScore} ${s.signalStrength}/${s.importance} ${s.timeframe} R:R 1:${s.rr}`
@@ -3076,7 +3089,7 @@ async function runTraderSpyPipeline() {
     console.warn("Outcome register error:", e.message);
   }
 
-  console.log("TraderSpy pipeline done.");
+  console.log(`${intelligenceSource} pipeline done.`);
 }
 
 async function main() {
