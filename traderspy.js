@@ -375,37 +375,247 @@ function applyValidation(signal,discovery,technical,derivatives,detail){
   return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
 }
 
+function buildScreenCandidate(discovery, technicalPayload, now) {
+  const tfs = timeframeMap(technicalPayload);
+  const h1 = tfs.get("1h") || tfs.get("15m");
+  const h4 = tfs.get("4h");
+  if (!h1 || !h4 || !Number.isFinite(Number(technicalPayload?.price))) return null;
+
+  const bias = String(technicalPayload?.confluence?.bias || h1?.summary?.bias || "").toLowerCase();
+  const action = bias === "bullish" ? "LONG" : bias === "bearish" ? "SHORT" : null;
+  if (!action) return null;
+
+  const entry = Number(technicalPayload.price);
+  const atr = Number(h1?.indicators?.atr?.value);
+  if (!Number.isFinite(atr) || atr <= 0) return null;
+
+  const levels = h1?.indicators?.levels || {};
+  const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
+  const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
+
+  const minRisk = Math.max(atr * 1.5, entry * 0.004);
+  let sl;
+  let tp1;
+  let tp2;
+  let tp3;
+
+  if (action === "LONG") {
+    const support = supports.find(x => x < entry && entry - x >= atr * 0.75);
+    const resistance = resistances.filter(x => x > entry);
+    sl = support != null && entry - support <= atr * 2.5 ? support : entry - minRisk;
+    const risk = entry - sl;
+    tp1 = resistance.find(x => x > entry && x - entry >= risk * 1.5) || entry + risk * 1.5;
+    tp2 = resistance.find(x => x > tp1) || entry + risk * 2.5;
+    tp3 = resistance.find(x => x > tp2) || entry + risk * 3.5;
+  } else {
+    const resistance = resistances.find(x => x > entry && x - entry >= atr * 0.75);
+    const support = supports.filter(x => x < entry).sort((a,b) => b-a);
+    sl = resistance != null && resistance - entry <= atr * 2.5 ? resistance : entry + minRisk;
+    const risk = sl - entry;
+    tp1 = support.find(x => entry - x >= risk * 1.5) || entry - risk * 1.5;
+    tp2 = support.find(x => x < tp1) || entry - risk * 2.5;
+    tp3 = support.find(x => x < tp2) || entry - risk * 3.5;
+  }
+
+  const risk = Math.abs(entry - sl);
+  const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
+  if (!Number.isFinite(rr) || rr < 1.5 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
+
+  const ageValidUntil = now + 60 * 60 * 1000;
+  return {
+    id: "screen-" + discovery.symbol + "-" + now,
+    source: "TraderSpy",
+    origin: "TraderSpy screener + MTF technical + derivatives validation",
+    generatedCandidate: true,
+    base: discovery.base,
+    instId: discovery.symbol,
+    action,
+    probability: 0,
+    qualityScore: 0,
+    signalStrength: "candidate",
+    importance: discovery.score >= 10 ? "high" : "medium",
+    strategyName: "TraderSpy MTF Candidate",
+    timeframe: "1h",
+    setup: "TRADERSPY_CANDIDATE",
+    mode: "TRADERSPY_MTF",
+    entry,
+    sl,
+    tp1,
+    tp2,
+    tp3,
+    rr: +rr.toFixed(2),
+    riskPct: +(risk / entry * 100).toFixed(3),
+    regime: h4?.summary?.volatility?.state || null,
+    book: null,
+    m5: { volume: { side: "—" }, rsi: null },
+    trends: {
+      h1: h1?.summary?.trend?.direction || "—",
+      m15: tfs.get("15m")?.summary?.trend?.direction || "—",
+      h4: h4?.summary?.trend?.direction || "—",
+    },
+    confluence: Number(technicalPayload?.confluence?.aligned ? 1 : 0),
+    persistent: false,
+    volConfirm: Number(h1?.summary?.volume?.ratioVsAverage) >= 1,
+    ev: null,
+    ts: now,
+    validUntil: new Date(ageValidUntil).toISOString(),
+    horizons: {},
+    traderSpy: {
+      id: "",
+      resolutionStatus: "candidate",
+      triggeredConditions: [],
+      targetPct: null,
+      validationOrigin: "screen_symbols",
+    },
+  };
+}
+
 async function getTraderSpyIntelligence(){
-  const tokenValue=process.env.TRADERSPY_MCP_TOKEN||'';
-  const url=process.env.TRADERSPY_MCP_URL||(/^https?:\/\//i.test(tokenValue)?tokenValue:'');
-  if(!url)throw new Error('TraderSpy MCP URL is missing.');
-  const sessionId=await initializeMcp(url); let callId=2;
-  const trackedPayload=await callTool(url,sessionId,callId++,'get_tracked_symbols',{});
+  const tokenValue=process.env.TRADERSPY_MCP_TOKEN||"";
+  const url=process.env.TRADERSPY_MCP_URL||(/^https?:\\/\\//i.test(tokenValue)?tokenValue:"");
+  if(!url)throw new Error("TraderSpy MCP URL is missing.");
+
+  const sessionId=await initializeMcp(url);
+  let callId=2;
+
+  const trackedPayload=await callTool(url,sessionId,callId++,"get_tracked_symbols",{});
   const trackedSymbols=new Set((Array.isArray(trackedPayload?.symbols)?trackedPayload.symbols:[]).map(x=>String(x).toUpperCase()));
-  if(!trackedSymbols.size) throw new Error('TraderSpy tracked-symbol universe is empty; refusing to validate signals.');
-  const discoveryPayload=await callTool(url,sessionId,callId++,'screen_symbols',{interval:'4h',universe:clamp(Number(process.env.TRADERSPY_DISCOVERY_UNIVERSE||100),5,100),limit:clamp(Number(process.env.TRADERSPY_DISCOVERY_LIMIT||50),5,50),sortBy:'volume',sortOrder:'desc'});
-  const discovery=normalizeDiscoveryRows(discoveryPayload);
-  const signalPayload=await callTool(url,sessionId,callId++,'get_signals',{limit:clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT||50),1,50),skip:0,importance:'all'});
-  const rows=Array.isArray(signalPayload?.data)?signalPayload.data:[],now=Date.now(),candidateAgeMin=Number(process.env.TRADERSPY_CANDIDATE_MAX_AGE_MIN||360);
+  if(!trackedSymbols.size)throw new Error("TraderSpy tracked-symbol universe is empty; refusing to validate candidates.");
+
+  const discoveryPayload=await callTool(url,sessionId,callId++,"screen_symbols",{
+    interval:"4h",
+    universe:clamp(Number(process.env.TRADERSPY_DISCOVERY_UNIVERSE||100),5,100),
+    limit:clamp(Number(process.env.TRADERSPY_DISCOVERY_LIMIT||50),5,50),
+    sortBy:"volume",
+    sortOrder:"desc"
+  });
+  const discovery=normalizeDiscoveryRows(discoveryPayload).filter(x=>trackedSymbols.has(x.symbol));
+
+  const signalPayload=await callTool(url,sessionId,callId++,"get_signals",{
+    limit:clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT||50),1,50),
+    skip:0,
+    importance:"all"
+  });
+  const rows=Array.isArray(signalPayload?.data)?signalPayload.data:[],
+    now=Date.now(),
+    candidateAgeMin=Number(process.env.TRADERSPY_CANDIDATE_MAX_AGE_MIN||360);
+
+  const publishedSignals=[];
+  for(const raw of rows){
+    const s=normalizeSignal(raw,now,{maxAgeMin:candidateAgeMin,allowedSymbols:trackedSymbols});
+    if(s)publishedSignals.push(s);
+  }
+
   const bySymbol=new Map(discovery.map((x,i)=>[x.symbol,{...x,rank:i+1}]));
   const unique=new Map();
-  for(const raw of rows){const s=normalizeSignal(raw,now,{maxAgeMin:candidateAgeMin,allowedSymbols:trackedSymbols});if(!s)continue;const key=s.instId+':'+s.action;if(!unique.has(key)||s.ts>unique.get(key).ts)unique.set(key,s);}
-  const ranked=[...unique.values()].map(signal=>{const d=bySymbol.get(signal.instId);const recencyBonus=Math.max(0,8-Math.floor(Math.max(0,now-signal.ts)/(30*60*1000)));const discoveryBonus=d?Math.min(10,d.score):0;return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};}).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
-  const targets=ranked.slice(0,clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||3),1,5));
-  if(!targets.length)return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:2};
-  const symbols=targets.map(x=>x.signal.instId);
-  const derivativesPayload=await callTool(url,sessionId,callId++,'get_derivatives',{symbols});
+  for(const signal of publishedSignals){
+    const key=signal.instId+":"+signal.action;
+    if(!unique.has(key)||signal.ts>unique.get(key).ts)unique.set(key,signal);
+  }
+
+  const rankedPublished=[...unique.values()].map(signal=>{
+    const d=bySymbol.get(signal.instId);
+    const recencyBonus=Math.max(0,8-Math.floor(Math.max(0,now-signal.ts)/(30*60*1000)));
+    const discoveryBonus=d?Math.min(10,d.score):0;
+    return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};
+  }).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
+
+  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||3),1,5);
+  const targets=[];
+  const used=new Set();
+
+  for(const x of rankedPublished){
+    if(targets.length>=maxTargets)break;
+    targets.push({published:x.signal,discovery:x.discovery});
+    used.add(x.signal.instId);
+  }
+
+  for(const d of discovery){
+    if(targets.length>=maxTargets)break;
+    if(used.has(d.symbol))continue;
+    targets.push({published:null,discovery:d});
+    used.add(d.symbol);
+  }
+
+  if(!targets.length){
+    return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:callId-2};
+  }
+
+  const symbols=targets.map(x=>x.published?.instId||x.discovery.symbol);
+  let derivativesPayload;
+  try{
+    derivativesPayload=await callTool(url,sessionId,callId++,"get_derivatives",{symbols});
+  }catch(e){
+    console.warn("TraderSpy derivatives validation failed: "+e.message);
+    return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:callId-2};
+  }
+
   const validated=[];
   for(const target of targets){
-    let technicalPayload;try{technicalPayload=await callTool(url,sessionId,callId++,'get_technical_indicators',{symbol:target.signal.instId,intervals:['15m','1h','4h'],indicators:['rsi','macd','ema','adx','atr','supertrend','obv','vwap'],history:2});}catch(e){console.warn('TraderSpy technical validation skipped '+target.signal.instId+': '+e.message);continue;}
-    const technical=technicalValidation(target.signal,technicalPayload),derivatives=derivativesValidation(target.signal,derivativesPayload);
-    let detail=null;if(validated.length<2){try{detail=await callTool(url,sessionId,callId++,'get_signal_details',{signalId:target.signal.traderSpy.id});}catch(e){console.warn('TraderSpy detail validation skipped '+target.signal.instId+': '+e.message);}}
-    const result=applyValidation(target.signal,target.discovery,technical,derivatives,detail);
-    console.log('TraderSpy validation: '+result.base+' '+result.action+' age='+result.validation.ageMin+'m disc='+result.validation.discoveryScore+' tech='+result.validation.technicalScore+' deriv='+result.validation.derivativesScore+' final='+result.qualityScore+' '+(result.validation.passed?'PASS':'REJECT'));
-    if(result.validation.passed)validated.push(result);
+    let technicalPayload;
+    try{
+      technicalPayload=await callTool(url,sessionId,callId++,"get_technical_indicators",{
+        symbol:target.published?.instId||target.discovery.symbol,
+        intervals:["15m","1h","4h"],
+        indicators:["rsi","macd","ema","adx","atr","supertrend","obv","vwap","levels"],
+        history:2
+      });
+    }catch(e){
+      console.warn("TraderSpy technical validation skipped "+(target.published?.instId||target.discovery.symbol)+": "+e.message);
+      continue;
+    }
+
+    let signal=target.published;
+    if(!signal){
+      signal=buildScreenCandidate(target.discovery,technicalPayload,now);
+      if(!signal)continue;
+    }
+
+    const technical=technicalValidation(signal,technicalPayload);
+    const derivatives=derivativesValidation(signal,derivativesPayload);
+
+    let detail=null;
+    if(target.published && validated.length<2){
+      try{
+        detail=await callTool(url,sessionId,callId++,"get_signal_details",{signalId:target.published.traderSpy.id});
+      }catch(e){
+        console.warn("TraderSpy detail validation skipped "+signal.instId+": "+e.message);
+      }
+    }
+
+    if(signal.generatedCandidate){
+      const baseScore=Number(target.discovery.score||0)*2;
+      const finalScore=Math.min(99,Math.round(72+baseScore+technical.score+derivatives.score+(detail?.aiReview?.score||0)*0.5));
+      signal.qualityScore=finalScore;
+      signal.probability=finalScore;
+      signal.traderSpy.validationScore=finalScore;
+      signal.validation={
+        passed:technical.pass&&derivatives.pass&&finalScore>=Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
+        stale:false,
+        ageMin:0,
+        threshold:Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
+        discoveryScore:target.discovery.score,
+        technicalScore:technical.score,
+        derivativesScore:derivatives.score,
+        detailScore:null,
+        reasons:[...(technical.reasons||[]),...(derivatives.reasons||[]),"candidate generated from TraderSpy live market data"]
+      };
+    }else{
+      signal=applyValidation(signal,target.discovery,technical,derivatives,detail);
+    }
+
+    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT"));
+    if(signal.validation?.passed)validated.push(signal);
   }
+
   validated.sort((a,b)=>b.qualityScore-a.qualityScore||b.ts-a.ts);
-  return {signals:validated.slice(0,MAX_POST),fetched:rows.length,discovered:discovery.length,validated:validated.length,validationCalls:callId-2};
+  return {
+    signals:validated.slice(0,MAX_POST),
+    fetched:rows.length,
+    discovered:discovery.length,
+    validated:validated.length,
+    validationCalls:callId-2
+  };
 }
 
 async function getTraderSpySignals(){ const result=await getTraderSpyIntelligence(); return result.signals; }
