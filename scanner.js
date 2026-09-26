@@ -2187,60 +2187,85 @@ async function sendBinanceSquare(signals) {
   const ranked = [...signals]
     .filter((s) => s.probability >= MIN_PROB_VALID)
     .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
-  const batch = ranked.slice(0, SQUARE_POST_COUNT);
-  if (!batch.length) {
-    console.log("Binance Square: no Valid signals this run");
+  if (!ranked.length) {
+    console.log("Binance Square: no new Valid signals this run");
     return;
   }
+
+  // Square is the only channel with a per-post capacity. Never truncate the
+  // shared delivery list: Telegram/Discord receive every new signal. Square
+  // publishes the same complete set in sequential batches of up to 3 coins.
+  const batches = [];
+  for (let i = 0; i < ranked.length; i += SQUARE_POST_COUNT) {
+    batches.push(ranked.slice(i, i + SQUARE_POST_COUNT));
+  }
+
   console.log(
-    `Binance Square 1 post · ${batch.length} coin(s) → ` +
-      batch.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")
+    `Binance Square: ${batches.length} post batch(es) · ` +
+      `${ranked.length} coin(s) total · max ${SQUARE_POST_COUNT}/post`
   );
-  const text = formatSquareBatchMessage(batch);
-  const body = { contentType: 1, bodyTextOnly: text };
-  // Binance Square posts must keep the visual card. Do not silently
-  // downgrade to text-only: if the image cannot be rendered/uploaded,
-  // abort this Square post so the required visual format is preserved.
-  try {
-    const pngPath = renderSquareCardPng(batch);
-    if (!pngPath) {
-      throw new Error("Square visual card could not be rendered");
-    }
-    console.log("Square: uploading professional card image...");
-    const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
-    if (!imageUrl) {
-      throw new Error("Square visual card upload returned no image URL");
-    }
-    body.imageList = [imageUrl];
-    console.log("Square: image ready");
-  } catch (e) {
-    console.error("Binance Square visual required — post aborted:", e.message);
-    return;
-  }
-  try {
-    const res = await fetch("https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add", {
-      method: "POST",
-      headers: {
-        "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
-        "Content-Type": "application/json",
-        clienttype: "binanceSkill",
-      },
-      body: JSON.stringify(body),
-    });
-    const payload = await res.json().catch(() => ({}));
-    if (!res.ok || String(payload.code) !== "000000") {
-      console.error("Binance Square failed:", res.status, payload.code, payload.message || JSON.stringify(payload));
-    } else {
-      const id = payload.data?.id;
-      console.log(
-        `Binance Square sent (${batch.length} coins` +
-          (body.imageList ? " + image" : "") +
-          `)` +
-          (id ? ` → https://www.binance.com/square/post/${id}` : "")
+
+  for (let index = 0; index < batches.length; index++) {
+    const batch = batches[index];
+    console.log(
+      `Binance Square batch ${index + 1}/${batches.length} · ${batch.length} coin(s) → ` +
+        batch.map((s) => `${s.base} ${s.action} ${s.probability}%`).join(", ")
+    );
+
+    const text = formatSquareBatchMessage(batch);
+    const body = { contentType: 1, bodyTextOnly: text };
+
+    // The visual is generated from the exact same batch sent in bodyTextOnly.
+    // If rendering/upload fails, abort this Square batch rather than posting
+    // a text-only fallback or a mismatched visual.
+    try {
+      const pngPath = renderSquareCardPng(batch);
+      if (!pngPath) {
+        throw new Error("Square visual card could not be rendered");
+      }
+      console.log("Square: uploading professional card image...");
+      const imageUrl = await uploadSquareImage(BINANCE_SQUARE_KEY, pngPath);
+      if (!imageUrl) {
+        throw new Error("Square visual card upload returned no image URL");
+      }
+      body.imageList = [imageUrl];
+      console.log("Square: image ready");
+    } catch (e) {
+      console.error(
+        `Binance Square visual required — batch ${index + 1} aborted:`,
+        e.message
       );
+      continue;
     }
-  } catch (e) {
-    console.error("Binance Square error:", e.message);
+
+    try {
+      const res = await fetch("https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add", {
+        method: "POST",
+        headers: {
+          "X-Square-OpenAPI-Key": BINANCE_SQUARE_KEY,
+          "Content-Type": "application/json",
+          clienttype: "binanceSkill",
+        },
+        body: JSON.stringify(body),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || String(payload.code) !== "000000") {
+        console.error(
+          `Binance Square batch ${index + 1} failed:`,
+          res.status,
+          payload.code,
+          payload.message || JSON.stringify(payload)
+        );
+      } else {
+        const id = payload.data?.id;
+        console.log(
+          `Binance Square sent batch ${index + 1}/${batches.length} (${batch.length} coins + image)` +
+            (id ? ` → https://www.binance.com/square/post/${id}` : "")
+        );
+      }
+    } catch (e) {
+      console.error(`Binance Square batch ${index + 1} error:`, e.message);
+    }
   }
 }
 async function sendTelegram(signals) {
@@ -2996,32 +3021,20 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
-  // Preserve the existing maximum of three posts, but remove the old
-  // direction-specific LONG/SHORT intelligence bias from the TraderSpy path.
+  // Delivery policy: dedup is the only cross-scan suppression rule.
+  // Do not truncate the validated set here and do not let loss streaks suppress
+  // newly validated signals. Channel-specific capacity is handled by Square only.
   postSignals.sort(
     (a, b) => (b.qualityScore || b.probability || 0) - (a.qualityScore || a.probability || 0)
   );
-  postSignals = postSignals.slice(0, 3);
 
   const watches = [];
   const streak = consecutiveLossStreak(outcomeLog);
-  if (streak >= 3 && postSignals.length > 1) {
-    // Safety breaker is direction-neutral: keep the strongest TraderSpy signal.
-    const keep = postSignals.slice(0, 1);
-    for (const s of postSignals.slice(1)) {
-      watches.push({
-        base: s.base,
-        action: s.action,
-        score: s.probability,
-        setup: s.setup,
-        reason: "loss-streak safety cap=" + streak,
-      });
-    }
-    postSignals = keep;
-    console.log("TraderSpy safety breaker: loss streak " + streak + " → 1 strongest signal");
+  if (streak > 0) {
+    console.log("Loss streak (informational only): " + streak + " — no delivery suppression");
   }
 
-  console.log("TraderSpy VALID:", postSignals.length);
+  console.log("TraderSpy VALID / NEW:", postSignals.length);
   for (const s of postSignals) {
     console.log(
       `  ${s.base} ${s.action} quality=${s.qualityScore} ${s.signalStrength}/${s.importance} ${s.timeframe} R:R 1:${s.rr}`
