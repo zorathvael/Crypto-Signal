@@ -401,6 +401,10 @@ Selalu validasi level, kondisi pasar, leverage, biaya, slippage, dan risiko sebe
 The active repository release is **v4.0.0** (`package.json`). Legacy comments/names from older scanner generations are not part of the public v4.0 presentation.
 
 
+## CI verification
+
+Alpha Hunter v2 verification branch: empirical outcome evidence is sample-gated and production delivery remains unchanged.
+
 ## Operational reliability rule
 
 Perubahan produksi wajib diperlakukan sebagai perubahan runtime, bukan hanya perubahan kode. Sebelum merge: cek syntax, unit test, workflow dry-run, konsumsi quota/tool call, error-path provider, delivery fan-out, dedup, batching Square, dan sinkronisasi README. Jangan menaikkan validation target tanpa menghitung dampaknya terhadap quota harian. Jika provider quota habis, runtime harus berhenti aman tanpa duplicate post, tanpa outcome mutation, dan tanpa crash yang tidak terkontrol.
