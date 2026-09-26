@@ -1,8 +1,8 @@
-# Crypto-Signal · TraderSpy Intelligence v4.0
+# Crypto-Signal v4.0
 
-Crypto-Signal adalah pipeline publikasi signal futures yang menggunakan **TraderSpy sebagai intelligence engine** dan mempertahankan delivery flow yang sudah ada:
+Crypto-Signal adalah pipeline publikasi signal futures v4.0 dengan **tiered market validation** dan delivery flow yang sudah ada. Provider intelligence tetap berada di backend dan tidak ditampilkan sebagai identitas sumber pada posting publik:
 
-**TraderSpy → validation/normalization → dedup & outcome tracking → Discord + Telegram + Binance Square**
+**Discovery → candidate validation → dedup → outcome tracking → Discord + Telegram + Binance Square**
 
 > Crypto-Signal tidak mengeksekusi order. Signal adalah informasi untuk validasi manual.
 
@@ -16,7 +16,7 @@ Signal aktif berasal dari TraderSpy MCP `get_signals`, kemudian dinormalisasi ol
 Yang tetap dipertahankan:
 - `signals-log.json`
 - outcome tracking
-- dedup 90 menit
+- persistent duplicate-result fingerprint + legacy dedup window
 - maksimum 3 signal per run
 - safety cap saat loss streak
 - format dan destination posting
@@ -40,7 +40,7 @@ File scanner lama masih berada di `scanner.js` sebagai rollback reference, tetap
 File:
 - `traderspy.js` — remote MCP client + signal normalization
 - `traderspy.test.js` — unit tests untuk normalisasi
-- `scanner.js` — pipeline dan delivery
+- `scanner.js` — pipeline, dedup, public formatting, dan delivery
 - `signals-log.json` — outcome tracker
 - `.github/workflows/scan.yml` — scheduled runtime
 
@@ -288,3 +288,17 @@ Crypto-Signal adalah alat informasi/edukasi untuk analisis pasar.
 Bukan nasihat keuangan dan bukan sistem eksekusi order.
 
 Selalu validasi level, kondisi pasar, leverage, biaya, slippage, dan risiko sebelum mengambil keputusan trading.
+
+
+## Public posting rules
+
+- Binance Square selalu menggunakan professional visual card; jika renderer atau upload visual gagal, posting text-only tidak diperbolehkan.
+- Hashtag Binance Square: `#PintarPakaiBinanceEarn`.
+- Internal provider names such as `TraderSpy` are not exposed in public signal copy or visual labels.
+- Duplicate scan results are blocked using a persistent signal fingerprint covering symbol, direction, setup, and relative entry/SL/TP structure.
+- Pull-request CI runs the scanner in delivery dry-run mode, so validation tests do not publish to external channels or mutate outcome/dedup state.
+- Production scheduled/manual runs retain live delivery.
+
+## Repository version
+
+The active repository release is **v4.0.0** (`package.json`). Legacy comments/names from older scanner generations are not part of the public v4.0 presentation.

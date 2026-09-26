@@ -1,6 +1,6 @@
 
 /**
- * Strict Core Scanner v3.12.3 — MTF scalp + LOC + Positioning Layer
+ * Crypto-Signal v4.0.0 — MTF scalp + LOC + Positioning Layer
  * + Volatility Regime (Clodds-inspired)
  * + Orderbook Quality Score
  * + Adaptive Risk Suggestion (modal minim)
@@ -59,7 +59,7 @@ async function getJson(url, retries = 3) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "StrictCore/2.13.0" },
+        headers: { Accept: "application/json", "User-Agent": "Crypto-Signal/4.0.0" },
       });
       if (res.status === 429) {
         const wait = 450 * (attempt + 1) + Math.floor(Math.random() * 150);
