@@ -186,7 +186,7 @@ The repository keeps the internal sizing/risk gate for validation safety, but th
 
 ## Alpha Hunter
 
-v4.0 now includes a deterministic alpha-selection layer after TraderSpy market validation and before publication.
+v4.0 now includes a deterministic alpha-selection layer after TraderSpy market validation and before publication. v2 also consumes the repository's resolved outcome history as an empirical prior when enough observations exist.
 
 Pipeline:
 ```
@@ -202,7 +202,8 @@ Alpha Hunter
     ├─ entry distance vs ATR
     ├─ 2R / 4R / 6R geometry
     ├─ funding / OI / taker-flow confirmation
-    └─ signal freshness
+    ├─ signal freshness
+    └─ empirical outcome evidence (sample-gated)
     ↓
 hard veto + alpha threshold
     ↓
@@ -221,6 +222,8 @@ Default:
 - hard veto if TP3 is not approximately 6R
 - hard veto if the entry is more than 2 ATR from live price
 - hard veto if the signal is older than 120 minutes
+- historical evidence is only used after at least 12 resolved outcomes for the selected setup/action
+- negative historical edge becomes a hard veto only at >=20 resolved outcomes
 
 TraderSpy target percentages are preserved in the internal audit field, while public trade levels are normalized from the actual Entry→SL risk into 2R/4R/6R.
 
@@ -266,7 +269,7 @@ TRADERSPY_STALE_MIN_SCORE: "90"
 
 ## TraderSpy authentication
 
-TraderSpy menyediakan **personal MCP connection URL** yang membawa credential di dalam URL. Secret yang digunakan repository ini adalah `TRADERSPY_MCP_TOKEN`; adapter otomatis memperlakukannya sebagai MCP URL bila nilainya diawali `http://` atau `https://`.
+TraderSpy menyediakan endpoint MCP resmi `https://mcp.traderspy.app/mcp` dan personal connection URL yang dapat membawa credential. Repository memakai `TRADERSPY_MCP_TOKEN`; workflow memiliki fallback endpoint resmi tersebut bila `TRADERSPY_MCP_URL` tidak diset.
 
 Jika menggunakan raw bearer token terpisah, gunakan `TRADERSPY_MCP_URL` sebagai endpoint dan `TRADERSPY_MCP_TOKEN` sebagai token.
 
