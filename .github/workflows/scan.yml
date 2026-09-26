@@ -47,7 +47,7 @@ jobs:
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
           TRADERSPY_ONLY: "true"
           TRADERSPY_DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
-          TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL }}
+          TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL || 'https://mcp.traderspy.app/mcp' }}
           TRADERSPY_MCP_TOKEN: ${{ secrets.TRADERSPY_MCP_TOKEN }}
           TRADERSPY_SIGNAL_LIMIT: "50"
           TRADERSPY_MAX_AGE_MIN: "120"
