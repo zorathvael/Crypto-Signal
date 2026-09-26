@@ -110,3 +110,17 @@ test("derivatives validation rejects extreme adverse crowding", () => {
   });
   assert.equal(out.pass, false);
 });
+
+
+test("discovery candidates are rejected when multi-timeframe data has no directional confluence", () => {
+  const signal = normalizeSignal(sample({ coin: "SOLUSDT" }), NOW);
+  const payload = {
+    price: 100,
+    timeframes: [
+      { interval: "15m", indicators: { rsi:{value:50}, macd:{histogram:0}, ema:{stack:"mixed"}, adx:{value:12}, supertrend:{trend:"down"} }, summary:{bias:"neutral",trend:{direction:"sideways",emaStack:"mixed",adx:12},momentum:{rsi:50,macdHistogram:0}} },
+      { interval: "1h", indicators: { rsi:{value:50}, macd:{histogram:0}, ema:{stack:"mixed"}, adx:{value:14}, supertrend:{trend:"down"} }, summary:{bias:"neutral",trend:{direction:"sideways",emaStack:"mixed",adx:14},momentum:{rsi:50,macdHistogram:0}} },
+      { interval: "4h", indicators: { rsi:{value:50}, macd:{histogram:0}, ema:{stack:"mixed"}, adx:{value:15}, supertrend:{trend:"down"} }, summary:{bias:"neutral",trend:{direction:"sideways",emaStack:"mixed",adx:15},momentum:{rsi:50,macdHistogram:0}} }
+    ]
+  };
+  assert.equal(technicalValidation(signal, payload).pass, false);
+});
