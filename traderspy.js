@@ -195,7 +195,7 @@ async function callTool(url, sessionId, id, name, arguments_) {
   return unwrapToolResult(response.payload);
 }
 
-function normalizeSignal(raw, now = Date.now()) {
+function normalizeSignal(raw, now = Date.now(), options = {}) {
   const action = String(raw?.action || "").toLowerCase();
   if (action !== "buy" && action !== "sell") return null;
 
@@ -230,7 +230,9 @@ function normalizeSignal(raw, now = Date.now()) {
   const createdMs = Date.parse(String(raw?.createdAt || ""));
   const ts = Number.isFinite(createdMs) ? createdMs : now;
   const ageMs = now - ts;
-  const maxAgeMs = Number(process.env.TRADERSPY_MAX_AGE_MIN || DEFAULT_MAX_AGE_MIN) * 60 * 1000;
+  const configuredMaxAgeMin = Number(process.env.TRADERSPY_MAX_AGE_MIN || DEFAULT_MAX_AGE_MIN);
+  const maxAgeMin = Number.isFinite(options.maxAgeMin) ? options.maxAgeMin : configuredMaxAgeMin;
+  const maxAgeMs = maxAgeMin * 60 * 1000;
   if (ageMs < -5 * 60 * 1000 || ageMs > maxAgeMs) return null;
 
   const status = String(raw?.resolutionStatus || "pending").toLowerCase();
@@ -286,44 +288,130 @@ function normalizeSignal(raw, now = Date.now()) {
   };
 }
 
-async function getTraderSpySignals() {
-  // TraderSpy personal MCP URLs embed the private key. The repository secret
-  // may be named TRADERSPY_MCP_TOKEN, so accept that secret as a URL when it
-  // contains an https:// MCP connection URL. Raw bearer tokens are supported
-  // only when TRADERSPY_MCP_URL is also configured.
-  const tokenValue = process.env.TRADERSPY_MCP_TOKEN || "";
-  const url = process.env.TRADERSPY_MCP_URL || (/^https?:\/\//i.test(tokenValue) ? tokenValue : "");
-  const limit = clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT || DEFAULT_SIGNAL_LIMIT), 1, 50);
-  const sessionId = await initializeMcp(url);
-  const payload = await callTool(url, sessionId, 2, "get_signals", {
-    limit,
-    skip: 0,
-    importance: "all",
-  });
+function finiteScore(v) { return Number.isFinite(Number(v)) ? Number(v) : 0; }
 
-  const rows = Array.isArray(payload?.data) ? payload.data : [];
-  const now = Date.now();
-  const normalized = rows.map((x) => normalizeSignal(x, now)).filter(Boolean);
-  normalized.sort((a, b) => (b.qualityScore - a.qualityScore) || (b.ts - a.ts) || a.base.localeCompare(b.base));
-  return {
-    signals: normalized.slice(0, MAX_POST),
-    fetched: rows.length,
-  };
+function normalizeDiscoveryRows(payload) {
+  const rows = Array.isArray(payload?.results) ? payload.results : [];
+  return rows.map((row) => {
+    const symbol = String(row?.symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const base = symbol.endsWith('USDT') ? symbol.slice(0, -4) : '';
+    if (!base || NON_CRYPTO_BASES.has(base)) return null;
+    const values = row?.values || {};
+    const adx = finiteScore(row?.adx14 ?? values['ADX(14)']);
+    const rsi = finiteScore(row?.rsi14 ?? values['RSI(14)']);
+    const volumeRatio = finiteScore(values['Volume ratio'] ?? values['Volume Ratio'] ?? values.volumeRatio);
+    const change24hPct = finiteScore(row?.change24hPct);
+    const bias = String(row?.bias || '').toLowerCase();
+    const trend = String(row?.trend || '').toLowerCase();
+    let score = 0;
+    if (bias === 'bullish' || bias === 'bearish') score += 4;
+    if (trend === 'up' || trend === 'down') score += 3;
+    if (adx >= 20) score += 3;
+    if (volumeRatio >= 1.1) score += 3;
+    if (Math.abs(change24hPct) >= 2) score += 1;
+    if (rsi >= 45 && rsi <= 70) score += 1;
+    return { symbol, base, price: finiteScore(row?.price), bias, trend, adx, rsi, volumeRatio, change24hPct, score };
+  }).filter(Boolean).sort((a,b) => b.score - a.score || Math.abs(b.change24hPct) - Math.abs(a.change24hPct));
 }
 
-async function runTraderSpyScan() {
-  const tokenValue = process.env.TRADERSPY_MCP_TOKEN || "";
-  if (!process.env.TRADERSPY_MCP_URL && !/^https?:\/\//i.test(tokenValue)) {
-    throw new Error("TraderSpy MCP URL is missing. Put the personal TraderSpy MCP connection URL in TRADERSPY_MCP_TOKEN or configure TRADERSPY_MCP_URL.");
+function directionWord(action) { return action === 'LONG' ? 'bullish' : 'bearish'; }
+
+function timeframeMap(payload) {
+  const out = new Map();
+  for (const tf of Array.isArray(payload?.timeframes) ? payload.timeframes : []) if (tf?.interval) out.set(String(tf.interval), tf);
+  return out;
+}
+
+function technicalValidation(signal, payload) {
+  const tfs = timeframeMap(payload);
+  if (!tfs.size) return { pass: false, score: 0, reasons: ['technical data unavailable'] };
+  const wanted = directionWord(signal.action);
+  const ordered = ['15m','1h','4h'].map(x => tfs.get(x)).filter(Boolean);
+  let score = 0, aligned = 0; const reasons = [];
+  for (const tf of ordered) {
+    const summary=tf.summary||{}, ind=tf.indicators||{};
+    const bias=String(summary.bias||'').toLowerCase();
+    const trend=String(summary?.trend?.direction||'').toLowerCase();
+    const emaStack=String(summary?.trend?.emaStack||ind?.ema?.stack||'').toLowerCase();
+    const st=String(ind?.supertrend?.trend||'').toLowerCase();
+    const rsi=Number(ind?.rsi?.value ?? summary?.momentum?.rsi);
+    const adx=Number(ind?.adx?.value ?? summary?.trend?.adx);
+    const macd=Number(ind?.macd?.histogram ?? summary?.momentum?.macdHistogram);
+    const dirOk=bias===wanted || (wanted==='bullish'&&trend==='up') || (wanted==='bearish'&&trend==='down');
+    const emaOk=emaStack===wanted;
+    const stOk=(wanted==='bullish'&&st==='up') || (wanted==='bearish'&&st==='down');
+    const macdOk=Number.isFinite(macd) && ((wanted==='bullish'&&macd>=0)||(wanted==='bearish'&&macd<=0));
+    const rsiOk=Number.isFinite(rsi) && ((wanted==='bullish'&&rsi>=45&&rsi<=72)||(wanted==='bearish'&&rsi>=28&&rsi<=55));
+    if(dirOk){aligned++;score+=4;} if(emaOk)score+=2; if(stOk)score+=2; if(macdOk)score+=1; if(rsiOk)score+=1; if(Number.isFinite(adx)&&adx>=20)score+=1;
+    reasons.push(tf.interval+':dir='+(dirOk?'ok':'no')+' ema='+(emaOk?'ok':'no')+' st='+(stOk?'ok':'no')+' adx='+(Number.isFinite(adx)?adx.toFixed(1):'na'));
   }
-  const result = await getTraderSpySignals();
-  console.log(`TraderSpy: fetched=${result.fetched} valid=${result.signals.length} (one get_signals call)`);
-  for (const s of result.signals) {
-    console.log(`  ${s.base} ${s.action} quality=${s.qualityScore} ${s.signalStrength}/${s.importance} ${s.timeframe} R:R 1:${s.rr}`);
+  const h1=tfs.get('1h'), price=Number(payload?.price), atr=Number(h1?.indicators?.atr?.value);
+  if(Number.isFinite(price)&&Number.isFinite(atr)&&atr>0){const distance=Math.abs(price-signal.entry);if(distance<=atr*1.5)score+=2;else if(distance>atr*2.5)reasons.push('price moved >2.5 ATR from entry');}
+  const pass=aligned>=Math.min(2,ordered.length)&&!reasons.includes('price moved >2.5 ATR from entry');
+  return {pass,score:Math.min(score,25),aligned,reasons};
+}
+
+function derivativesValidation(signal,payload){
+  const row=Array.isArray(payload?.data)?payload.data.find(x=>String(x?.symbol||'').toUpperCase()===signal.instId):null;
+  if(!row||row.error)return {pass:false,score:0,reasons:['derivatives data unavailable']};
+  const side=signal.action, funding=Number(row?.funding?.ratePct), longPct=Number(row?.positioning?.globalLongPct), taker=Number(row?.positioning?.takerBuySellRatio), regime=String(row?.openInterest?.regime||'').toLowerCase();
+  let score=0,adverse=false;const reasons=[];
+  if(side==='LONG'){if(Number.isFinite(taker)&&taker>=1)score+=4;if(['new_longs','short_covering'].includes(regime))score+=4;if(Number.isFinite(longPct)&&longPct>72){score-=3;adverse=true;}if(Number.isFinite(funding)&&funding>0.05){score-=4;adverse=true;}}
+  else {if(Number.isFinite(taker)&&taker<=1)score+=4;if(['new_shorts','long_liquidation'].includes(regime))score+=4;if(Number.isFinite(longPct)&&longPct<28){score-=3;adverse=true;}if(Number.isFinite(funding)&&funding<-0.05){score-=4;adverse=true;}}
+  if(!adverse)score+=2;
+  reasons.push('funding='+(Number.isFinite(funding)?funding.toFixed(4):'na')+'%','OI='+(regime||'na'),'taker='+(Number.isFinite(taker)?taker.toFixed(2):'na'),'globalLong='+(Number.isFinite(longPct)?longPct.toFixed(1):'na')+'%');
+  return {pass:!adverse,score:Math.max(0,Math.min(score,12)),reasons};
+}
+
+function applyValidation(signal,discovery,technical,derivatives,detail){
+  const ds=Number(detail?.aiReview?.score);
+  let score=Number(signal.qualityScore||0)+Math.min(Number(discovery?.score||0),10)+Number(technical?.score||0)+Number(derivatives?.score||0);
+  if(Number.isFinite(ds))score+=Math.round(Math.max(0,Math.min(ds,10))*0.5);
+  const ageMin=Math.max(0,(Date.now()-signal.ts)/60000);
+  const stale=ageMin>Number(process.env.TRADERSPY_MAX_AGE_MIN||DEFAULT_MAX_AGE_MIN);
+  const threshold=stale?Number(process.env.TRADERSPY_STALE_MIN_SCORE||90):Number(process.env.TRADERSPY_VALIDATION_MIN_SCORE||88);
+  const finalScore=Math.min(99,Math.round(score));
+  return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
+}
+
+async function getTraderSpyIntelligence(){
+  const tokenValue=process.env.TRADERSPY_MCP_TOKEN||'';
+  const url=process.env.TRADERSPY_MCP_URL||(/^https?:\/\//i.test(tokenValue)?tokenValue:'');
+  if(!url)throw new Error('TraderSpy MCP URL is missing.');
+  const sessionId=await initializeMcp(url); let callId=2;
+  const discoveryPayload=await callTool(url,sessionId,callId++,'screen_symbols',{interval:'4h',universe:clamp(Number(process.env.TRADERSPY_DISCOVERY_UNIVERSE||100),5,100),limit:clamp(Number(process.env.TRADERSPY_DISCOVERY_LIMIT||50),5,50),sortBy:'volume',sortOrder:'desc'});
+  const discovery=normalizeDiscoveryRows(discoveryPayload);
+  const signalPayload=await callTool(url,sessionId,callId++,'get_signals',{limit:clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT||50),1,50),skip:0,importance:'all'});
+  const rows=Array.isArray(signalPayload?.data)?signalPayload.data:[],now=Date.now(),candidateAgeMin=Number(process.env.TRADERSPY_CANDIDATE_MAX_AGE_MIN||360);
+  const bySymbol=new Map(discovery.map((x,i)=>[x.symbol,{...x,rank:i+1}]));
+  const unique=new Map();
+  for(const raw of rows){const s=normalizeSignal(raw,now,{maxAgeMin:candidateAgeMin});if(!s)continue;const key=s.instId+':'+s.action;if(!unique.has(key)||s.ts>unique.get(key).ts)unique.set(key,s);}
+  const ranked=[...unique.values()].map(signal=>{const d=bySymbol.get(signal.instId);const recencyBonus=Math.max(0,8-Math.floor(Math.max(0,now-signal.ts)/(30*60*1000)));const discoveryBonus=d?Math.min(10,d.score):0;return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};}).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
+  const targets=ranked.slice(0,clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||3),1,5));
+  if(!targets.length)return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:2};
+  const symbols=targets.map(x=>x.signal.instId);
+  const derivativesPayload=await callTool(url,sessionId,callId++,'get_derivatives',{symbols});
+  const validated=[];
+  for(const target of targets){
+    let technicalPayload;try{technicalPayload=await callTool(url,sessionId,callId++,'get_technical_indicators',{symbol:target.signal.instId,intervals:['15m','1h','4h'],indicators:['rsi','macd','ema','adx','atr','supertrend','obv','vwap'],history:2});}catch(e){console.warn('TraderSpy technical validation skipped '+target.signal.instId+': '+e.message);continue;}
+    const technical=technicalValidation(target.signal,technicalPayload),derivatives=derivativesValidation(target.signal,derivativesPayload);
+    let detail=null;if(validated.length<2){try{detail=await callTool(url,sessionId,callId++,'get_signal_details',{signalId:target.signal.traderSpy.id});}catch(e){console.warn('TraderSpy detail validation skipped '+target.signal.instId+': '+e.message);}}
+    const result=applyValidation(target.signal,target.discovery,technical,derivatives,detail);
+    console.log('TraderSpy validation: '+result.base+' '+result.action+' age='+result.validation.ageMin+'m disc='+result.validation.discoveryScore+' tech='+result.validation.technicalScore+' deriv='+result.validation.derivativesScore+' final='+result.qualityScore+' '+(result.validation.passed?'PASS':'REJECT'));
+    if(result.validation.passed)validated.push(result);
   }
+  validated.sort((a,b)=>b.qualityScore-a.qualityScore||b.ts-a.ts);
+  return {signals:validated.slice(0,MAX_POST),fetched:rows.length,discovered:discovery.length,validated:validated.length,validationCalls:callId-2};
+}
+
+async function getTraderSpySignals(){ return getTraderSpyIntelligence(); }
+
+async function runTraderSpyScan(){
+  const result=await getTraderSpyIntelligence();
+  console.log('TraderSpy funnel: discovered='+result.discovered+' fetched='+result.fetched+' validated='+result.validated+' calls='+result.validationCalls);
+  for(const s of result.signals)console.log('  '+s.base+' '+s.action+' quality='+s.qualityScore+' '+s.signalStrength+'/'+s.importance+' '+s.timeframe+' R:R 1:'+s.rr);
   return result.signals;
 }
-
 module.exports = {
   normalizeSignal,
   signalQualityScore,
