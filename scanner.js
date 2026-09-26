@@ -35,7 +35,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 1.5;
+const MIN_RR = 2.0;
 const CANDIDATE_LIMIT = 60; // v3.12.3 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
@@ -3447,13 +3447,13 @@ async function main() {
           levels = buildLevels(m5x, scored, c.mark, regime);
         }
       }
-      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < (useExtremeLevels ? 1.5 : MIN_RR)) {
+      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR || levels.rr > 6) {
         watches.push({
           base: c.base,
           action: scored.action,
           score: scored.probability,
           setup: "SCALP_15M",
-          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr<" + MIN_RR + " (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
+          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr outside 2-6R (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
         });
         funnel.levelsFail++;
         continue;
