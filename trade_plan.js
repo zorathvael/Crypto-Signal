@@ -26,7 +26,7 @@ function calculateTradePlan(signal, options = {}) {
 
   const riskBudgetUsdt = marginUsdt * riskFraction;
   const rawLeverage = riskBudgetUsdt / (marginUsdt * slDistancePct);
-  const leverage = Math.max(MIN_LEVERAGE, Math.min(maxLeverage, Math.round(rawLeverage)));
+  const leverage = Math.max(MIN_LEVERAGE, Math.min(maxLeverage, Math.floor(rawLeverage)));
   const notionalUsdt = marginUsdt * leverage;
   const slLossUsdt = notionalUsdt * slDistancePct;
   const quantity = notionalUsdt / entry;
