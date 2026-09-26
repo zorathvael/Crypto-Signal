@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeSignal, signalQualityScore, normalizeDiscoveryRows, technicalValidation, derivativesValidation } = require("./traderspy");
+const { normalizeSignal, signalQualityScore, normalizeDiscoveryRows, buildScreenCandidate, technicalValidation, derivativesValidation } = require("./traderspy");
 
 const NOW = Date.parse("2026-09-26T00:00:00Z");
 

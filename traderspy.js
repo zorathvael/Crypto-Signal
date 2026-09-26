@@ -375,14 +375,63 @@ function applyValidation(signal,discovery,technical,derivatives,detail){
   return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
 }
 
-function buildScreenCandidate(discovery, technicalPayload, now) {
+function buildScreenCandidate(discovery, technicalPayload, now, actionHint = null) {
   const tfs = timeframeMap(technicalPayload);
   const h1 = tfs.get("1h") || tfs.get("15m");
   const h4 = tfs.get("4h");
-  if (!h1 || !h4 || !Number.isFinite(Number(technicalPayload?.price))) return null;
+  if (!h1 || !Number.isFinite(Number(technicalPayload?.price))) return null;
 
-  const bias = String(technicalPayload?.confluence?.bias || h1?.summary?.bias || "").toLowerCase();
-  const action = bias === "bullish" ? "LONG" : bias === "bearish" ? "SHORT" : null;
+  // Candidate discovery must not depend on a single optional confluence field.
+  // TraderSpy's MTF payload can expose direction in bias, trend, EMA stack, or
+  // SuperTrend. Use a deterministic MTF vote to hand candidates to the
+  // validation layer; the validation gate still decides whether they publish.
+  const directionalVotes = [];
+  for (const [interval, tf] of tfs.entries()) {
+    if (!["15m", "1h", "4h"].includes(interval)) continue;
+    const summary = tf?.summary || {};
+    const indicators = tf?.indicators || {};
+    const bias = String(summary?.bias || "").toLowerCase();
+    const trend = String(summary?.trend?.direction || "").toLowerCase();
+    const ema = String(summary?.trend?.emaStack || indicators?.ema?.stack || "").toLowerCase();
+    const st = String(indicators?.supertrend?.trend || "").toLowerCase();
+    const bullish = [bias === "bullish", trend === "up", ema === "bullish", st === "up"].filter(Boolean).length;
+    const bearish = [bias === "bearish", trend === "down", ema === "bearish", st === "down"].filter(Boolean).length;
+    if (bullish > bearish && bullish >= 2) directionalVotes.push({ interval, direction: "LONG", strength: bullish });
+    else if (bearish > bullish && bearish >= 2) directionalVotes.push({ interval, direction: "SHORT", strength: bearish });
+  }
+  const explicitBias = String(technicalPayload?.confluence?.bias || "").toLowerCase();
+  const hintedAction = String(actionHint || "").toUpperCase();
+  let action = hintedAction === "LONG" || hintedAction === "SHORT"
+    ? hintedAction
+    : explicitBias === "bullish" ? "LONG" : explicitBias === "bearish" ? "SHORT" : null;
+  if (!action) {
+    const longVotes = directionalVotes.filter(x => x.direction === "LONG");
+    const shortVotes = directionalVotes.filter(x => x.direction === "SHORT");
+    if (longVotes.length >= 2 && longVotes.length > shortVotes.length) action = "LONG";
+    else if (shortVotes.length >= 2 && shortVotes.length > longVotes.length) action = "SHORT";
+  }
+  // Some TraderSpy responses omit the summary/confluence fields entirely.
+  // In that case use the primary 1h/4h trend fields as a final discovery
+  // handoff fallback. This does not publish anything; technicalValidation()
+  // still requires two aligned timeframes before a candidate can pass.
+  if (!action) {
+    const primary = ["1h", "4h"]
+      .map(interval => tfs.get(interval))
+      .filter(Boolean)
+      .map(tf => String(tf?.summary?.trend?.direction || "").toLowerCase());
+    if (primary.filter(x => x === "up").length >= 2) action = "LONG";
+    else if (primary.filter(x => x === "down").length >= 2) action = "SHORT";
+  }
+  // screen_symbols is the discovery source. If the technical payload omits
+  // optional directional summaries, preserve the screener's direction as the
+  // candidate seed. It is NOT a validation pass: technicalValidation() below
+  // still requires multi-timeframe agreement before publication.
+  if (!action) {
+    const discoveryBias = String(discovery?.bias || "").toLowerCase();
+    const discoveryTrend = String(discovery?.trend || "").toLowerCase();
+    if (discoveryBias === "bullish" || discoveryTrend === "up") action = "LONG";
+    else if (discoveryBias === "bearish" || discoveryTrend === "down") action = "SHORT";
+  }
   if (!action) return null;
 
   const entry = Number(technicalPayload.price);
@@ -551,6 +600,8 @@ async function getTraderSpyIntelligence(){
   }
 
   const validated=[];
+  let candidatesBuilt=0;
+  let candidateBuildRejected=0;
   for(const target of targets){
     let technicalPayload;
     try{
@@ -567,7 +618,7 @@ async function getTraderSpyIntelligence(){
 
     let signal=target.published;
     if(!signal){
-      signal=buildScreenCandidate(target.discovery,technicalPayload,now);
+      signal=buildScreenCandidate(target.discovery,technicalPayload,now,target.discovery.bias==="bullish"?"LONG":target.discovery.bias==="bearish"?"SHORT":target.discovery.trend==="up"?"LONG":target.discovery.trend==="down"?"SHORT":null);
       if(!signal)continue;
     }
 
@@ -614,7 +665,9 @@ async function getTraderSpyIntelligence(){
     fetched:rows.length,
     discovered:discovery.length,
     validated:validated.length,
-    validationCalls:callId-2
+    validationCalls:callId-2,
+    candidatesBuilt,
+    candidateBuildRejected
   };
 }
 
@@ -622,7 +675,7 @@ async function getTraderSpySignals(){ const result=await getTraderSpyIntelligenc
 
 async function runTraderSpyScan(){
   const result=await getTraderSpyIntelligence();
-  console.log('TraderSpy funnel: discovered='+result.discovered+' fetched='+result.fetched+' validated='+result.validated+' calls='+result.validationCalls);
+  console.log('TraderSpy funnel: discovered='+result.discovered+' fetched='+result.fetched+' built='+result.candidatesBuilt+' buildRejected='+result.candidateBuildRejected+' validated='+result.validated+' calls='+result.validationCalls);
   for(const s of result.signals)console.log('  '+s.base+' '+s.action+' quality='+s.qualityScore+' '+s.signalStrength+'/'+s.importance+' '+s.timeframe+' R:R 1:'+s.rr);
   return result.signals;
 }
@@ -632,6 +685,7 @@ module.exports = {
   runTraderSpyScan,
   getTraderSpySignals,
   normalizeDiscoveryRows,
+  buildScreenCandidate,
   technicalValidation,
   derivativesValidation,
 };
