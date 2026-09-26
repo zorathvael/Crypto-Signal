@@ -18,7 +18,7 @@
 
 const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
-const DEFAULT_MIN_SCORE = 80;
+const DEFAULT_MIN_SCORE = 80;\nconst { calculateAlpha } = require("./alpha_hunter");
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
@@ -367,7 +367,7 @@ function derivativesValidation(signal,payload){
   return {pass:!adverse,score:Math.max(0,Math.min(score,12)),reasons};
 }
 
-function applyValidation(signal,discovery,technical,derivatives,detail){
+function applyValidation(signal,discovery,technical,derivatives,detail,alpha){
   const ds=Number(detail?.aiReview?.score);
   let score=Number(signal.qualityScore||0)+Math.min(Number(discovery?.score||0),10)+Number(technical?.score||0)+Number(derivatives?.score||0);
   if(Number.isFinite(ds))score+=Math.round(Math.max(0,Math.min(ds,10))*0.5);
@@ -375,7 +375,7 @@ function applyValidation(signal,discovery,technical,derivatives,detail){
   const stale=ageMin>Number(process.env.TRADERSPY_MAX_AGE_MIN||DEFAULT_MAX_AGE_MIN);
   const threshold=stale?Number(process.env.TRADERSPY_STALE_MIN_SCORE||90):Number(process.env.TRADERSPY_VALIDATION_MIN_SCORE||88);
   const finalScore=Math.min(99,Math.round(score));
-  return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
+  return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&alpha?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,alphaScore:Number(alpha?.alphaScore||0),alphaReasons:alpha?.reasons||[],reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
 }
 
 function buildScreenCandidate(discovery, technicalPayload, now, actionHint = null) {
@@ -664,10 +664,10 @@ async function getTraderSpyIntelligence(){
         reasons:[...(technical.reasons||[]),...(derivatives.reasons||[]),"candidate generated from TraderSpy live market data"]
       };
     }else{
-      signal=applyValidation(signal,target.discovery,technical,derivatives,detail);
+      const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now);\n      signal=applyValidation(signal,target.discovery,technical,derivatives,detail,alpha);\n      signal.alpha=alpha;
     }
 
-    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT"));
+    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT"));
     if(signal.validation?.passed)validated.push(signal);
   }
 
