@@ -667,7 +667,7 @@ async function getTraderSpyIntelligence(options = {}){
       };
       signal.alpha=alpha;
     }else{
-      const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now);
+      const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now, options.history);
       signal=applyValidation(signal,target.discovery,technical,derivatives,detail,alpha);
       signal.alpha=alpha;
     }
