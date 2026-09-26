@@ -138,7 +138,8 @@ test("builds a candidate from MTF direction when confluence bias is absent", () 
   const candidate = buildScreenCandidate(
     { symbol: "ETHUSDT", base: "ETH", score: 8, bias: "bullish", trend: "up" },
     payload,
-    NOW
+    NOW,
+    "LONG"
   );
   assert.ok(candidate);
   assert.equal(candidate.generatedCandidate, true);
