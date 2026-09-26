@@ -3,8 +3,8 @@
  *
  * Runtime contract:
  * - Connects to TraderSpy's remote MCP server over Streamable HTTP.
- * - Uses exactly one MCP tool call per scan: get_signals.
- * - Fails closed: no TraderSpy data => no signal.
+ * - Uses a bounded tiered MCP pipeline: tracked universe → market discovery → signals → live technical/derivatives validation.
+ * - Fails closed: incomplete validation => no published signal.
  * - Never invents market data, probability, entries, SL or TP.
  *
  * Required secret:
@@ -16,7 +16,7 @@
  *   TRADERSPY_MIN_SCORE Derived delivery quality floor (default 80)
  */
 
-const DEFAULT_SIGNAL_LIMIT = 20;
+const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
 const DEFAULT_MIN_SCORE = 80;
 const MAX_POST = 3;
@@ -233,6 +233,7 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
   const configuredMaxAgeMin = Number(process.env.TRADERSPY_MAX_AGE_MIN || DEFAULT_MAX_AGE_MIN);
   const maxAgeMin = Number.isFinite(options.maxAgeMin) ? options.maxAgeMin : configuredMaxAgeMin;
   const maxAgeMs = maxAgeMin * 60 * 1000;
+  if (options.allowedSymbols && !options.allowedSymbols.has(symbol)) return null;
   if (ageMs < -5 * 60 * 1000 || ageMs > maxAgeMs) return null;
 
   const status = String(raw?.resolutionStatus || "pending").toLowerCase();
@@ -379,13 +380,16 @@ async function getTraderSpyIntelligence(){
   const url=process.env.TRADERSPY_MCP_URL||(/^https?:\/\//i.test(tokenValue)?tokenValue:'');
   if(!url)throw new Error('TraderSpy MCP URL is missing.');
   const sessionId=await initializeMcp(url); let callId=2;
+  const trackedPayload=await callTool(url,sessionId,callId++,'get_tracked_symbols',{});
+  const trackedSymbols=new Set((Array.isArray(trackedPayload?.symbols)?trackedPayload.symbols:[]).map(x=>String(x).toUpperCase()));
+  if(!trackedSymbols.size) throw new Error('TraderSpy tracked-symbol universe is empty; refusing to validate signals.');
   const discoveryPayload=await callTool(url,sessionId,callId++,'screen_symbols',{interval:'4h',universe:clamp(Number(process.env.TRADERSPY_DISCOVERY_UNIVERSE||100),5,100),limit:clamp(Number(process.env.TRADERSPY_DISCOVERY_LIMIT||50),5,50),sortBy:'volume',sortOrder:'desc'});
   const discovery=normalizeDiscoveryRows(discoveryPayload);
   const signalPayload=await callTool(url,sessionId,callId++,'get_signals',{limit:clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT||50),1,50),skip:0,importance:'all'});
   const rows=Array.isArray(signalPayload?.data)?signalPayload.data:[],now=Date.now(),candidateAgeMin=Number(process.env.TRADERSPY_CANDIDATE_MAX_AGE_MIN||360);
   const bySymbol=new Map(discovery.map((x,i)=>[x.symbol,{...x,rank:i+1}]));
   const unique=new Map();
-  for(const raw of rows){const s=normalizeSignal(raw,now,{maxAgeMin:candidateAgeMin});if(!s)continue;const key=s.instId+':'+s.action;if(!unique.has(key)||s.ts>unique.get(key).ts)unique.set(key,s);}
+  for(const raw of rows){const s=normalizeSignal(raw,now,{maxAgeMin:candidateAgeMin,allowedSymbols:trackedSymbols});if(!s)continue;const key=s.instId+':'+s.action;if(!unique.has(key)||s.ts>unique.get(key).ts)unique.set(key,s);}
   const ranked=[...unique.values()].map(signal=>{const d=bySymbol.get(signal.instId);const recencyBonus=Math.max(0,8-Math.floor(Math.max(0,now-signal.ts)/(30*60*1000)));const discoveryBonus=d?Math.min(10,d.score):0;return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};}).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
   const targets=ranked.slice(0,clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||3),1,5));
   if(!targets.length)return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:2};
@@ -404,7 +408,7 @@ async function getTraderSpyIntelligence(){
   return {signals:validated.slice(0,MAX_POST),fetched:rows.length,discovered:discovery.length,validated:validated.length,validationCalls:callId-2};
 }
 
-async function getTraderSpySignals(){ return getTraderSpyIntelligence(); }
+async function getTraderSpySignals(){ const result=await getTraderSpyIntelligence(); return result.signals; }
 
 async function runTraderSpyScan(){
   const result=await getTraderSpyIntelligence();
