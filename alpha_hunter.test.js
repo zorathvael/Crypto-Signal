@@ -18,7 +18,7 @@ test("alpha hunter passes aligned 2R/4R/6R setup",()=>{
 });
 
 test("alpha hunter vetoes weak MTF alignment",()=>{
-  const p=payload();p.timeframes[1].summary.bias="bearish";p.timeframes[1].summary.trend.direction="down";p.timeframes[1].summary.trend.emaStack="bearish";p.timeframes[1].indicators.supertrend.trend="down";
+  const p=payload();for (const i of [1, 2]) { p.timeframes[i].summary.bias="bearish"; p.timeframes[i].summary.trend.direction="down"; p.timeframes[i].summary.trend.emaStack="bearish"; p.timeframes[i].indicators.supertrend.trend="down"; }
   const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99,tp1:102,tp2:104,tp3:106,ts:Date.now()},p,deriv());
   assert.equal(out.pass,false);
   assert.ok(out.hardReject.includes("MTF alignment <2/3"));
