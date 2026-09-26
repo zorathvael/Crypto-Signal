@@ -1963,26 +1963,20 @@ function formatTelegramMessage(s) {
   const regimeTxt = s.regime
     ? ` · Vol ${String(s.regime.regime ?? "NORMAL").toUpperCase()} (${s.regime.atrPct ?? "n/a"}%)`
     : "";
-  const riskTxt = s.riskPct ? `\n⚠️ Risk saran: <b>${s.riskPct}%</b> equity` : "";
   const bookTxt = s.book
     ? ` · Book ${s.book.side} (${s.book.imbalance})${s.book.quality ? " · " + s.book.quality : ""}`
     : "";
-  const plan = calculateTradePlan(s);
 
   return (
     `${tag} · <b>${s.base}</b> ${arrow}${persist}${volOk}\n\n` +
     `📊 Score: <b>${s.probability}</b>${regimeTxt}\n` +
     `🧩 Setup: <b>${displaySetup(s.setup)}</b>\n\n` +
-    `💵 Margin: <b>${plan.marginUsdt.toFixed(2)} USDT</b>\n` +
-    `⚡ Leverage: <b>${plan.leverage}x</b>\n` +
-    `📦 Position: <b>${plan.notionalUsdt.toFixed(2)} USDT</b>\n` +
     `🎯 Entry: <code>${formatPrice(s.entry)}</code>${displayMode(s.mode) ? " · " + displayMode(s.mode) : ""}\n` +
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
     `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
     `🚀 TP3: <code>${formatPrice(s.tp3)}</code>\n` +
     `📈 R:R 1:${s.rr.toFixed(1)}\n` +
-    `⚠️ SL risk: <b>~${plan.slLossUsdt.toFixed(2)} USDT</b> before fees/slippage${riskTxt}` +
     (s.ev && s.ev.netRr != null ? `\n📐 Net R (after cost): ~${s.ev.netRr}` : "") +
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
