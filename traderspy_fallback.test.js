@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { tfAnalysis, derivativeScore, levels } = require("./traderspy_fallback");
+const { tfAnalysis, derivativeScore, levels, binance } = require("./traderspy_fallback");
+const http = require("node:http");
 
 function candles(n=100, drift=0.2){
   const out=[]; let p=100;
@@ -35,4 +36,31 @@ test("fallback levels preserve directional geometry and R:R",()=>{
   assert.ok(lv.tp2>lv.tp1);
   assert.ok(lv.tp3>lv.tp2);
   assert.ok(Math.abs((lv.tp1-lv.entry)/(lv.entry-lv.sl))>=1.5);
+});
+
+
+test("fallback request fails over from HTTP 451 to the next configured endpoint", async () => {
+  const first = http.createServer((req, res) => {
+    res.writeHead(451, { "content-type": "application/json" });
+    res.end(JSON.stringify({ msg: "restricted" }));
+  });
+  const second = http.createServer((req, res) => {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ ok: true, endpoint: "second" }));
+  });
+  await new Promise((resolve) => first.listen(0, "127.0.0.1", resolve));
+  await new Promise((resolve) => second.listen(0, "127.0.0.1", resolve));
+  const firstUrl = "http://127.0.0.1:" + first.address().port;
+  const secondUrl = "http://127.0.0.1:" + second.address().port;
+  const previous = process.env.BINANCE_FUTURES_BASE_URLS;
+  process.env.BINANCE_FUTURES_BASE_URLS = firstUrl + "," + secondUrl;
+  try {
+    const out = await binance("/fapi/v1/ping");
+    assert.deepEqual(out, { ok: true, endpoint: "second" });
+  } finally {
+    if (previous == null) delete process.env.BINANCE_FUTURES_BASE_URLS;
+    else process.env.BINANCE_FUTURES_BASE_URLS = previous;
+    await new Promise((resolve) => first.close(resolve));
+    await new Promise((resolve) => second.close(resolve));
+  }
 });

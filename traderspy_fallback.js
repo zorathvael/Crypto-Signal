@@ -17,7 +17,13 @@
  * - default 6 targets
  */
 
-const BASE = "https://fapi.binance.com";
+const DEFAULT_BINANCE_FUTURES_BASES = [
+  "https://fapi.binance.com",
+  "https://fapi1.binance.com",
+  "https://fapi2.binance.com",
+  "https://fapi3.binance.com",
+  "https://fapi4.binance.com",
+];
 const DEFAULT_TARGETS = 6;
 const DEFAULT_MIN_SCORE = 88;
 const NON_CRYPTO = new Set([
@@ -29,14 +35,39 @@ function n(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
 function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
 function mean(a) { return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; }
 
+let activeBase = null;
+
+function binanceBases() {
+  const configured = String(process.env.BINANCE_FUTURES_BASE_URLS || "")
+    .split(",")
+    .map((x) => x.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+  return configured.length ? configured : DEFAULT_BINANCE_FUTURES_BASES;
+}
+
 async function binance(pathname, params = {}) {
   const qs = new URLSearchParams(params);
-  const res = await fetch(BASE + pathname + "?" + qs.toString(), {
-    headers: { Accept: "application/json", "User-Agent": "Crypto-Signal/4.0.0-fallback" },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) throw new Error(`Binance fallback HTTP ${res.status}`);
-  return res.json();
+  const bases = activeBase ? [activeBase, ...binanceBases().filter((x) => x !== activeBase)] : binanceBases();
+  let lastErr = null;
+
+  for (const base of bases) {
+    try {
+      const res = await fetch(base + pathname + "?" + qs.toString(), {
+        headers: { Accept: "application/json", "User-Agent": "Crypto-Signal/4.0.0-fallback" },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (res.ok) {
+        activeBase = base;
+        return res.json();
+      }
+      lastErr = new Error(`Binance fallback HTTP ${res.status} @ ${base}`);
+      if (![403, 429, 451, 500, 502, 503, 504].includes(res.status)) break;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  throw lastErr || new Error("Binance fallback endpoint unavailable");
 }
 
 function ema(values, period) {
@@ -244,4 +275,4 @@ async function getFallbackIntelligence() {
   return {signals:out,discovered:ranked.length,fetched:ranked.length,validated:out.length,validationCalls:targets.length,source:"fallback"};
 }
 
-module.exports={getFallbackIntelligence,tfAnalysis,derivativeScore,levels};
+module.exports={getFallbackIntelligence,tfAnalysis,derivativeScore,levels,binance};
