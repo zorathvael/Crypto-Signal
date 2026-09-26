@@ -34,11 +34,9 @@ jobs:
           npm test
 
       - name: Install SVG renderer (Square card)
-        if: github.event_name != 'pull_request'
-        continue-on-error: true
         run: |
-          sudo apt-get update -qq || true
-          sudo apt-get install -y -qq librsvg2-bin || echo "rsvg missing — Square will post text only"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin
 
       - name: Run Strict Scanner
         env:
