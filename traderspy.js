@@ -600,6 +600,8 @@ async function getTraderSpyIntelligence(){
   }
 
   const validated=[];
+  let candidatesBuilt=0;
+  let candidateBuildRejected=0;
   for(const target of targets){
     let technicalPayload;
     try{
@@ -671,7 +673,7 @@ async function getTraderSpySignals(){ const result=await getTraderSpyIntelligenc
 
 async function runTraderSpyScan(){
   const result=await getTraderSpyIntelligence();
-  console.log('TraderSpy funnel: discovered='+result.discovered+' fetched='+result.fetched+' validated='+result.validated+' calls='+result.validationCalls);
+  console.log('TraderSpy funnel: discovered='+result.discovered+' fetched='+result.fetched+' built='+result.candidatesBuilt+' buildRejected='+result.candidateBuildRejected+' validated='+result.validated+' calls='+result.validationCalls);
   for(const s of result.signals)console.log('  '+s.base+' '+s.action+' quality='+s.qualityScore+' '+s.signalStrength+'/'+s.importance+' '+s.timeframe+' R:R 1:'+s.rr);
   return result.signals;
 }
