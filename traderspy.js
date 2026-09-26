@@ -523,7 +523,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
 
 async function getTraderSpyIntelligence(options = {}){
   const tokenValue=process.env.TRADERSPY_MCP_TOKEN||"";
-  const url=process.env.TRADERSPY_MCP_URL||(/^https?:\/\//i.test(tokenValue)?tokenValue:"");
+  const url=process.env.TRADERSPY_MCP_URL||(/^https?:\/\//i.test(tokenValue)?tokenValue:"https://mcp.traderspy.app/mcp");
   if(!url)throw new Error("TraderSpy MCP URL is missing.");
 
   const sessionId=await initializeMcp(url);
