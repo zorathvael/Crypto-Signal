@@ -19,11 +19,10 @@
 const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
 const DEFAULT_MIN_SCORE = 80;
-const MAX_POST = 3;
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
-  "NVDA", "PLTR", "TSLA",
+  "NVDA", "PLTR", "TSLA", "SOXL", "CRCL", "XAU", "XAG",
 ]);
 
 function finiteNumber(value) {
@@ -353,7 +352,11 @@ function technicalValidation(signal, payload) {
 }
 
 function derivativesValidation(signal,payload){
-  const row=Array.isArray(payload?.data)?payload.data.find(x=>String(x?.symbol||'').toUpperCase()===signal.instId):null;
+  const row=payload instanceof Map
+    ? payload.get(String(signal.instId||"").toUpperCase())
+    : Array.isArray(payload?.data)
+      ? payload.data.find(x=>String(x?.symbol||'').toUpperCase()===signal.instId)
+      : null;
   if(!row||row.error)return {pass:false,score:0,reasons:['derivatives data unavailable']};
   const side=signal.action, funding=Number(row?.funding?.ratePct), longPct=Number(row?.positioning?.globalLongPct), taker=Number(row?.positioning?.takerBuySellRatio), regime=String(row?.openInterest?.regime||'').toLowerCase();
   let score=0,adverse=false;const reasons=[];
@@ -569,7 +572,7 @@ async function getTraderSpyIntelligence(){
     return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};
   }).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
 
-  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||3),1,5);
+  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||50),1,50);
   const targets=[];
   const used=new Set();
 
@@ -591,9 +594,18 @@ async function getTraderSpyIntelligence(){
   }
 
   const symbols=targets.map(x=>x.published?.instId||x.discovery.symbol);
-  let derivativesPayload;
+  // TraderSpy get_derivatives accepts at most 5 symbols per request. Batch the
+  // complete validation target set instead of silently dropping targets.
+  const derivativesBySymbol=new Map();
   try{
-    derivativesPayload=await callTool(url,sessionId,callId++,"get_derivatives",{symbols});
+    for(let i=0;i<symbols.length;i+=5){
+      const chunk=symbols.slice(i,i+5);
+      const payload=await callTool(url,sessionId,callId++,"get_derivatives",{symbols:chunk});
+      for(const row of Array.isArray(payload?.data)?payload.data:[]){
+        const key=String(row?.symbol||"").toUpperCase();
+        if(key) derivativesBySymbol.set(key,row);
+      }
+    }
   }catch(e){
     console.warn("TraderSpy derivatives validation failed: "+e.message);
     return {signals:[],fetched:rows.length,discovered:discovery.length,validated:0,validationCalls:callId-2};
@@ -623,7 +635,7 @@ async function getTraderSpyIntelligence(){
     }
 
     const technical=technicalValidation(signal,technicalPayload);
-    const derivatives=derivativesValidation(signal,derivativesPayload);
+    const derivatives=derivativesValidation(signal,derivativesBySymbol);
 
     let detail=null;
     if(target.published && validated.length<2){
@@ -661,7 +673,7 @@ async function getTraderSpyIntelligence(){
 
   validated.sort((a,b)=>b.qualityScore-a.qualityScore||b.ts-a.ts);
   return {
-    signals:validated.slice(0,MAX_POST),
+    signals:validated,
     fetched:rows.length,
     discovered:discovery.length,
     validated:validated.length,
