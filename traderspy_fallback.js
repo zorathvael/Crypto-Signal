@@ -275,4 +275,4 @@ async function getFallbackIntelligence() {
   return {signals:out,discovered:ranked.length,fetched:ranked.length,validated:out.length,validationCalls:targets.length,source:"fallback"};
 }
 
-module.exports={getFallbackIntelligence,tfAnalysis,derivativeScore,levels};
+module.exports={getFallbackIntelligence,tfAnalysis,derivativeScore,levels,binance};
