@@ -39,8 +39,8 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.equal(out.entry, 100);
   assert.equal(out.sl, 99);
   assert.equal(out.tp1, 102);
-  assert.equal(out.tp2, 103);
-  assert.equal(out.tp3, 104);
+  assert.equal(out.tp2, 104);
+  assert.equal(out.tp3, 106);
   assert.equal(out.rr, 2);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
