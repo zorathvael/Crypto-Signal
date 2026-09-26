@@ -62,3 +62,23 @@ test("alpha hunter vetoes materially negative historical edge with enough outcom
   assert.ok(out.hardReject.includes("historical edge negative with >=20 outcomes"));
   assert.equal(out.pass,false);
 });
+
+
+test("alpha hunter uses conditional quality-bucket edge before generic action edge",()=>{
+  const closed=[];
+  for(let i=0;i<14;i++) closed.push({ts:Date.parse("2026-09-20T00:00:00Z")+i*3600000,base:"BTC",action:"LONG",setup:"OTHER",probability:80+i%9,outcome:i<10?"WIN_TP1":"LOSS_SL",rMultiple:i<10?1.4:-1,horizons:{h15:{r:i<10?0.35:-0.05}}});
+  for(let i=0;i<12;i++) closed.push({ts:Date.parse("2026-09-20T00:00:00Z")+i*7200000,base:"BTC",action:"LONG",setup:"OTHER",probability:95,outcome:i<5?"WIN_TP1":"LOSS_SL",rMultiple:i<5?1.2:-1});
+  const out=calculateAlpha({action:"LONG",setup:"NEW_SETUP",instId:"BTCUSDT",qualityScore:84,entry:100,sl:99,tp1:102,tp2:104,tp3:106,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
+  assert.equal(out.factors.historical.source,"quality_bucket_action");
+  assert.ok(out.factors.historical.scoreDelta>0);
+  assert.equal(out.factors.historical.bucket,"80_89");
+});
+
+test("alpha hunter ignores legacy non-crypto and pre-baseline outcomes",()=>{
+  const closed=[];
+  for(let i=0;i<30;i++) closed.push({ts:Date.parse("2026-09-10T00:00:00Z")+i*3600000,base:"AAPL",action:"LONG",setup:"SCALP_MTF",outcome:"LOSS_SL",rMultiple:-1});
+  for(let i=0;i<30;i++) closed.push({ts:Date.parse("2026-09-20T00:00:00Z")+i*3600000,base:"BTC",action:"LONG",setup:"OTHER",outcome:"WIN_TP1",rMultiple:1.5});
+  const out=calculateAlpha({action:"LONG",setup:"NEW_SETUP",instId:"BTCUSDT",entry:100,sl:99,tp1:102,tp2:104,tp3:106,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
+  assert.equal(out.factors.historical.sampleSize,30);
+  assert.equal(out.factors.historical.edge,"positive");
+});
