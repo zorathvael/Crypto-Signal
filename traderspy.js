@@ -124,7 +124,7 @@ async function postMcp(url, body, sessionId) {
   const text = await res.text();
   if (!res.ok) {
     const suffix = text ? `: ${text.slice(0, 300)}` : "";
-    throw new Error(`TraderSpy MCP HTTP ${res.status}${suffix}`);
+    const err=new Error(`TraderSpy MCP HTTP ${res.status}${suffix}`); err.code=`HTTP_${res.status}`; if(res.status===429) err.quota=true; throw err;
   }
   const contentType = res.headers.get("content-type") || "";
   return {
