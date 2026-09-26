@@ -381,8 +381,32 @@ function buildScreenCandidate(discovery, technicalPayload, now) {
   const h4 = tfs.get("4h");
   if (!h1 || !h4 || !Number.isFinite(Number(technicalPayload?.price))) return null;
 
-  const bias = String(technicalPayload?.confluence?.bias || h1?.summary?.bias || "").toLowerCase();
-  const action = bias === "bullish" ? "LONG" : bias === "bearish" ? "SHORT" : null;
+  // Candidate discovery must not depend on a single optional confluence field.
+  // TraderSpy's MTF payload can expose direction in bias, trend, EMA stack, or
+  // SuperTrend. Use a deterministic MTF vote to hand candidates to the
+  // validation layer; the validation gate still decides whether they publish.
+  const directionalVotes = [];
+  for (const [interval, tf] of tfs.entries()) {
+    if (!["15m", "1h", "4h"].includes(interval)) continue;
+    const summary = tf?.summary || {};
+    const indicators = tf?.indicators || {};
+    const bias = String(summary?.bias || "").toLowerCase();
+    const trend = String(summary?.trend?.direction || "").toLowerCase();
+    const ema = String(summary?.trend?.emaStack || indicators?.ema?.stack || "").toLowerCase();
+    const st = String(indicators?.supertrend?.trend || "").toLowerCase();
+    const bullish = [bias === "bullish", trend === "up", ema === "bullish", st === "up"].filter(Boolean).length;
+    const bearish = [bias === "bearish", trend === "down", ema === "bearish", st === "down"].filter(Boolean).length;
+    if (bullish > bearish && bullish >= 2) directionalVotes.push({ interval, direction: "LONG", strength: bullish });
+    else if (bearish > bullish && bearish >= 2) directionalVotes.push({ interval, direction: "SHORT", strength: bearish });
+  }
+  const explicitBias = String(technicalPayload?.confluence?.bias || "").toLowerCase();
+  let action = explicitBias === "bullish" ? "LONG" : explicitBias === "bearish" ? "SHORT" : null;
+  if (!action) {
+    const longVotes = directionalVotes.filter(x => x.direction === "LONG");
+    const shortVotes = directionalVotes.filter(x => x.direction === "SHORT");
+    if (longVotes.length >= 2 && longVotes.length > shortVotes.length) action = "LONG";
+    else if (shortVotes.length >= 2 && shortVotes.length > longVotes.length) action = "SHORT";
+  }
   if (!action) return null;
 
   const entry = Number(technicalPayload.price);
