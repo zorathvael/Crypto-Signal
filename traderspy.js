@@ -375,7 +375,7 @@ function applyValidation(signal,discovery,technical,derivatives,detail){
   return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
 }
 
-function buildScreenCandidate(discovery, technicalPayload, now) {
+function buildScreenCandidate(discovery, technicalPayload, now, actionHint = null) {
   const tfs = timeframeMap(technicalPayload);
   const h1 = tfs.get("1h") || tfs.get("15m");
   const h4 = tfs.get("4h");
@@ -400,7 +400,10 @@ function buildScreenCandidate(discovery, technicalPayload, now) {
     else if (bearish > bullish && bearish >= 2) directionalVotes.push({ interval, direction: "SHORT", strength: bearish });
   }
   const explicitBias = String(technicalPayload?.confluence?.bias || "").toLowerCase();
-  let action = explicitBias === "bullish" ? "LONG" : explicitBias === "bearish" ? "SHORT" : null;
+  const hintedAction = String(actionHint || "").toUpperCase();
+  let action = hintedAction === "LONG" || hintedAction === "SHORT"
+    ? hintedAction
+    : explicitBias === "bullish" ? "LONG" : explicitBias === "bearish" ? "SHORT" : null;
   if (!action) {
     const longVotes = directionalVotes.filter(x => x.direction === "LONG");
     const shortVotes = directionalVotes.filter(x => x.direction === "SHORT");
@@ -613,7 +616,7 @@ async function getTraderSpyIntelligence(){
 
     let signal=target.published;
     if(!signal){
-      signal=buildScreenCandidate(target.discovery,technicalPayload,now);
+      signal=buildScreenCandidate(target.discovery,technicalPayload,now,target.discovery.bias==="bullish"?"LONG":target.discovery.bias==="bearish"?"SHORT":target.discovery.trend==="up"?"LONG":target.discovery.trend==="down"?"SHORT":null);
       if(!signal)continue;
     }
 
