@@ -18,7 +18,7 @@
 
 const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
-const DEFAULT_MIN_SCORE = 80;\nconst { calculateAlpha } = require("./alpha_hunter");
+const DEFAULT_MIN_SCORE = 80;\nconst { calculateAlpha } = require("./alpha_hunter");\nconst { calculateAlpha } = require("./alpha_hunter");
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
@@ -653,7 +653,7 @@ async function getTraderSpyIntelligence(){
       signal.probability=finalScore;
       signal.traderSpy.validationScore=finalScore;
       signal.validation={
-        passed:technical.pass&&derivatives.pass&&finalScore>=Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
+        passed:technical.pass&&derivatives.pass&&alpha.pass&&finalScore>=Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
         stale:false,
         ageMin:0,
         threshold:Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
@@ -664,7 +664,7 @@ async function getTraderSpyIntelligence(){
         reasons:[...(technical.reasons||[]),...(derivatives.reasons||[]),"candidate generated from TraderSpy live market data"]
       };
     }else{
-      const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now);\n      signal=applyValidation(signal,target.discovery,technical,derivatives,detail,alpha);\n      signal.alpha=alpha;
+      signal=applyValidation(signal,target.discovery,technical,derivatives,detail,alpha);\n      signal.alpha=alpha;
     }
 
     console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT"));
