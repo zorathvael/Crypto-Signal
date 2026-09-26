@@ -121,11 +121,13 @@ function levels(c, side, a) {
   const high=Math.max(...look.map(x=>x.high));
   const minRisk=Math.max(a*1.5,entry*0.004);
   if(side==="LONG"){
-    const sl=Math.max(low,entry-minRisk*1.8);
+    const structural=Math.min(low,entry-minRisk*0.75);
+    const sl=Math.min(entry-minRisk,structural);
     const risk=Math.max(entry-sl,minRisk);
     return {entry,sl:entry-risk,tp1:entry+risk*1.5,tp2:entry+risk*2.5,tp3:entry+risk*3.5};
   }
-  const sl=Math.min(high,entry+minRisk*1.8);
+  const structural=Math.max(high,entry+minRisk*0.75);
+  const sl=Math.max(entry+minRisk,structural);
   const risk=Math.max(sl-entry,minRisk);
   return {entry,sl:entry+risk,tp1:entry-risk*1.5,tp2:entry-risk*2.5,tp3:entry-risk*3.5};
 }
