@@ -71,6 +71,8 @@ Default fallback budget:
 - per target: 3 kline requests + OI + funding + depth
 - no order execution
 - no synthetic/mock market data
+- Binance Futures endpoint failover: `fapi.binance.com` → `fapi1` → `fapi2` → `fapi3` → `fapi4`; the first working endpoint is reused for the scan
+- failover is bounded to 403/429/451/5xx responses and network failures; unexpected 4xx errors are not masked
 
 Fallback tidak mengklaim mereplikasi proprietary internals TraderSpy. Ia mereplikasi **observable validation contract dan decision structure** yang digunakan repository ini untuk menjaga bentuk/aturan signal tetap kompatibel.
 
