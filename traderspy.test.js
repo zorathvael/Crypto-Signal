@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeSignal, signalQualityScore, normalizeDiscoveryRows, technicalValidation, derivativesValidation } = require("./traderspy");
+const { normalizeSignal, signalQualityScore, normalizeDiscoveryRows, buildScreenCandidate, technicalValidation, derivativesValidation } = require("./traderspy");
 
 const NOW = Date.parse("2026-09-26T00:00:00Z");
 
@@ -123,4 +123,25 @@ test("discovery candidates are rejected when multi-timeframe data has no directi
     ]
   };
   assert.equal(technicalValidation(signal, payload).pass, false);
+});
+
+
+test("builds a candidate from MTF direction when confluence bias is absent", () => {
+  const payload = {
+    price: 100,
+    timeframes: [
+      { interval: "15m", indicators: { atr:{value:1}, ema:{stack:"bullish"}, supertrend:{trend:"up"} }, summary:{bias:"",trend:{direction:"up",emaStack:"bullish"}} },
+      { interval: "1h", indicators: { atr:{value:1.2}, ema:{stack:"bullish"}, supertrend:{trend:"up"} }, summary:{bias:"",trend:{direction:"up",emaStack:"bullish"}} },
+      { interval: "4h", indicators: { atr:{value:2}, ema:{stack:"bullish"}, supertrend:{trend:"up"} }, summary:{bias:"",trend:{direction:"up",emaStack:"bullish"}} }
+    ]
+  };
+  const candidate = buildScreenCandidate(
+    { symbol: "ETHUSDT", base: "ETH", score: 8 },
+    payload,
+    NOW
+  );
+  assert.ok(candidate);
+  assert.equal(candidate.generatedCandidate, true);
+  assert.equal(candidate.action, "LONG");
+  assert.ok(candidate.rr >= 1.5);
 });
