@@ -2,7 +2,7 @@
 
 Crypto-Signal adalah pipeline publikasi signal futures v4.0 dengan **tiered market validation** dan delivery flow yang sudah ada. Provider intelligence tetap berada di backend dan tidak ditampilkan sebagai identitas sumber pada posting publik:
 
-**Discovery → candidate validation → dedup → outcome tracking → Discord + Telegram + Binance Square**
+**Discovery → full validation → dedup → outcome tracking → Discord + Telegram + Binance Square**
 
 > Crypto-Signal tidak mengeksekusi order. Signal adalah informasi untuk validasi manual.
 
@@ -55,7 +55,7 @@ get_signals (up to 50 recent candidates)
     ↓
 age/status/level/crypto validation
     ↓
-top 3 candidates
+all validation targets (up to 50)
     ↓
 get_derivatives (batched)
     ↓
@@ -131,13 +131,13 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
-## Delivery — tidak diubah
+## Delivery
 
 Destination tetap:
 
-1. **Telegram**
-2. **Binance Square**
-3. **Discord**
+1. **Discord** — semua signal baru yang lolos dedup
+2. **Telegram** — semua signal baru yang lolos dedup
+3. **Binance Square** — semua signal baru yang lolos dedup, dibagi batch maksimal 3 coin per post
 
 Urutan pemanggilan di scanner tetap:
 
@@ -166,7 +166,7 @@ TRADERSPY_MAX_AGE_MIN: "120"
 TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
 TRADERSPY_DISCOVERY_UNIVERSE: "100"
 TRADERSPY_DISCOVERY_LIMIT: "50"
-TRADERSPY_VALIDATION_TARGETS: "3"
+TRADERSPY_VALIDATION_TARGETS: "50"
 TRADERSPY_VALIDATION_MIN_SCORE: "88"
 TRADERSPY_STALE_MIN_SCORE: "90"
 ```
@@ -242,18 +242,17 @@ Pipeline sengaja tidak memanggil seluruh tool TraderSpy pada setiap coin. Discov
 - 1 `get_tracked_symbols`
 - 1 `screen_symbols` across up to 100 high-volume futures
 - 1 `get_signals` request for up to 50 recent candidates
-- 1 batched `get_derivatives` request for the top validation targets
-- up to 3 `get_technical_indicators` calls
-- up to 2 `get_signal_details` calls
+- 1 batched `get_derivatives` request for the validation targets
+- up to 50 `get_technical_indicators` calls when all targets require validation
+- up to 2 `get_signal_details` calls for the strongest published candidates
 
 This keeps the deep validation stage small while making the candidate universe substantially broader than the previous 20-signal-only importer.
 
 Tujuannya:
-- mengurangi MCP credits
-- mengurangi latency
-- menghindari rate-limit
+- menjaga candidate discovery tetap bounded (maksimal 50 target)
 - menghindari pemanggilan data redundan
 - menggunakan signal engine TraderSpy langsung sebagai source of truth
+- tidak membuang signal valid hanya karena batas delivery channel
 
 TraderSpy MCP memiliki daily tool-call allowance berdasarkan plan akun. Karena itu adapter tidak melakukan `get_candles`, `get_derivatives`, `get_positions`, atau `get_signal_details` secara otomatis pada setiap signal.
 
@@ -295,7 +294,10 @@ Selalu validasi level, kondisi pasar, leverage, biaya, slippage, dan risiko sebe
 - Binance Square selalu menggunakan professional visual card; jika renderer atau upload visual gagal, posting text-only tidak diperbolehkan.
 - Hashtag Binance Square: `#PintarPakaiBinanceEarn`.
 - Internal provider names such as `TraderSpy` are not exposed in public signal copy or visual labels.
-- Duplicate scan results are blocked using a persistent signal fingerprint covering symbol, direction, setup, and relative entry/SL/TP structure.
+- Duplicate scan results are blocked using a persistent signal fingerprint covering symbol, direction, setup, and relative entry/SL/TP structure; duplicate suppression is the only cross-scan delivery filter.
+- Discord and Telegram receive every newly validated, non-duplicate signal; there is no global `max 3` delivery cap.
+- Binance Square posts the same signals in sequential batches of up to 3 coins, and each batch visual is rendered from the exact same coin set.
+- Loss streak is informational for the active TraderSpy delivery path and does not suppress newly validated signals.
 - Pull-request CI runs the scanner in delivery dry-run mode, so validation tests do not publish to external channels or mutate outcome/dedup state.
 - Production scheduled/manual runs retain live delivery.
 
