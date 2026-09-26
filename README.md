@@ -132,7 +132,28 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
-## Delivery
+## Telegram trade plan — 5 USDT margin
+
+Telegram signal output now includes a deterministic manual-futures sizing plan. It does **not** execute orders.
+
+Default rules:
+- margin: **5 USDT**
+- estimated SL-loss budget: **10% of margin = 0.50 USDT**, before fees/slippage
+- leverage is derived from the entry-to-SL distance and rounded down
+- maximum displayed leverage: **20x**
+- minimum leverage: **1x**
+- position notional = margin × leverage
+- quantity = position notional ÷ entry price
+
+Example: a 1% SL distance produces **10x** leverage and about **50 USDT** notional; a 2% SL distance produces **5x**. Tight SLs are capped at 20x. This is a sizing suggestion, not an execution instruction; exchange-specific leverage limits, fees, slippage, funding and liquidation rules still apply.
+
+Environment overrides:
+- `TELEGRAM_MARGIN_USDT` (default `5`)
+- `TELEGRAM_MARGIN_RISK_FRACTION` (default `0.10`)
+- `TELEGRAM_MAX_LEVERAGE` (default `20`)
+
+Telegram now shows Margin, Leverage, Position notional, Entry, SL, TP1/TP2/TP3, R:R and estimated SL loss.
+
 
 Destination tetap:
 
@@ -167,7 +188,7 @@ TRADERSPY_MAX_AGE_MIN: "120"
 TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
 TRADERSPY_DISCOVERY_UNIVERSE: "100"
 TRADERSPY_DISCOVERY_LIMIT: "50"
-TRADERSPY_VALIDATION_TARGETS: "50"
+TRADERSPY_VALIDATION_TARGETS: "10"
 TRADERSPY_VALIDATION_MIN_SCORE: "88"
 TRADERSPY_STALE_MIN_SCORE: "90"
 ```
@@ -238,19 +259,20 @@ Test adapter mencakup:
 
 ## Cost / call discipline
 
-Pipeline tidak memanggil tool detail yang tidak diperlukan. Discovery dan validation tetap bounded pada maksimal 50 target:
+Pipeline tidak memanggil tool detail yang tidak diperlukan. Discovery dan validation tetap bounded pada default 10 validation targets:
 
 - 1 `get_tracked_symbols`
 - 1 `screen_symbols` across up to 100 high-volume futures
 - 1 `get_signals` request for up to 50 recent candidates
 - 1 batched `get_derivatives` request for the validation targets
-- up to 50 `get_technical_indicators` calls when all targets require validation
+- up to 10 `get_technical_indicators` calls when all validation targets require validation
 - up to 2 `get_signal_details` calls for the strongest published candidates
 
 This keeps the deep validation stage small while making the candidate universe substantially broader than the previous 20-signal-only importer.
 
 Tujuannya:
-- menjaga candidate discovery tetap bounded (maksimal 50 target)
+- menjaga candidate discovery tetap bounded (maksimal 50 candidate discovery)
+- menjaga validation default tetap 10 target agar quota TraderSpy tidak terbuang
 - menghindari pemanggilan data redundan
 - menggunakan signal engine TraderSpy langsung sebagai source of truth
 - tidak membuang signal valid hanya karena batas delivery channel
