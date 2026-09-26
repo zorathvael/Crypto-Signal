@@ -17,57 +17,72 @@
  * - default 6 targets
  */
 
-const DEFAULT_BINANCE_FUTURES_BASES = [
-  "https://fapi.binance.com",
-  "https://fapi1.binance.com",
-  "https://fapi2.binance.com",
-  "https://fapi3.binance.com",
-  "https://fapi4.binance.com",
-];
+const DEFAULT_BITGET_BASE = "https://api.bitget.com";
+const DEFAULT_BINANCE_FUTURES_BASES = ["https://fapi.binance.com","https://fapi1.binance.com","https://fapi2.binance.com","https://fapi3.binance.com","https://fapi4.binance.com"];
 const DEFAULT_TARGETS = 6;
 const DEFAULT_MIN_SCORE = 88;
-const NON_CRYPTO = new Set([
-  "AAPL","AMZN","AMD","COIN","GOOG","GOOGL","META","MSFT","MSTR","NFLX",
-  "NVDA","PLTR","TSLA","SOXL","CRCL","XAU","XAG"
-]);
+const NON_CRYPTO = new Set(["AAPL","AMZN","AMD","COIN","GOOG","GOOGL","META","MSFT","MSTR","NFLX","NVDA","PLTR","TSLA","SOXL","CRCL","XAU","XAG"]);
 
-function n(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
-function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
-function mean(a) { return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; }
-
-let activeBase = null;
+function n(v) { const x=Number(v); return Number.isFinite(x)?x:null; }
+function clamp(v,lo,hi) { return Math.min(Math.max(v,lo),hi); }
+function mean(a) { return a.length?a.reduce((x,y)=>x+y,0)/a.length:0; }
+let activeBinanceBase=null;
 
 function binanceBases() {
-  const configured = String(process.env.BINANCE_FUTURES_BASE_URLS || "")
-    .split(",")
-    .map((x) => x.trim().replace(/\/$/, ""))
-    .filter(Boolean);
-  return configured.length ? configured : DEFAULT_BINANCE_FUTURES_BASES;
+  const configured=String(process.env.BINANCE_FUTURES_BASE_URLS||"").split(",").map(x=>x.trim().replace(/\/$/,"")).filter(Boolean);
+  return configured.length?configured:DEFAULT_BINANCE_FUTURES_BASES;
 }
 
-async function binance(pathname, params = {}) {
-  const qs = new URLSearchParams(params);
-  const bases = activeBase ? [activeBase, ...binanceBases().filter((x) => x !== activeBase)] : binanceBases();
-  let lastErr = null;
+async function requestJson(url,headers={}) {
+  const res=await fetch(url,{headers:{Accept:"application/json","User-Agent":"Crypto-Signal/4.0.0-fallback",...headers},signal:AbortSignal.timeout(15000)});
+  const body=await res.text();
+  if(!res.ok) throw new Error("HTTP "+res.status+" "+url);
+  if(!body.trim()) throw new Error("empty JSON response "+url);
+  try{return JSON.parse(body);}catch{throw new Error("invalid JSON response "+url+" ("+body.length+" bytes)");}
+}
 
-  for (const base of bases) {
-    try {
-      const res = await fetch(base + pathname + "?" + qs.toString(), {
-        headers: { Accept: "application/json", "User-Agent": "Crypto-Signal/4.0.0-fallback" },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (res.ok) {
-        activeBase = base;
-        return res.json();
-      }
-      lastErr = new Error(`Binance fallback HTTP ${res.status} @ ${base}`);
-      if (![403, 429, 451, 500, 502, 503, 504].includes(res.status)) break;
-    } catch (e) {
-      lastErr = e;
-    }
+async function bitget(pathname,params={}) {
+  const qs=new URLSearchParams(params);
+  const data=await requestJson(DEFAULT_BITGET_BASE+pathname+"?"+qs.toString());
+  if(data?.code!=="00000") throw new Error("Bitget API "+String(data?.code||"unknown")+": "+String(data?.msg||"error"));
+  return data.data;
+}
+
+async function binance(pathname,params={}) {
+  const qs=new URLSearchParams(params);
+  const bases=activeBinanceBase?[activeBinanceBase,...binanceBases().filter(x=>x!==activeBinanceBase)]:binanceBases();
+  let lastErr=null;
+  for(const base of bases){
+    try{const data=await requestJson(base+pathname+"?"+qs.toString());activeBinanceBase=base;return data;}
+    catch(e){lastErr=e;const m=String(e.message||"");if(!(/HTTP (403|429|451|500|502|503|504) /.test(m)||/empty JSON response|invalid JSON response|fetch failed|timed out|timeout/i.test(m)))break;}
   }
+  throw lastErr||new Error("Binance fallback endpoint unavailable");
+}
 
-  throw lastErr || new Error("Binance fallback endpoint unavailable");
+function parseBitgetCandles(rows) {
+  return (Array.isArray(rows)?rows:[]).map(x=>({open:n(x[1]),high:n(x[2]),low:n(x[3]),close:n(x[4]),volume:n(x[5]),closeTime:n(x[0])})).filter(x=>[x.open,x.high,x.low,x.close,x.volume,x.closeTime].every(Number.isFinite)).sort((a,b)=>a.closeTime-b.closeTime);
+}
+function parseBitgetDepth(depth) { return {bids:Array.isArray(depth?.b)?depth.b:[],asks:Array.isArray(depth?.a)?depth.a:[]}; }
+
+async function bitgetSnapshot() {
+  const instruments=await bitget("/api/v3/market/instruments",{category:"USDT-FUTURES"});
+  const symbols=(Array.isArray(instruments)?instruments:[]).filter(s=>s.status==="online"&&s.type==="perpetual"&&String(s.symbol||"").endsWith("USDT")&&!NON_CRYPTO.has(String(s.baseCoin||"").toUpperCase())).map(s=>s.symbol);
+  const tickers=await bitget("/api/v3/market/tickers",{category:"USDT-FUTURES"});
+  const universe=new Map(symbols.map(s=>[s,true]));
+  const ranked=(Array.isArray(tickers)?tickers:[]).filter(t=>universe.has(t.symbol)).map(t=>({symbol:t.symbol,quoteVolume:n(t.turnover24h)||0,change:n(t.price24hPcnt)||0,price:n(t.lastPrice)})).filter(x=>x.quoteVolume>5000000&&Number.isFinite(x.price)).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,Math.max(DEFAULT_TARGETS,Number(process.env.FALLBACK_DISCOVERY_LIMIT||20)));
+  return {ranked,provider:"Bitget"};
+}
+
+async function bitgetMarket(symbol) {
+  const [k15,k1h,k4h,depth,tickerRows]=await Promise.all([
+    bitget("/api/v3/market/candles",{category:"USDT-FUTURES",symbol,interval:"15m",limit:100}),
+    bitget("/api/v3/market/candles",{category:"USDT-FUTURES",symbol,interval:"1H",limit:100}),
+    bitget("/api/v3/market/candles",{category:"USDT-FUTURES",symbol,interval:"4H",limit:100}),
+    bitget("/api/v3/market/orderbook",{category:"USDT-FUTURES",symbol,limit:5}),
+    bitget("/api/v3/market/tickers",{category:"USDT-FUTURES",symbol})
+  ]);
+  const ticker=Array.isArray(tickerRows)?tickerRows[0]:null;
+  return {k15:parseBitgetCandles(k15),k1h:parseBitgetCandles(k1h),k4h:parseBitgetCandles(k4h),oi:{openInterest:ticker?.openInterest},funding:{lastFundingRate:ticker?.fundingRate},depth:parseBitgetDepth(depth)};
 }
 
 function ema(values, period) {
@@ -197,82 +212,35 @@ function candidateScore(discovery, tfs, deriv, rr) {
   return {side,score:Math.min(99,Math.round(score))};
 }
 
-async function getFallbackIntelligence() {
-  const info=await binance("/fapi/v1/exchangeInfo");
-  const symbols=(info.symbols||[]).filter(s=>
-    s.status==="TRADING" && s.quoteAsset==="USDT" && s.contractType==="PERPETUAL" &&
-    !NON_CRYPTO.has(String(s.baseAsset||"").toUpperCase())
-  ).map(s=>s.symbol);
-
-  const tickers=await binance("/fapi/v1/ticker/24hr");
-  const universe=new Map(symbols.map(s=>[s,true]));
-  const ranked=(Array.isArray(tickers)?tickers:[])
-    .filter(t=>universe.has(t.symbol))
-    .map(t=>({symbol:t.symbol,quoteVolume:n(t.quoteVolume)||0,change:n(t.priceChangePercent)||0,price:n(t.lastPrice)}))
-    .filter(x=>x.quoteVolume>5_000_000 && Number.isFinite(x.price))
-    .sort((a,b)=>b.quoteVolume-a.quoteVolume)
-    .slice(0,Math.max(DEFAULT_TARGETS,Number(process.env.FALLBACK_DISCOVERY_LIMIT||20)));
-
-  const targetLimit=clamp(Number(process.env.FALLBACK_TARGETS||DEFAULT_TARGETS),1,10);
-  const targets=ranked.slice(0,targetLimit);
-  const out=[];
-
-  for(const d of targets){
-    try{
-      const [k15,k1h,k4h,oi,funding,depth]=await Promise.all([
-        binance("/fapi/v1/klines",{symbol:d.symbol,interval:"15m",limit:100}),
-        binance("/fapi/v1/klines",{symbol:d.symbol,interval:"1h",limit:100}),
-        binance("/fapi/v1/klines",{symbol:d.symbol,interval:"4h",limit:100}),
-        binance("/fapi/v1/openInterest",{symbol:d.symbol}),
-        binance("/fapi/v1/premiumIndex",{symbol:d.symbol}),
-        binance("/fapi/v1/depth",{symbol:d.symbol,limit:5})
-      ]);
-      const tfs=[tfAnalysis(parseKlines(k15)),tfAnalysis(parseKlines(k1h)),tfAnalysis(parseKlines(k4h))];
-      if(tfs.some(x=>!x))continue;
-      const dirs=tfs.map(x=>x.direction), longN=dirs.filter(x=>x==="LONG").length, shortN=dirs.filter(x=>x==="SHORT").length;
-      const side=longN>=2?"LONG":shortN>=2?"SHORT":null;
-      if(!side)continue;
-      const lv=levels(parseKlines(k1h),side,tfs[1].atr);
-      const risk=Math.abs(lv.entry-lv.sl);
-      const rr=risk?Math.abs(lv.tp1-lv.entry)/risk:0;
-      if(!Number.isFinite(rr)||rr<1.5)continue;
-      const ds=derivativeScore(side,oi,funding,depth);
-      if(ds.adverse)continue;
-      const disc=Math.min(10,Math.round(Math.log10(Math.max(d.quoteVolume,1))-6));
-      const cs=candidateScore(disc,tfs,ds.score,rr);
-      if(cs.side!==side)continue;
-      const threshold=Number(process.env.FALLBACK_MIN_SCORE||DEFAULT_MIN_SCORE);
-      if(cs.score<threshold)continue;
-      out.push({
-        id:`fallback-${d.symbol}-${Date.now()}`,
-        source:"TraderSpy-Compatible",
-        origin:"Binance public futures data · TraderSpy-compatible fallback",
-        base:d.symbol.replace(/USDT$/,""),instId:d.symbol,action:side,
-        probability:cs.score,qualityScore:cs.score,
-        signalStrength:cs.score>=96?"very_strong":cs.score>=90?"strong":"moderate",
-        importance:d.quoteVolume>=50_000_000?"high":"medium",
-        strategyName:"TraderSpy-Compatible MTF",
-        timeframe:"1h",setup:"TRADERSPY_COMPATIBLE_MTF",mode:"TRADERSPY_COMPATIBLE",
-        ...lv,rr:+rr.toFixed(2),riskPct:+(risk/lv.entry*100).toFixed(3),
-        regime:{atrPct:+(tfs[1].atr/lv.entry*100).toFixed(3)},
-        book:{source:"Binance public futures depth"},m5:{volume:{side:"—"},rsi:null},
-        trends:{m15:dirs[0],h1:dirs[1],h4:dirs[2]},confluence:dirs.filter(x=>x===side).length,
-        persistent:false,volConfirm:Math.abs(tfs[0].pressure)>0.08,ev:null,ts:Date.now(),
-        validUntil:new Date(Date.now()+60*60*1000).toISOString(),horizons:{},
-        validation:{
-          passed:true,stale:false,ageMin:0,threshold,
-          discoveryScore:disc,technicalScore:tfs.reduce((s,x)=>s+Math.max(0,x.score),0),
-          derivativesScore:ds.score,detailScore:null,
-          reasons:["2/3+ MTF agreement","ATR/structure levels","derivatives sanity","public Binance market data"]
-        },
-        traderSpy:{id:"",resolutionStatus:"pending",triggeredConditions:[],targetPct:null,fallback:true}
-      });
-    }catch(e){
-      console.warn("Fallback skipped "+d.symbol+": "+e.message);
-    }
-  }
+async function buildSignals(snapshot,provider,marketLoader) {
+  const ranked=snapshot.ranked,targetLimit=clamp(Number(process.env.FALLBACK_TARGETS||DEFAULT_TARGETS),1,10),targets=ranked.slice(0,targetLimit),out=[];
+  for(const d of targets) try {
+    const market=await marketLoader(d.symbol), tfs=[tfAnalysis(market.k15),tfAnalysis(market.k1h),tfAnalysis(market.k4h)];
+    if(tfs.some(x=>!x)) continue;
+    const dirs=tfs.map(x=>x.direction),longN=dirs.filter(x=>x==="LONG").length,shortN=dirs.filter(x=>x==="SHORT").length,side=longN>=2?"LONG":shortN>=2?"SHORT":null;
+    if(!side) continue;
+    const lv=levels(market.k1h,side,tfs[1].atr),risk=Math.abs(lv.entry-lv.sl),rr=risk?Math.abs(lv.tp1-lv.entry)/risk:0;
+    if(!Number.isFinite(rr)||rr<1.5) continue;
+    const ds=derivativeScore(side,market.oi,market.funding,market.depth); if(ds.adverse) continue;
+    const disc=Math.min(10,Math.round(Math.log10(Math.max(d.quoteVolume,1))-6)),cs=candidateScore(disc,tfs,ds.score,rr);
+    if(cs.side!==side) continue;
+    const threshold=Number(process.env.FALLBACK_MIN_SCORE||DEFAULT_MIN_SCORE); if(cs.score<threshold) continue;
+    out.push({id:`fallback-${provider.toLowerCase()}-${d.symbol}-${Date.now()}`,source:"Public-Market-Compatible",origin:provider+" public futures data · compatible fallback",base:d.symbol.replace(/USDT$/,""),instId:d.symbol,action:side,probability:cs.score,qualityScore:cs.score,signalStrength:cs.score>=96?"very_strong":cs.score>=90?"strong":"moderate",importance:d.quoteVolume>=50000000?"high":"medium",strategyName:"TraderSpy-Compatible MTF",timeframe:"1h",setup:"TRADERSPY_COMPATIBLE_MTF",mode:"TRADERSPY_COMPATIBLE",...lv,rr:+rr.toFixed(2),riskPct:+(risk/lv.entry*100).toFixed(3),regime:{atrPct:+(tfs[1].atr/lv.entry*100).toFixed(3)},book:{source:provider+" public futures depth"},m5:{volume:{side:"—"},rsi:null},trends:{m15:dirs[0],h1:dirs[1],h4:dirs[2]},confluence:dirs.filter(x=>x===side).length,persistent:false,volConfirm:Math.abs(tfs[0].pressure)>0.08,ev:null,ts:Date.now(),validUntil:new Date(Date.now()+3600000).toISOString(),horizons:{},validation:{passed:true,stale:false,ageMin:0,threshold,discoveryScore:disc,technicalScore:tfs.reduce((s,x)=>s+Math.max(0,x.score),0),derivativesScore:ds.score,detailScore:null,reasons:["2/3+ MTF agreement","ATR/structure levels","derivatives sanity","public futures market data"]},traderSpy:{id:"",resolutionStatus:"pending",triggeredConditions:[],targetPct:null,fallback:true}});
+  } catch(e) { console.warn("Fallback skipped "+provider+" "+d.symbol+": "+e.message); }
   out.sort((a,b)=>b.qualityScore-a.qualityScore||b.ts-a.ts);
-  return {signals:out,discovered:ranked.length,fetched:ranked.length,validated:out.length,validationCalls:targets.length,source:"fallback"};
+  return {signals:out,discovered:ranked.length,fetched:ranked.length,validated:out.length,validationCalls:targets.length,source:provider.toLowerCase()};
+}
+
+async function getFallbackIntelligence() {
+  const providers=[
+    ["Bitget",bitgetSnapshot,bitgetMarket],
+    ["Binance",async()=>{const info=await binance("/fapi/v1/exchangeInfo");const symbols=(info.symbols||[]).filter(s=>s.status==="TRADING"&&s.quoteAsset==="USDT"&&s.contractType==="PERPETUAL"&&!NON_CRYPTO.has(String(s.baseAsset||"").toUpperCase())).map(s=>s.symbol);const tickers=await binance("/fapi/v1/ticker/24hr");const universe=new Map(symbols.map(s=>[s,true]));const ranked=(Array.isArray(tickers)?tickers:[]).filter(t=>universe.has(t.symbol)).map(t=>({symbol:t.symbol,quoteVolume:n(t.quoteVolume)||0,change:n(t.priceChangePercent)||0,price:n(t.lastPrice)})).filter(x=>x.quoteVolume>5000000&&Number.isFinite(x.price)).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,Math.max(DEFAULT_TARGETS,Number(process.env.FALLBACK_DISCOVERY_LIMIT||20)));return {ranked,provider:"Binance"}},async symbol=>{const [k15,k1h,k4h,oi,funding,depth]=await Promise.all([binance("/fapi/v1/klines",{symbol,interval:"15m",limit:100}),binance("/fapi/v1/klines",{symbol,interval:"1h",limit:100}),binance("/fapi/v1/klines",{symbol,interval:"4h",limit:100}),binance("/fapi/v1/openInterest",{symbol}),binance("/fapi/v1/premiumIndex",{symbol}),binance("/fapi/v1/depth",{symbol,limit:5})]);return {k15:parseKlines(k15),k1h:parseKlines(k1h),k4h:parseKlines(k4h),oi,funding,depth}}];
+  let lastErr=null;
+  for(const [provider,discover,loader] of providers) {
+    try { console.log("Fallback provider: "+provider); const snapshot=await discover(); const result=await buildSignals(snapshot,provider,loader); if(result.signals.length>0)return result; lastErr=new Error(provider+" returned zero validated signals"); }
+    catch(e){lastErr=e;console.warn("Fallback provider "+provider+" unavailable: "+e.message);}
+  }
+  throw lastErr||new Error("No public market-data provider available");
 }
 
 module.exports={getFallbackIntelligence,tfAnalysis,derivativeScore,levels,binance};
