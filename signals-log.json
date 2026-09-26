@@ -31,36 +31,6 @@
       }
     },
     {
-      "id": "ZEC_LONG_1790429477770",
-      "ts": 1790429477770,
-      "base": "ZEC",
-      "instId": "ZECUSDT",
-      "action": "LONG",
-      "fingerprint": "ZEC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.51|2.27|3.78|5.29",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 91,
-      "entry": 1537.44,
-      "sl": 1514.2,
-      "tp1": 1572.3000000000002,
-      "tp2": 1595.54,
-      "tp3": 1618.7800000000002,
-      "rr": 1.5,
-      "validUntil": "2026-09-26T14:31:10.371Z",
-      "horizons": {
-        "h15": {
-          "r": 0.076,
-          "price": 1539.2,
-          "at": 1790431200000
-        },
-        "h60": {
-          "r": 0.292,
-          "price": 1544.2199999999998,
-          "at": 1790433900000
-        }
-      }
-    },
-    {
       "id": "BTC_SHORT_1790435649056",
       "ts": 1790435649056,
       "base": "BTC",
@@ -147,6 +117,41 @@
     }
   ],
   "closed": [
+    {
+      "id": "ZEC_LONG_1790429477770",
+      "ts": 1790429477770,
+      "base": "ZEC",
+      "instId": "ZECUSDT",
+      "action": "LONG",
+      "fingerprint": "ZEC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.51|2.27|3.78|5.29",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 91,
+      "entry": 1537.44,
+      "sl": 1514.2,
+      "tp1": 1572.3000000000002,
+      "tp2": 1595.54,
+      "tp3": 1618.7800000000002,
+      "rr": 1.5,
+      "validUntil": "2026-09-26T14:31:10.371Z",
+      "horizons": {
+        "h15": {
+          "r": 0.076,
+          "price": 1539.2,
+          "at": 1790431200000
+        },
+        "h60": {
+          "r": 0.292,
+          "price": 1544.2199999999998,
+          "at": 1790433900000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 1.41,
+      "exit": 1572.3000000000002,
+      "closedAt": 1790442000000,
+      "costR": 0.093
+    },
     {
       "id": "ETH_LONG_1790411715464",
       "ts": 1790411715464,
@@ -2841,19 +2846,19 @@
     }
   ],
   "stats": {
-    "total": 40,
-    "wins": 13,
+    "total": 41,
+    "wins": 14,
     "losses": 13,
     "expired": 14,
-    "sumR": 0.39999999999999925,
+    "sumR": 1.8100000000000005,
     "bySetup": {
       "TRADERSPY_COMPATIBLE_MTF": {
-        "n": 9,
-        "wins": 0,
+        "n": 10,
+        "wins": 1,
         "losses": 0,
-        "sumR": 0,
-        "winrate": null,
-        "avgR": null
+        "sumR": 1.41,
+        "winrate": 100,
+        "avgR": 1.41
       },
       "TRADERSPY · Pullback Trend Continuation Buy (1H)": {
         "n": 1,
@@ -2882,12 +2887,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 33,
-        "wins": 13,
+        "n": 34,
+        "wins": 14,
         "losses": 10,
-        "sumR": 3.7799999999999994,
-        "winrate": 56.5,
-        "avgR": 0.16
+        "sumR": 5.1899999999999995,
+        "winrate": 58.3,
+        "avgR": 0.22
       },
       "SHORT": {
         "n": 7,
@@ -2900,7 +2905,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 50,
-    "avgR": 0.02
+    "winrate": 51.9,
+    "avgR": 0.07
   }
 }
