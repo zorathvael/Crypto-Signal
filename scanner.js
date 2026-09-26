@@ -1989,7 +1989,6 @@ function formatTelegramMessage(s) {
     `<i>Crypto-Signal v4.0 · information only · NFA</i>`
   );
 }
-
 async function sendTelegram(signals) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram: skip (no secrets)");
