@@ -36,6 +36,44 @@ Yang tidak lagi menjadi sumber signal pada mode aktif:
 
 File scanner lama masih berada di `scanner.js` sebagai rollback reference, tetapi **workflow aktif memakai `TRADERSPY_ONLY=true`** sehingga jalur lama tidak dieksekusi.
 
+## TraderSpy quota fallback
+
+TraderSpy tetap menjadi **sumber utama**. Jika TraderSpy mengembalikan **HTTP 429 / daily quota exhausted**, scanner otomatis berpindah ke `traderspy_fallback.js`.
+
+Fallback memakai **public Binance USDⓈ-M Futures market data** dan mempertahankan observable TraderSpy-compatible pipeline:
+
+```
+Binance futures universe
+    ↓
+liquidity discovery
+    ↓
+15M + 1H + 4H technical direction
+    ↓
+MTF agreement
+    ↓
+ATR / structure SL-TP
+    ↓
+funding + open interest + orderbook sanity
+    ↓
+bounded quality gate
+    ↓
+same signal contract
+    ↓
+same dedup / delivery pipeline
+```
+
+Fallback **tidak** menjadi sumber kedua yang selalu aktif dan tidak mengubah TraderSpy ketika TraderSpy tersedia. Ia hanya aktif pada quota exhaustion. Authentication errors, malformed TraderSpy responses, dan error lain tetap fail-closed.
+
+Default fallback budget:
+- discovery: top 20 liquid perpetual USDT symbols
+- validation targets: 6
+- hard maximum validation targets: 10
+- per target: 3 kline requests + OI + funding + depth
+- no order execution
+- no synthetic/mock market data
+
+Fallback tidak mengklaim mereplikasi proprietary internals TraderSpy. Ia mereplikasi **observable validation contract dan decision structure** yang digunakan repository ini untuk menjaga bentuk/aturan signal tetap kompatibel.
+
 ## TraderSpy adapter
 
 File:
