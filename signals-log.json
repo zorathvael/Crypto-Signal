@@ -1,6 +1,68 @@
 {
   "open": [
     {
+      "id": "ETH_LONG_1790464607430",
+      "ts": 1790464607430,
+      "base": "ETH",
+      "instId": "ETHUSDT",
+      "action": "LONG",
+      "fingerprint": "ETH|LONG|TRADERSPY_COMPATIBLE_MTF|-1.10|2.21|4.42|6.62",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 94,
+      "entry": 2692.48,
+      "sl": 2662.76,
+      "tp1": 2751.9199999999996,
+      "tp2": 2811.359999999999,
+      "tp3": 2870.799999999999,
+      "rr": 2,
+      "validUntil": "2026-09-27T00:16:39.091Z",
+      "horizons": {
+        "h15": {
+          "r": 0.041,
+          "price": 2693.685,
+          "at": 1790466300000
+        },
+        "h60": {
+          "r": 0.002,
+          "price": 2692.55,
+          "at": 1790469000000
+        }
+      }
+    },
+    {
+      "id": "BTC_LONG_1790464607430",
+      "ts": 1790464607430,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "LONG",
+      "fingerprint": "BTC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.42|2.84|5.69|8.53",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "TRADERSPY_COMPATIBLE",
+      "probability": 91,
+      "entry": 84320.2,
+      "sl": 83121.1,
+      "tp1": 86718.39999999998,
+      "tp2": 89116.59999999996,
+      "tp3": 91514.79999999994,
+      "rr": 2,
+      "validUntil": "2026-09-27T00:16:38.917Z",
+      "horizons": {
+        "h15": {
+          "r": 0.029,
+          "price": 84354.85,
+          "at": 1790466300000
+        },
+        "h60": {
+          "r": -0.046,
+          "price": 84264.5,
+          "at": 1790469000000
+        }
+      }
+    }
+  ],
+  "closed": [
+    {
       "id": "BTC_LONG_1790444702843",
       "ts": 1790444702843,
       "base": "BTC",
@@ -28,7 +90,10 @@
           "price": 83981.04999999999,
           "at": 1790449200000
         }
-      }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790477162839
     },
     {
       "id": "BTC_SHORT_1790448695627",
@@ -58,48 +123,11 @@
           "price": 83977,
           "at": 1790452800000
         }
-      }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790477162839
     },
-    {
-      "id": "ETH_LONG_1790464607430",
-      "ts": 1790464607430,
-      "base": "ETH",
-      "instId": "ETHUSDT",
-      "action": "LONG",
-      "fingerprint": "ETH|LONG|TRADERSPY_COMPATIBLE_MTF|-1.10|2.21|4.42|6.62",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 94,
-      "entry": 2692.48,
-      "sl": 2662.76,
-      "tp1": 2751.9199999999996,
-      "tp2": 2811.359999999999,
-      "tp3": 2870.799999999999,
-      "rr": 2,
-      "validUntil": "2026-09-27T00:16:39.091Z",
-      "horizons": {}
-    },
-    {
-      "id": "BTC_LONG_1790464607430",
-      "ts": 1790464607430,
-      "base": "BTC",
-      "instId": "BTCUSDT",
-      "action": "LONG",
-      "fingerprint": "BTC|LONG|TRADERSPY_COMPATIBLE_MTF|-1.42|2.84|5.69|8.53",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "TRADERSPY_COMPATIBLE",
-      "probability": 91,
-      "entry": 84320.2,
-      "sl": 83121.1,
-      "tp1": 86718.39999999998,
-      "tp2": 89116.59999999996,
-      "tp3": 91514.79999999994,
-      "rr": 2,
-      "validUntil": "2026-09-27T00:16:38.917Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
     {
       "id": "BTC_SHORT_1790429477770",
       "ts": 1790429477770,
@@ -2961,14 +2989,14 @@
     }
   ],
   "stats": {
-    "total": 45,
+    "total": 47,
     "wins": 14,
     "losses": 13,
-    "expired": 18,
+    "expired": 20,
     "sumR": 1.8100000000000005,
     "bySetup": {
       "TRADERSPY_COMPATIBLE_MTF": {
-        "n": 14,
+        "n": 16,
         "wins": 1,
         "losses": 0,
         "sumR": 1.41,
@@ -3001,21 +3029,21 @@
       }
     },
     "byAction": {
-      "SHORT": {
-        "n": 9,
-        "wins": 0,
-        "losses": 3,
-        "sumR": -3.38,
-        "winrate": 0,
-        "avgR": -1.13
-      },
       "LONG": {
-        "n": 36,
+        "n": 37,
         "wins": 14,
         "losses": 10,
         "sumR": 5.1899999999999995,
         "winrate": 58.3,
         "avgR": 0.22
+      },
+      "SHORT": {
+        "n": 10,
+        "wins": 0,
+        "losses": 3,
+        "sumR": -3.38,
+        "winrate": 0,
+        "avgR": -1.13
       }
     },
     "afterTs": 1789689600000,
