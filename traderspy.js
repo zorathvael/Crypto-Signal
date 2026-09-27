@@ -482,12 +482,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   // executable SL envelope; structure was already used to calibrate Entry.
   const maxRisk = entry * 0.004;
 
-  // The fixed 0.4% price-risk envelope is also the measurable volatility
-  // capacity. If one ATR already exceeds the entire envelope, a market entry
-  // cannot be executed with the production geometry without relying on
-  // sub-ATR noise; reject the candidate before validation.
-  const atrCapacity = Number(h1?.indicators?.atr?.value);
-  if (Number.isFinite(atrCapacity) && atrCapacity > 0 && atrCapacity >= maxRisk) return null;  const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
+  const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
 
   // Layer 3: single production risk/reward engine. It owns leverage and TP geometry.
   let plan;
