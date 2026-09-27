@@ -18,7 +18,13 @@
       "rr": 5,
       "regime": "expanded",
       "validUntil": "2026-09-27T08:15:52.082Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 0.307,
+          "price": 71.84,
+          "at": 1790495100000
+        }
+      }
     },
     {
       "id": "FIL_LONG_1790493372390",
@@ -38,7 +44,13 @@
       "rr": 5,
       "regime": "normal",
       "validUntil": "2026-09-27T08:15:52.082Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 0.97,
+          "price": 1.14975,
+          "at": 1790495100000
+        }
+      }
     },
     {
       "id": "WLD_LONG_1790493372390",
@@ -58,7 +70,13 @@
       "rr": 5,
       "regime": "expanded",
       "validUntil": "2026-09-27T08:15:52.082Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 1.526,
+          "price": 0.54235,
+          "at": 1790495100000
+        }
+      }
     },
     {
       "id": "GRAM_LONG_1790493372390",
@@ -78,7 +96,13 @@
       "rr": 5,
       "regime": "expanded",
       "validUntil": "2026-09-27T08:15:52.082Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.572,
+          "price": 1.59085,
+          "at": 1790495100000
+        }
+      }
     },
     {
       "id": "ZEC_LONG_1790493372390",
@@ -98,6 +122,52 @@
       "rr": 5.32,
       "regime": "normal",
       "validUntil": "2026-09-27T08:15:52.082Z",
+      "horizons": {
+        "h15": {
+          "r": -0.054,
+          "price": 1661.325,
+          "at": 1790495100000
+        }
+      }
+    },
+    {
+      "id": "NEAR_LONG_1790495511887",
+      "ts": 1790495511887,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "LONG",
+      "fingerprint": "NEAR|LONG|TRADERSPY_CANDIDATE|-1.00|5.00|10.00|20.00",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 5.431,
+      "sl": 5.37669,
+      "tp1": 5.7025500000000005,
+      "tp2": 5.974100000000001,
+      "tp3": 6.5172,
+      "rr": 5,
+      "regime": "normal",
+      "validUntil": "2026-09-27T08:51:41.339Z",
+      "horizons": {}
+    },
+    {
+      "id": "TAO_LONG_1790495511887",
+      "ts": 1790495511887,
+      "base": "TAO",
+      "instId": "TAOUSDT",
+      "action": "LONG",
+      "fingerprint": "TAO|LONG|TRADERSPY_CANDIDATE|-1.00|5.00|10.00|20.00",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 326.66702505,
+      "sl": 323.4003547995,
+      "tp1": 343.0003763025,
+      "tp2": 359.33372755500005,
+      "tp3": 392.00043006,
+      "rr": 5,
+      "regime": "normal",
+      "validUntil": "2026-09-27T08:51:41.339Z",
       "horizons": {}
     }
   ],
