@@ -130,12 +130,16 @@ TraderSpy memberikan:
 - createdAt
 - triggered conditions
 
-Crypto-Signal mengubah persentase level tersebut menjadi level absolut:
+Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL sumber menjadi structural-stop input, lalu satu-satunya production trade-plan engine menghitung leverage dan TP dari margin contract:
 
 - LONG: SL di bawah entry, TP di atas entry
 - SHORT: SL di atas entry, TP di bawah entry
+- Margin: 10 USDT
+- Maximum risk: 5% margin = 0.50 USDT
+- Leverage: 5x–25x
+- TP1/TP2/TP3: 25% / 50% / 100% margin
 
-R:R dihitung dari TP1 terhadap jarak SL.
+R:R tetap tersedia sebagai metrik diagnostik/outcome, tetapi tidak lagi menjadi pengendali Entry/SL/TP.
 
 ### Quality score
 
@@ -332,7 +336,7 @@ Test adapter mencakup:
 - LONG normalization
 - SHORT normalization
 - TP/SL conversion
-- R:R calculation
+- margin geometry validation (5% risk, 25/50/100% reward)
 - quality score
 - stale signal rejection
 - resolved signal rejection
