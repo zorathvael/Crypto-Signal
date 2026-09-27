@@ -192,15 +192,13 @@ Public channels show actual entry/SL/TP prices and margin-based percentages. R:R
 Discovery candidates are not allowed to create a geometry that the final Alpha Hunter gate will reject itself.
 
 For every candidate generated from screen_symbols:
-- SL is derived from current ATR/structure.
-- TP1 is exactly **2R**.
-- TP2 is exactly **4R**.
-- TP3 is exactly **6R**.
+- SL is derived from current ATR/structure and must fit the **5% margin risk** budget at the 5x minimum.
+- TP1 is **+25% of margin** converted through the selected leverage.
+- TP2 is **+50% of margin** converted through the selected leverage.
+- TP3 is **+100% of margin** converted through the selected leverage.
 - The candidate builder is counted explicitly as built or buildRejected in the runtime funnel.
-- Discovery candidates are rejected before deep validation when ATR/structure volatility cannot produce an SL within the 2% maximum distance required by the 5x minimum-leverage risk budget.
 
-
-This keeps discovery → validation internally consistent and makes the funnel metrics meaningful.
+This keeps discovery → validation consistent with the production margin-based contract and makes the funnel metrics meaningful.
 
 ## Alpha Hunter v3 — conditional edge selection
 
