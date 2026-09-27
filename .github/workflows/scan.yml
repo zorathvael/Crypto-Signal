@@ -40,6 +40,7 @@ jobs:
           sudo apt-get install -y -qq librsvg2-bin
 
       - name: Run Strict Scanner
+        if: github.event_name != 'pull_request'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
