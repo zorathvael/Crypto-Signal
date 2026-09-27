@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: "22"
 
+      # PR validation intentionally stops after syntax + unit tests; live provider scans run only on schedule/manual dispatch.
       - name: Verify modules
         run: |
           node --check positioning.js
