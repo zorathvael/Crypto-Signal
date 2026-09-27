@@ -448,8 +448,8 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   // risk budget, so the maximum admissible SL distance is 2% at 5x.
   // Discovery must respect that contract before entering Alpha Hunter; otherwise
   // we waste validation calls on candidates that can never become publishable.
-  const maxRisk = entry * 0.02;
-  const minAtrRisk = atr * 0.5;
+  const maxRisk = entry * 0.01;
+  const minAtrRisk = atr * 0.35;
   let sl;
   let tp1;
   let tp2;
@@ -457,14 +457,16 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
 
   if (action === "LONG") {
     const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
-    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
+    const fallbackRisk = Math.min(atr * 0.60, maxRisk);
     if (support != null) sl = support;
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
     else return null;
     const risk = entry - sl;
-    tp1 = entry + risk * 2;
-    tp2 = entry + risk * 4;
-    tp3 = entry + risk * 6;
+    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry))));
+    if (leverage < 5) return null;
+    tp1 = entry * (1 + 0.25 / leverage);
+    tp2 = entry * (1 + 0.50 / leverage);
+    tp3 = entry * (1 + 1.00 / leverage);
   } else {
     const resistance = resistances.find(x => x > entry && x - entry >= minAtrRisk && x - entry <= maxRisk);
     const fallbackRisk = Math.min(atr * 0.75, maxRisk);
@@ -472,9 +474,11 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
     else return null;
     const risk = sl - entry;
-    tp1 = entry - risk * 2;
-    tp2 = entry - risk * 4;
-    tp3 = entry - risk * 6;
+    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry))));
+    if (leverage < 5) return null;
+    tp1 = entry / (1 + 0.25 / leverage);
+    tp2 = entry / (1 + 0.50 / leverage);
+    tp3 = entry / (1 + 1.00 / leverage);
   }
 
   const risk = Math.abs(entry - sl);
