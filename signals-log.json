@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "ETH_LONG_1790464607430",
       "ts": 1790464607430,
@@ -28,7 +29,10 @@
           "price": 2692.55,
           "at": 1790469000000
         }
-      }
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790488502688
     },
     {
       "id": "BTC_LONG_1790464607430",
@@ -58,10 +62,11 @@
           "price": 84264.5,
           "at": 1790469000000
         }
-      }
-    }
-  ],
-  "closed": [
+      },
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790488502688
+    },
     {
       "id": "BTC_LONG_1790444702843",
       "ts": 1790444702843,
@@ -2989,14 +2994,14 @@
     }
   ],
   "stats": {
-    "total": 47,
+    "total": 49,
     "wins": 14,
     "losses": 13,
-    "expired": 20,
+    "expired": 22,
     "sumR": 1.8100000000000005,
     "bySetup": {
       "TRADERSPY_COMPATIBLE_MTF": {
-        "n": 16,
+        "n": 18,
         "wins": 1,
         "losses": 0,
         "sumR": 1.41,
@@ -3030,7 +3035,7 @@
     },
     "byAction": {
       "LONG": {
-        "n": 37,
+        "n": 39,
         "wins": 14,
         "losses": 10,
         "sumR": 5.1899999999999995,
