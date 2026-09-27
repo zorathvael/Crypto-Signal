@@ -1980,7 +1980,7 @@ function formatTelegramMessage(s) {
     `💵 Margin: <b>${plan?.marginUsdt ?? 10} USDT</b> · Leverage: <b>${plan?.leverage ?? "—"}x</b>\n` +
     `🛑 Risk: <b>${plan?.riskMarginPercent ?? 5}% margin</b> · SL <b>${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price</b>\n` +
     `🎯 Reward: <b>${plan?.rewardMarginPcts?.join("% / ") || "25 / 50 / 100"}% margin</b>\n`
-    (s.ev && s.ev.netRr != null ? `\n📐 Net R (after cost): ~${s.ev.netRr}` : "") +
+    + (s.ev && s.ev.netRr != null ? `\n📐 Net R (after cost): ~${s.ev.netRr}` : "") +
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
