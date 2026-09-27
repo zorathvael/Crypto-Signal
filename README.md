@@ -134,9 +134,9 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 
 - LONG: SL di bawah entry, TP di atas entry
 - SHORT: SL di atas entry, TP di bawah entry
-- Margin: 10 USDT
+- Margin: 5 USDT
 - Maximum risk: 5% margin = 0.50 USDT
-- Leverage: 5x–25x
+- Leverage: 5x–20x
 - TP1/TP2/TP3: 25% / 50% / 100% margin
 
 R:R tetap tersedia sebagai metrik diagnostik/outcome, tetapi tidak lagi menjadi pengendali Entry/SL/TP.
@@ -178,14 +178,14 @@ Environment variables dapat mengubah:
 
 ## Independent entry calibration vs margin trade geometry
 
-Production logic separates two concerns. **Entry calibration** decides only the executable Entry using live price, technical price, ATR, and nearby structure. It does not know margin, leverage, SL budget, or TP percentages. **Margin risk/reward geometry** starts after Entry is fixed: it accepts Entry + structural SL, derives 5x–25x leverage from the 5% margin-risk budget, and converts TP1/TP2/TP3 into exactly 25/50/100% of margin. Changing those percentages must not change Entry calibration.
+Production logic separates two concerns. **Entry calibration** decides only the executable Entry using live price, technical price, ATR, and nearby structure. It does not know margin, leverage, SL budget, or TP percentages. **Margin risk/reward geometry** starts after Entry is fixed: it accepts Entry + structural SL, derives 5x–20x leverage from the 5% margin-risk budget, and converts TP1/TP2/TP3 into exactly 25/50/100% of margin. Changing those percentages must not change Entry calibration.
 
 ```text
 market / MTF evidence → ENTRY CALIBRATION → Entry
                                       ↓
                               structural SL
                                       ↓
-                     RISK ENGINE: 10 USDT / 5% / 5–25x
+                     RISK ENGINE: 5 USDT / 5% / 5–20x
                                       ↓
                      REWARD ENGINE: 25% / 50% / 100%
                                       ↓
@@ -197,7 +197,7 @@ market / MTF evidence → ENTRY CALIBRATION → Entry
 Production level contract:
 - Margin: **10 USDT**
 - Maximum SL risk: **5% of margin = 0.50 USDT**
-- Leverage: **5x–25x**
+- Leverage: **5x–20x**
 - TP1: **+25% of margin**
 - TP2: **+50% of margin**
 - TP3: **+100% of margin**
