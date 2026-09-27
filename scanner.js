@@ -1977,7 +1977,7 @@ function formatTelegramMessage(s) {
     `🎯 TP1: <code>${formatPrice(plan?.tp1 || s.tp1)}</code>\n` +
     `🎯 TP2: <code>${formatPrice(plan?.tp2 || s.tp2)}</code>\n` +
     `🚀 TP3: <code>${formatPrice(plan?.tp3 || s.tp3)}</code>\n` +
-    `💵 Margin: <b>${plan?.marginUsdt ?? 10} USDT</b> · Leverage: <b>${plan?.leverage ?? "—"}x</b>\n` +
+    `💵 Margin: <b>${plan?.marginUsdt ?? 5} USDT</b> · Leverage: <b>${plan?.leverage ?? "—"}x</b>\n` +
     `🛑 Risk: <b>${plan?.riskMarginPercent ?? 5}% margin</b> · SL <b>${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price</b>\n` +
     `🎯 Reward: <b>${plan?.rewardMarginPcts?.join("% / ") || "25 / 50 / 100"}% margin</b>\n`
     + (s.ev && s.ev.netRr != null ? `\n📐 Net R (after cost): ~${s.ev.netRr}` : "") +
@@ -2016,7 +2016,7 @@ function formatSquareCoinBlock(s) {
     `🎯 TP1: ${formatPrice(plan?.tp1 || s.tp1)}\n` +
     `🎯 TP2: ${formatPrice(plan?.tp2 || s.tp2)}\n` +
     `🚀 TP3: ${formatPrice(plan?.tp3 || s.tp3 || s.tp2)}\n` +
-    `💵 Margin ${plan?.marginUsdt ?? 10} USDT · Leverage ${plan?.leverage ?? "—"}x\n` +
+    `💵 Margin ${plan?.marginUsdt ?? 5} USDT · Leverage ${plan?.leverage ?? "—"}x\n` +
     `🛑 Risk ${plan?.riskMarginPercent ?? 5}% margin · SL ${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price\n` +
     `🎯 Reward ${(plan?.rewardMarginPcts || [25,50,100]).join("% / ")}% margin` +
     (s.ev && s.ev.netRr != null ? `\nNet R~${s.ev.netRr}` : "") +
@@ -3050,7 +3050,7 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
-  // Hard execution gate: every published trade must have a valid 5x–25x plan.
+  // Hard execution gate: every published trade must have a valid 5x–20x plan.
   // Signals whose SL is too wide for the 5x minimum are NO-TRADE and are not
   // sent to any delivery channel. This prevents runtime failures and prevents
   // accidental publication of sub-5x leverage.
