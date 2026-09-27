@@ -1,65 +1,106 @@
 /**
- * Telegram trade-plan sizing for Crypto-Signal.
- * Output/sizing only; never executes orders.
- * Default: 5 USDT margin, 5% margin risk budget, 20x max leverage.
- * Leverage is always constrained to 5x–20x. Trades whose SL is too wide
- * to respect the 5% margin risk budget at 5x are rejected instead of
- * silently falling back to 1x.
+ * Production trade-plan geometry for Crypto-Signal.
+ *
+ * IMPORTANT: Entry calibration and margin geometry are separate layers.
+ * entry_calibration.js decides the executable Entry from market/technical
+ * evidence. This module starts only after Entry + structural SL exist.
+ *
+ * Fixed production contract:
+ * - Margin: 5 USDT
+ * - Leverage: 25x (fixed; never recalibrated)
+ * - Notional: 125 USDT
+ * - Maximum SL loss: 10% of margin = 0.50 USDT
+ * - TP1: +30% of margin = +1.50 USDT
+ * - TP2: +60% of margin = +3.00 USDT
+ * - TP3: +120% of margin = +6.00 USDT
+ *
+ * Therefore the corresponding linear price geometry is:
+ * - SL: 0.4% from Entry
+ * - TP1: 1.2% from Entry
+ * - TP2: 2.4% from Entry
+ * - TP3: 4.8% from Entry
+ *
+ * A structural SL wider than 0.4% is rejected instead of silently changing
+ * leverage or risk. No order is executed by this module.
  */
 const MARGIN_USDT = 5;
-const RISK_FRACTION = 0.05;
-const REWARD_MARGIN_PCTS = [25, 50, 100];
-const MIN_LEVERAGE = 5;
-const MAX_LEVERAGE = 20;
+const FIXED_LEVERAGE = 25;
+const RISK_MARGIN_PERCENT = 10;
+const RISK_FRACTION = 0.10;
+const REWARD_MARGIN_PCTS = [30, 60, 120];
+const EPSILON = 1e-9;
 
 function finitePositive(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function calculateTradePlan(signal, options = {}) {
-  const marginUsdt = finitePositive(options.marginUsdt ?? process.env.TELEGRAM_MARGIN_USDT) ?? MARGIN_USDT;
-  const riskFraction = finitePositive(options.riskFraction ?? process.env.TELEGRAM_MARGIN_RISK_FRACTION) ?? RISK_FRACTION;
-  const maxLeverage = Math.max(MIN_LEVERAGE, Math.min(MAX_LEVERAGE,
-    Math.floor(finitePositive(options.maxLeverage ?? process.env.TELEGRAM_MAX_LEVERAGE) ?? MAX_LEVERAGE)
-  ));
+function calculateTradePlan(signal) {
+  const marginUsdt = MARGIN_USDT;
+  const leverage = FIXED_LEVERAGE;
   const entry = finitePositive(signal?.entry);
   const sl = finitePositive(signal?.sl);
   if (!entry || !sl) throw new Error("Trade plan requires valid entry and SL");
 
+  const action = String(signal?.action || "LONG").toUpperCase();
+  if (action !== "LONG" && action !== "SHORT") {
+    throw new Error("Trade plan requires LONG or SHORT action");
+  }
+
   const slDistancePct = Math.abs(entry - sl) / entry;
   if (!(slDistancePct > 0)) throw new Error("Trade plan requires non-zero entry-to-SL distance");
 
-  const riskBudgetUsdt = marginUsdt * riskFraction;
-  const maxSlDistancePct = riskBudgetUsdt / (marginUsdt * MIN_LEVERAGE);
-  if (slDistancePct > maxSlDistancePct + 1e-9) {
-    throw new Error(`SL distance ${(slDistancePct * 100).toFixed(3)}% exceeds risk budget at ${MIN_LEVERAGE}x`);
+  const notionalUsdt = marginUsdt * leverage;
+  const riskBudgetUsdt = marginUsdt * RISK_FRACTION;
+  const maxSlDistancePct = riskBudgetUsdt / notionalUsdt;
+
+  if (slDistancePct > maxSlDistancePct + EPSILON) {
+    throw new Error(
+      `SL distance ${(slDistancePct * 100).toFixed(3)}% exceeds fixed 25x risk geometry (max ${(maxSlDistancePct * 100).toFixed(3)}%)`
+    );
   }
 
-  const rawLeverage = riskBudgetUsdt / (marginUsdt * slDistancePct);
-  const leverage = Math.max(MIN_LEVERAGE, Math.min(maxLeverage, Math.floor(rawLeverage)));
-  const notionalUsdt = marginUsdt * leverage;
-  const slLossUsdt = notionalUsdt * slDistancePct;
   const quantity = notionalUsdt / entry;
-  const action = String(signal?.action || "LONG").toUpperCase();
-  const rewardMarginPcts = Array.isArray(options.rewardMarginPcts)
-    ? options.rewardMarginPcts.map(Number).filter(Number.isFinite)
-    : REWARD_MARGIN_PCTS.slice();
-  if (!rewardMarginPcts.length || rewardMarginPcts.some((x) => x < 25)) {
-    throw new Error("Reward ladder requires at least 25% of margin per target");
-  }
-  const priceTargets = rewardMarginPcts.map((rewardMarginPct) => {
+  const slLossUsdt = notionalUsdt * slDistancePct;
+
+  // Linear price movement is intentional. It makes margin reward percentages
+  // exact for both LONG and SHORT instead of introducing reciprocal asymmetry.
+  const priceTargets = REWARD_MARGIN_PCTS.map((rewardMarginPct) => {
     const priceMovePct = rewardMarginPct / leverage;
-    const multiplier = 1 + priceMovePct / 100;
-    return action === "SHORT" ? entry / multiplier : entry * multiplier;
+    const move = priceMovePct / 100;
+    return action === "SHORT"
+      ? entry * (1 - move)
+      : entry * (1 + move);
   });
+
+  const slExpected = action === "SHORT"
+    ? entry * (1 + maxSlDistancePct)
+    : entry * (1 - maxSlDistancePct);
+
+  // The supplied structural SL remains the production SL input. This field is
+  // diagnostic and shows the exact contract boundary without overwriting it.
   const [tp1, tp2, tp3] = priceTargets;
   return {
-    marginUsdt, riskFraction, riskMarginPercent: riskFraction * 100,
-    riskBudgetUsdt, leverage, notionalUsdt, quantity,
-    slDistancePct, slDistancePercent: slDistancePct * 100, slLossUsdt,
-    rewardMarginPcts, rewardPriceMovePcts: rewardMarginPcts.map((x) => x / leverage),
-    tp1, tp2, tp3, geometry: "MARGIN_PERCENT"
+    marginUsdt,
+    riskFraction: RISK_FRACTION,
+    riskMarginPercent: RISK_MARGIN_PERCENT,
+    riskBudgetUsdt,
+    leverage,
+    notionalUsdt,
+    quantity,
+    slDistancePct,
+    slDistancePercent: slDistancePct * 100,
+    slLossUsdt,
+    maxSlDistancePct,
+    maxSlDistancePercent: maxSlDistancePct * 100,
+    contractSlPrice: slExpected,
+    rewardMarginPcts: REWARD_MARGIN_PCTS.slice(),
+    rewardPriceMovePcts: REWARD_MARGIN_PCTS.map((x) => x / leverage),
+    tp1,
+    tp2,
+    tp3,
+    geometry: "MARGIN_PERCENT_FIXED_25X",
+    entryGeometryIndependent: true,
   };
 }
 
