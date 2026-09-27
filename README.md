@@ -172,6 +172,22 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
+## Independent entry calibration vs margin trade geometry
+
+Production logic separates two concerns. **Entry calibration** decides only the executable Entry using live price, technical price, ATR, and nearby structure. It does not know margin, leverage, SL budget, or TP percentages. **Margin risk/reward geometry** starts after Entry is fixed: it accepts Entry + structural SL, derives 5x–25x leverage from the 5% margin-risk budget, and converts TP1/TP2/TP3 into exactly 25/50/100% of margin. Changing those percentages must not change Entry calibration.
+
+```text
+market / MTF evidence → ENTRY CALIBRATION → Entry
+                                      ↓
+                              structural SL
+                                      ↓
+                     RISK ENGINE: 10 USDT / 5% / 5–25x
+                                      ↓
+                     REWARD ENGINE: 25% / 50% / 100%
+                                      ↓
+                         Entry / SL / TP1 / TP2 / TP3
+```
+
 ## Margin-based trade geometry
 
 Production level contract:
@@ -212,9 +228,8 @@ Default:
 - `ALPHA_MIN_SCORE=72`
 - `ALPHA_HISTORY_AFTER_TS=2026-09-18T00:00:00Z`
 - hard veto jika MTF alignment < 2/3
-- hard veto jika TP1 di luar 2R–6R
-- hard veto jika TP2 tidak sekitar 4R
-- hard veto jika TP3 tidak sekitar 6R
+- hard veto jika calibrated Entry > 2 ATR dari live price
+- historical R metrics may be used for outcome analysis, but never define public Entry/SL/TP geometry
 - hard veto jika entry > 2 ATR dari live price
 - hard veto jika signal > 120 menit
 - empirical edge negatif menjadi hard veto hanya setelah cohort stabil minimal 20 outcome
