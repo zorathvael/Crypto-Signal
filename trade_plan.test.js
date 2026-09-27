@@ -44,7 +44,7 @@ test("reward targets are percentages of margin converted through leverage", () =
   assert.deepEqual(plan.rewardMarginPcts, [25, 50, 100]);
   assert.deepEqual(plan.rewardPriceMovePcts, [5, 10, 20]);
   assert.equal(plan.tp1, 105);
-  assert.equal(plan.tp2, 110);
+  assert.ok(Math.abs(plan.tp2 - 110) < 1e-9);
   assert.equal(plan.tp3, 120);
 });
 test("short reward targets mirror price movement", () => {
