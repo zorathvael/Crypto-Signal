@@ -12,6 +12,11 @@
  * / "1.5 ATR" thresholds.
  */
 const MAX_PRICE_RISK_PCT = 0.004;
+// Execution viability is measured against observed volatility, not a legacy
+// absolute ATR threshold: the fixed price-risk envelope must cover at least
+// 10% of one ATR. Below that ratio, the geometry is too small to represent a
+// meaningful fraction of the current volatility regime.
+const MIN_GEOMETRY_CAPACITY_ATR = 0.10;
 const EPSILON = 1e-12;
 
 function finitePositive(value) {
@@ -49,6 +54,22 @@ function calibrateEntry(input = {}) {
   const maxRiskPrice = livePrice * MAX_PRICE_RISK_PCT;
   const geometryCapacityAtr = maxRiskPrice / atr;
   const technicalDistanceAtr = Math.abs(technicalPrice - livePrice) / atr;
+
+  // Do not publish a candidate when the fixed execution envelope represents
+  // less than the minimum measurable volatility coverage. This is an
+  // execution-capacity gate, not a tightening of the entry-quality score.
+  if (geometryCapacityAtr < MIN_GEOMETRY_CAPACITY_ATR) {
+    return {
+      pass: false,
+      entry: technicalPrice,
+      score: 0,
+      distanceAtr: +technicalDistanceAtr.toFixed(3),
+      geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
+      geometryUse: 0,
+      mode: "REJECT_VOLATILITY_CAPACITY",
+      reasons: ["fixed geometry covers less than 10% of observed ATR"],
+    };
+  }
 
   // A technical anchor farther away than the geometry can reasonably absorb
   // is not "fixed" by widening risk. It must be rejected or replaced by a
@@ -147,4 +168,4 @@ function calibrateEntry(input = {}) {
   };
 }
 
-module.exports = { calibrateEntry, MAX_PRICE_RISK_PCT };
+module.exports = { calibrateEntry, MAX_PRICE_RISK_PCT, MIN_GEOMETRY_CAPACITY_ATR };
