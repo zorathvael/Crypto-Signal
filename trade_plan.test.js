@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { calculateTradePlan } = require("./trade_plan");
 
 test("10 USDT margin sizes leverage from 0.5% SL distance at 5% margin risk", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 99 });
+  const plan = calculateTradePlan({ entry: 100, sl: 99.5 });
   assert.equal(plan.marginUsdt, 10);
   assert.equal(plan.leverage, 10);
   assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
