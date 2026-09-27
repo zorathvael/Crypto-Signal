@@ -2017,8 +2017,8 @@ function formatSquareCoinBlock(s) {
     `🎯 TP2: ${formatPrice(plan?.tp2 || s.tp2)}\n` +
     `🚀 TP3: ${formatPrice(plan?.tp3 || s.tp3 || s.tp2)}\n` +
     `💵 Margin ${plan?.marginUsdt ?? 5} USDT · Leverage ${plan?.leverage ?? "—"}x\n` +
-    `🛑 Risk ${plan?.riskMarginPercent ?? 5}% margin · SL ${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price\n` +
-    `🎯 Reward ${(plan?.rewardMarginPcts || [25,50,100]).join("% / ")}% margin` +
+    `🛑 Risk ${plan?.riskMarginPercent ?? 10}% margin · SL ${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price\n` +
+    `🎯 Reward ${(plan?.rewardMarginPcts || [30,60,120]).join("% / ")}% margin` +
     (s.ev && s.ev.netRr != null ? `\nNet R~${s.ev.netRr}` : "") +
     `\n` +
     `\n` +
@@ -3050,14 +3050,13 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
-  // Hard execution gate: every published trade must have a valid 5x–20x plan.
-  // Signals whose SL is too wide for the 5x minimum are NO-TRADE and are not
-  // sent to any delivery channel. This prevents runtime failures and prevents
-  // accidental publication of sub-5x leverage.
+  // Hard execution gate: every published trade must have the fixed 25x geometry.
+  // Signals whose structural SL exceeds the 0.4% price-risk ceiling are NO-TRADE.
+  // Entry calibration remains independent from this post-entry geometry gate.
   postSignals = postSignals.filter((s) => {
     try {
       const plan = calculateTradePlan(s);
-      if (plan.leverage < 5 || plan.leverage > 25) {
+      if (plan.leverage !== 25) {
         console.warn(`Skip ${s.base} ${s.action}: invalid leverage ${plan.leverage}x`);
         return false;
       }
@@ -3453,13 +3452,13 @@ async function main() {
           levels = buildLevels(m5x, scored, c.mark, regime);
         }
       }
-      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR || levels.rr > 6) {
+      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR) {
         watches.push({
           base: c.base,
           action: scored.action,
           score: scored.probability,
           setup: "SCALP_15M",
-          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr outside 2-6R (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
+          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr below minimum 2R (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
         });
         funnel.levelsFail++;
         continue;
