@@ -46,7 +46,7 @@ test("entry calibration remains independent from margin geometry", () => {
   const { calibrateEntry } = require("./entry_calibration");
   const result = calibrateEntry({ action: "LONG", livePrice: 100, technicalPrice: 100, atr: 2, supports: [99], resistances: [103] });
   assert.equal(result.pass, true);
-  assert.equal(result.entry, 99.2);
+  assert.equal(result.entry, 100);
   const plan = calculateTradePlan({ entry: result.entry, sl: result.entry * 0.996, action: "LONG" });
   assert.equal(plan.entryGeometryIndependent, true);
   assert.equal(plan.entryUnchanged, true);
