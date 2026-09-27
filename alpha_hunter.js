@@ -116,7 +116,7 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const risk=Math.abs(entry-sl);
   const slPricePct=entry?risk/entry*100:0;
-  const leverage=Math.max(5,Math.min(25,Math.floor(0.05/(slPricePct/100)+1e-9)));
+  const leverage=25;
   const marginRiskPct=+(slPricePct*leverage).toFixed(2);
   const marginRewardPct=p=>entry&&leverage?+(Math.abs(p-entry)/entry*100*leverage).toFixed(2):0;
   const reward1=marginRewardPct(tp1),reward2=marginRewardPct(tp2),reward3=marginRewardPct(tp3);
@@ -152,10 +152,10 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
     else if(entryAtrDistance>2){score-=10;reasons.push("entry >2 ATR from live price");}
   }
 
-  if(marginRiskPct<=5)score+=4;else score-=20;
-  if(reward1>=25)score+=4;else score-=8;
-  if(reward2>=50)score+=4;else score-=6;
-  if(reward3>=100)score+=4;else score-=6;
+  if(marginRiskPct<=10)score+=4;else score-=20;
+  if(reward1>=30)score+=4;else score-=8;
+  if(reward2>=60)score+=4;else score-=6;
+  if(reward3>=120)score+=4;else score-=6;
   reasons.push("margin geometry risk "+marginRiskPct.toFixed(1)+"% / rewards "+reward1.toFixed(0)+"/"+reward2.toFixed(0)+"/"+reward3.toFixed(0)+"%");
 
   const row=derivativesPayload instanceof Map
@@ -189,10 +189,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const hardReject=[];
   if(aligned<2)hardReject.push("MTF alignment <2/3");
-  if(marginRiskPct>5)hardReject.push("SL risk exceeds 5% of margin");
-  if(reward1<25)hardReject.push("TP1 reward below 25% of margin");
-  if(reward2<50)hardReject.push("TP2 reward below 50% of margin");
-  if(reward3<100)hardReject.push("TP3 reward below 100% of margin");
+  if(leverage!==25)hardReject.push("leverage geometry is not fixed at 25x");
+  if(marginRiskPct>10)hardReject.push("SL risk exceeds 10% of margin");
+  if(reward1<30)hardReject.push("TP1 reward below 30% of margin");
+  if(reward2<60)hardReject.push("TP2 reward below 60% of margin");
+  if(reward3<120)hardReject.push("TP3 reward below 120% of margin");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
 
