@@ -1955,6 +1955,7 @@ function buildLevels(candles, signal, mark, regime = null) {
 }
 
 function formatTelegramMessage(s) {
+  let plan; try { plan = calculateTradePlan(s); } catch { plan = null; }
   const isSniper = s.probability >= MIN_PROB_SNIPER;
   const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
   const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
@@ -1973,10 +1974,12 @@ function formatTelegramMessage(s) {
     `🧩 Setup: <b>${displaySetup(s.setup)}</b>\n\n` +
     `🎯 Entry: <code>${formatPrice(s.entry)}</code>${displayMode(s.mode) ? " · " + displayMode(s.mode) : ""}\n` +
     `🛑 SL: <code>${formatPrice(s.sl)}</code>\n` +
-    `🎯 TP1: <code>${formatPrice(s.tp1)}</code>\n` +
-    `🎯 TP2: <code>${formatPrice(s.tp2)}</code>\n` +
-    `🚀 TP3: <code>${formatPrice(s.tp3)}</code>\n` +
-    `📈 R:R 1:${s.rr.toFixed(1)}\n` +
+    `🎯 TP1: <code>${formatPrice(plan?.tp1 || s.tp1)}</code>\n` +
+    `🎯 TP2: <code>${formatPrice(plan?.tp2 || s.tp2)}</code>\n` +
+    `🚀 TP3: <code>${formatPrice(plan?.tp3 || s.tp3)}</code>\n` +
+    `💵 Margin: <b>${plan?.marginUsdt ?? 10} USDT</b> · Leverage: <b>${plan?.leverage ?? "—"}x</b>\n` +
+    `🛑 Risk: <b>${plan?.riskMarginPercent ?? 5}% margin</b> · SL <b>${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price</b>\n` +
+    `🎯 Reward: <b>${plan?.rewardMarginPcts?.join("% / ") || "25 / 50 / 100"}% margin</b>\n`
     (s.ev && s.ev.netRr != null ? `\n📐 Net R (after cost): ~${s.ev.netRr}` : "") +
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
@@ -1986,6 +1989,7 @@ function formatTelegramMessage(s) {
 }
 
 function formatSquareCoinBlock(s) {
+  let plan; try { plan = calculateTradePlan(s); } catch { plan = null; }
   const isSniper = s.probability >= MIN_PROB_SNIPER;
   const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
   const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
@@ -2009,10 +2013,12 @@ function formatSquareCoinBlock(s) {
     `🧩 Setup: ${displaySetup(s.setup)}\n` +
     `🎯 Entry: ${formatPrice(s.entry)}${mode}\n` +
     `🛑 SL: ${formatPrice(s.sl)}\n` +
-    `🎯 TP1: ${formatPrice(s.tp1)}\n` +
-    `🎯 TP2: ${formatPrice(s.tp2)}\n` +
-    `🚀 TP3: ${formatPrice(s.tp3 || s.tp2)}\n` +
-    `📈 R:R 1:${s.rr.toFixed(1)}${risk}` +
+    `🎯 TP1: ${formatPrice(plan?.tp1 || s.tp1)}\n` +
+    `🎯 TP2: ${formatPrice(plan?.tp2 || s.tp2)}\n` +
+    `🚀 TP3: ${formatPrice(plan?.tp3 || s.tp3 || s.tp2)}\n` +
+    `💵 Margin ${plan?.marginUsdt ?? 10} USDT · Leverage ${plan?.leverage ?? "—"}x\n` +
+    `🛑 Risk ${plan?.riskMarginPercent ?? 5}% margin · SL ${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price\n` +
+    `🎯 Reward ${(plan?.rewardMarginPcts || [25,50,100]).join("% / ")}% margin` +
     (s.ev && s.ev.netRr != null ? `\nNet R~${s.ev.netRr}` : "") +
     `\n` +
     `\n` +
@@ -2053,7 +2059,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Strict Core v2.12 · potensi + proteksi · NFA");
+  lines.push("Crypto-Signal v4.0 · potensi + proteksi · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
