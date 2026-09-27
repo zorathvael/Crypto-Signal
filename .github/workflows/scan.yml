@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: "22"
 
+      # PR validation intentionally stops after syntax + unit tests; live provider scans run only on schedule/manual dispatch.
       - name: Verify modules
         run: |
           node --check positioning.js
@@ -40,6 +41,7 @@ jobs:
           sudo apt-get install -y -qq librsvg2-bin
 
       - name: Run Strict Scanner
+        if: github.event_name != 'pull_request'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
