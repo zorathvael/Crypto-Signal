@@ -1,8 +1,8 @@
 /**
  * Telegram trade-plan sizing for Crypto-Signal.
  * Output/sizing only; never executes orders.
- * Default: 5 USDT margin, 10% margin risk budget, 20x max leverage.
- * Leverage is always constrained to 5x–20x. Trades whose SL is too wide
+ * Default: 5 USDT margin, 10% margin risk budget, 25x max leverage.
+ * Leverage is always constrained to 5x–25x. Trades whose SL is too wide
  * to respect the 10% margin risk budget at 5x are rejected instead of
  * silently falling back to 1x.
  */
@@ -10,7 +10,7 @@ const MARGIN_USDT = 10;
 const RISK_FRACTION = 0.05;
 const REWARD_MARGIN_PCTS = [25, 50, 100];
 const MIN_LEVERAGE = 5;
-const MAX_LEVERAGE = 20;
+const MAX_LEVERAGE = 25;
 
 function finitePositive(value) {
   const n = Number(value);
