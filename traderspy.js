@@ -20,6 +20,8 @@ const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
 const DEFAULT_MIN_SCORE = 80;
 const { calculateAlpha } = require("./alpha_hunter");
+const { calibrateEntry } = require("./entry_calibration");
+const { calculateTradePlan } = require("./trade_plan");
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
@@ -436,7 +438,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   }
   if (!action) return null;
 
-  const entry = Number(technicalPayload.price);
+  const technicalPrice = Number(technicalPayload.price);
   const atr = Number(h1?.indicators?.atr?.value);
   if (!Number.isFinite(atr) || atr <= 0) return null;
 
@@ -444,52 +446,38 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
   const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
 
-  // The trade-plan layer has a hard 5x minimum leverage and a 5% margin-risk
-  // budget, so the maximum admissible SL distance is 1% at 5x.
-  // Discovery must respect that contract before entering Alpha Hunter; otherwise
-  // we waste validation calls on candidates that can never become publishable.
+  // Layer 1: ENTRY CALIBRATION. No margin percentage or TP formula belongs here.
+  const entryCalibration = calibrateEntry({
+    action, livePrice: technicalPrice, technicalPrice, atr, supports, resistances,
+  });
+  if (!entryCalibration.pass) return null;
+  const entry = entryCalibration.entry;
+
+  // Layer 2: structural stop candidate. Risk engine validates its affordability.
   const maxRisk = entry * 0.01;
   const minAtrRisk = atr * 0.35;
   let sl;
-  let tp1;
-  let tp2;
-  let tp3;
-
   if (action === "LONG") {
     const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
     const fallbackRisk = Math.min(atr * 0.60, maxRisk);
     if (support != null) sl = support;
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
     else return null;
-    const risk = entry - sl;
-    const leverage = Math.max(5, Math.min(25, Math.floor(0.05 / (risk / entry) + 1e-9)));
-    if (leverage < 5) return null;
-    tp1 = entry * (1 + 0.25 / leverage);
-    tp2 = entry * (1 + 0.50 / leverage);
-    tp3 = entry * (1 + 1.00 / leverage);
   } else {
     const resistance = resistances.find(x => x > entry && x - entry >= minAtrRisk && x - entry <= maxRisk);
     const fallbackRisk = Math.min(atr * 0.75, maxRisk);
     if (resistance != null) sl = resistance;
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
     else return null;
-    const risk = sl - entry;
-    const leverage = Math.max(5, Math.min(25, Math.floor(0.05 / (risk / entry) + 1e-9)));
-    if (leverage < 5) return null;
-    tp1 = entry / (1 + 0.25 / leverage);
-    tp2 = entry / (1 + 0.50 / leverage);
-    tp3 = entry / (1 + 1.00 / leverage);
   }
 
+  // Layer 3: single production risk/reward engine. It owns leverage and TP geometry.
+  let plan;
+  try { plan = calculateTradePlan({ action, entry, sl }); } catch { return null; }
+  const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
   const risk = Math.abs(entry - sl);
   const priceRiskPct = entry ? risk / entry * 100 : 0;
-  const leverage = Math.max(5, Math.min(25, Math.floor(0.05 / (risk / entry) + 1e-9)));
-  if (!Number.isFinite(leverage) || leverage < 5 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
-  const rewardMarginPcts = [
-    +(Math.abs(tp1 - entry) / entry * 100 * leverage).toFixed(2),
-    +(Math.abs(tp2 - entry) / entry * 100 * leverage).toFixed(2),
-    +(Math.abs(tp3 - entry) / entry * 100 * leverage).toFixed(2),
-  ];
+  if (![entry, sl, tp1, tp2, tp3, leverage].every(Number.isFinite)) return null;
   const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
 
   const ageValidUntil = now + 60 * 60 * 1000;
@@ -516,9 +504,10 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     tp3,
     rr: +rr.toFixed(2),
     riskPct: +priceRiskPct.toFixed(3),
-    marginRiskPct: +(priceRiskPct * leverage).toFixed(2),
+    marginRiskPct: plan.riskMarginPercent,
     leverage,
     rewardMarginPcts,
+    entryCalibration,
     regime: h4?.summary?.volatility ? { regime: h4.summary.volatility.state || "normal", atrPct: Number(h4.summary.volatility.atrPct || 0) } : null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
