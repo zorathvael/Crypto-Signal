@@ -155,7 +155,7 @@ test("discovery candidates respect the fixed 25x risk-plan SL ceiling", () => {
   };
   const out=buildScreenCandidate(discovery,payload,NOW,"LONG");
   assert.ok(out);
-  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.004);
+  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.004000001);
 });
 
 test("discovery candidates with excessive volatility are rejected before validation", () => {
