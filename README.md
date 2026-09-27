@@ -136,8 +136,8 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 - SHORT: SL di atas entry, TP di bawah entry
 - Margin: 5 USDT
 - Maximum risk: 5% margin = 0.25 USDT
-- Leverage: 5x–20x
-- TP1/TP2/TP3: 25% / 50% / 100% margin
+- Leverage: 25x fixed
+- TP1/TP2/TP3: 30% / 60% / 120% margin
 
 R:R tetap tersedia sebagai metrik diagnostik/outcome, tetapi tidak lagi menjadi pengendali Entry/SL/TP.
 
@@ -178,49 +178,47 @@ Environment variables dapat mengubah:
 
 ## Independent entry calibration vs margin trade geometry
 
-Production logic separates two concerns. **Entry calibration** decides only the executable Entry using live price, technical price, ATR, and nearby structure. It does not know margin, leverage, SL budget, or TP percentages. **Margin risk/reward geometry** starts after Entry is fixed: it accepts Entry + structural SL, derives 5x–20x leverage from the 5% margin-risk budget, and converts TP1/TP2/TP3 into exactly 25/50/100% of margin. Changing those percentages must not change Entry calibration.
+Production logic keeps **Entry calibration** and **margin trade geometry** as separate layers.
+
+**Entry calibration is NOT leverage geometry.** `entry_calibration.js` decides only the executable Entry from live price, technical price, ATR, and nearby market structure. It does not use the 5 USDT margin, 25x leverage, SL budget, or TP percentages.
+
+After Entry is fixed, the separate trade-plan engine receives **Entry + structural SL** and applies the fixed production contract:
+
+- Margin: **5 USDT**
+- Leverage: **25x fixed**
+- Notional: **125 USDT**
+- Maximum SL loss: **10% of margin = 0.50 USDT**
+- TP1: **+30% of margin = +1.50 USDT**
+- TP2: **+60% of margin = +3.00 USDT**
+- TP3: **+120% of margin = +6.00 USDT**
+
+At 25x this corresponds to linear price distances:
+
+- SL: **0.4%**
+- TP1: **1.2%**
+- TP2: **2.4%**
+- TP3: **4.8%**
+
+LONG and SHORT use mirrored linear price movement so the margin P&L geometry remains exact in both directions.
 
 ```text
-market / MTF evidence → ENTRY CALIBRATION → Entry
-                                      ↓
-                              structural SL
-                                      ↓
-                     RISK ENGINE: 5 USDT / 5% / 5–20x
-                                      ↓
-                     REWARD ENGINE: 25% / 50% / 100%
-                                      ↓
-                         Entry / SL / TP1 / TP2 / TP3
+market / MTF evidence
+        ↓
+ENTRY CALIBRATION
+        ↓
+fixed Entry
+        ↓
+structural SL
+        ↓
+TRADE GEOMETRY — 5 USDT / 25x / max SL 10% margin
+        ↓
+TP1 30% / TP2 60% / TP3 120% margin
 ```
 
-## Margin-based trade geometry
+Changing the margin reward ladder must not modify Entry calibration. A structural SL wider than 0.4% is rejected rather than silently changing leverage or risk.
 
-Production level contract:
-- Margin: **5 USDT**
-- Maximum SL risk: **5% of margin = 0.25 USDT**
-- Leverage: **5x–20x**
-- TP1: **+25% of margin**
-- TP2: **+50% of margin**
-- TP3: **+100% of margin**
-
-Price levels are derived from these margin percentages through the selected leverage. For example, at 5x leverage, -5% margin corresponds to about -1% price movement and +25% margin corresponds to about +5% price movement.
-
-Public channels show actual entry/SL/TP prices and margin-based percentages. R:R is no longer the public level-setting contract.
-
-
-## Discovery candidate geometry
-
-Discovery candidates are not allowed to create a geometry that the final Alpha Hunter gate will reject itself.
-
-For every candidate generated from screen_symbols:
-- SL is derived from current ATR/structure and must fit the **5% margin risk** budget at the 5x minimum.
-- TP1 is **+25% of margin** converted through the selected leverage.
-- TP2 is **+50% of margin** converted through the selected leverage.
-- TP3 is **+100% of margin** converted through the selected leverage.
-- The candidate builder is counted explicitly as built or buildRejected in the runtime funnel.
-
-This keeps discovery → validation consistent with the production margin-based contract and makes the funnel metrics meaningful.
-
-## Alpha Hunter v3 — conditional edge selection
+## Alpha Hunter v3
+— conditional edge selection
 
 Alpha Hunter memakai conditional empirical evidence dari outcome tracker, bukan hanya score teknikal.
 
@@ -336,7 +334,7 @@ Test adapter mencakup:
 - LONG normalization
 - SHORT normalization
 - TP/SL conversion
-- margin geometry validation (5% risk, 25/50/100% reward)
+- margin geometry validation (5% risk, 30/60/120% reward)
 - quality score
 - stale signal rejection
 - resolved signal rejection
