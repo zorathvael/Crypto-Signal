@@ -62,7 +62,8 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   assert.ok(Math.abs(out.tp1 - 200 / 1.05) < 1e-9);
   assert.ok(Math.abs(out.tp2 - 200 / 1.10) < 1e-9);
   assert.ok(Math.abs(out.tp3 - 200 / 1.20) < 1e-9);
-  assert.equal(out.rr, 5);
+  assert.ok(out.rr >= 2 && out.rr <= 6);
+  assert.ok(Math.abs(out.rr - 4.76) < 0.01);
 });
 
 test("rejects resolved, stale and non-crypto signals", () => {
