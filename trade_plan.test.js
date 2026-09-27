@@ -2,46 +2,51 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { calculateTradePlan } = require("./trade_plan");
 
-test("production geometry is fixed at 5 USDT margin and 25x leverage", () => {
+test("production geometry uses 5 USDT margin and stays within 5x..20x", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99.6, action: "LONG" });
   assert.equal(plan.marginUsdt, 5);
-  assert.equal(plan.leverage, 25);
-  assert.equal(plan.notionalUsdt, 125);
+  assert.equal(plan.leverage, 20);
+  assert.equal(plan.notionalUsdt, 100);
   assert.equal(plan.riskMarginPercent, 10);
   assert.equal(plan.riskBudgetUsdt, 0.5);
+  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
   assert.ok(Math.abs(plan.slDistancePercent - 0.4) < 1e-9);
+  assert.ok(Math.abs(plan.slLossUsdt - 0.4) < 1e-9);
+});
+
+test("leverage adapts downward when a wider structural SL needs it", () => {
+  const plan = calculateTradePlan({ entry: 100, sl: 99, action: "LONG" });
+  assert.equal(plan.leverage, 10);
   assert.ok(Math.abs(plan.slLossUsdt - 0.5) < 1e-9);
 });
 
-test("SL wider than 0.4% is rejected rather than changing leverage", () => {
+test("SL requiring below 5x is rejected rather than increasing risk", () => {
   assert.throws(
-    () => calculateTradePlan({ entry: 100, sl: 99.5, action: "LONG" }),
-    /fixed 25x risk geometry/
+    () => calculateTradePlan({ entry: 100, sl: 97.9, action: "LONG" }),
+    /5x minimum/
   );
 });
 
-test("narrow structural SL does not change the fixed 25x geometry", () => {
+test("narrow structural SL is capped at 20x", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99.9, action: "LONG" });
-  assert.equal(plan.leverage, 25);
-  assert.ok(Math.abs(plan.slLossUsdt - 0.125) < 1e-9);
-  assert.equal(plan.rewardMarginPcts.join(","), "30,60,120");
+  assert.equal(plan.leverage, 20);
+  assert.ok(Math.abs(plan.slLossUsdt - 0.1) < 1e-9);
 });
 
-test("LONG targets are exactly 30/60/120% of margin", () => {
+test("LONG targets are exactly 2R/4R/6R", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99.6, action: "LONG" });
-  assert.deepEqual(plan.rewardMarginPcts, [30, 60, 120]);
-  assert.deepEqual(plan.rewardPriceMovePcts, [1.2, 2.4, 4.8]);
-  assert.ok(Math.abs(plan.tp1 - 101.2) < 1e-9);
-  assert.ok(Math.abs(plan.tp2 - 102.4) < 1e-9);
-  assert.ok(Math.abs(plan.tp3 - 104.8) < 1e-9);
+  assert.deepEqual(plan.rewardRMultiples, [2, 4, 6]);
+  assert.ok(Math.abs(plan.tp1 - 100.8) < 1e-9);
+  assert.ok(Math.abs(plan.tp2 - 101.6) < 1e-9);
+  assert.ok(Math.abs(plan.tp3 - 102.4) < 1e-9);
 });
 
-test("SHORT targets use exact linear mirrored geometry", () => {
+test("SHORT targets use exact mirrored 2R/4R/6R geometry", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 100.4, action: "SHORT" });
-  assert.ok(Math.abs(plan.slDistancePercent - 0.4) < 1e-9);
-  assert.ok(Math.abs(plan.tp1 - 98.8) < 1e-9);
-  assert.ok(Math.abs(plan.tp2 - 97.6) < 1e-9);
-  assert.ok(Math.abs(plan.tp3 - 95.2) < 1e-9);
+  assert.equal(plan.leverage, 20);
+  assert.ok(Math.abs(plan.tp1 - 99.2) < 1e-9);
+  assert.ok(Math.abs(plan.tp2 - 98.4) < 1e-9);
+  assert.ok(Math.abs(plan.tp3 - 97.6) < 1e-9);
 });
 
 test("invalid levels and directions are rejected", () => {
@@ -61,6 +66,6 @@ test("entry calibration remains independent from margin geometry", () => {
 
   const plan = calculateTradePlan({ entry: result.entry, sl: result.entry * 0.996, action: "LONG" });
   assert.equal(plan.entryGeometryIndependent, true);
-  assert.equal(plan.leverage, 25);
-  assert.ok(Math.abs(plan.tp1 - result.entry * 1.012) < 1e-9);
+  assert.equal(plan.leverage, 20);
+  assert.ok(Math.abs(plan.tp1 - result.entry * 1.008) < 1e-9);
 });
