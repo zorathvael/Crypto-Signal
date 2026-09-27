@@ -121,10 +121,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   try { plan=calculateTradePlan({action:signal.action,entry,sl}); }
   catch { return {pass:false,alphaScore:0,reasons:["trade geometry rejected"],factors:{},hardReject:["trade geometry rejected"]}; }
   const leverage=plan.leverage;
-  const marginRiskPct=+(slPricePct*leverage).toFixed(2);
-  const marginRewardPct=p=>entry&&leverage?+(Math.abs(p-entry)/entry*100*leverage).toFixed(2):0;
-  const reward1=marginRewardPct(tp1),reward2=marginRewardPct(tp2),reward3=marginRewardPct(tp3);
-  const rewardR=[tp1,tp2,tp3].map(p=>risk>0?Math.abs(p-entry)/risk:0);
+  const marginRiskPct=plan.riskMarginPercent;
+  const reward1=plan.rewardMarginPcts[0];
+  const reward2=plan.rewardMarginPcts[1];
+  const reward3=plan.rewardMarginPcts[2];
+  const rewardR=[tp1,tp2,tp3].map((p,i)=>Math.abs(p-entry)/(Math.abs(entry-plan.sl)||1));
   const features=timeframeFeatures(technicalPayload);
   const aligned=features.filter(x=>x.direction===side).length;
   const opposing=features.filter(x=>x.direction===-side).length;
@@ -158,10 +159,10 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   }
 
   if(marginRiskPct<=10)score+=4;else score-=20;
-  if(rewardR[0]>=2)score+=4;else score-=8;
-  if(rewardR[1]>=4)score+=4;else score-=6;
-  if(rewardR[2]>=6)score+=4;else score-=6;
-  reasons.push("geometry risk "+marginRiskPct.toFixed(1)+"% margin / rewards "+rewardR.map(x=>x.toFixed(1)).join("/")+"R @ "+leverage+"x");
+  if(reward1>=30)score+=4;else score-=8;
+  if(reward2>=60)score+=4;else score-=6;
+  if(reward3>=120)score+=4;else score-=6;
+  reasons.push("geometry fixed: 5 USDT / 25x / SL 10% margin / TP 30-60-120% margin");
 
   const row=derivativesPayload instanceof Map
     ? derivativesPayload.get(String(signal.instId||"").toUpperCase())
@@ -194,11 +195,12 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const hardReject=[];
   if(aligned<2)hardReject.push("MTF alignment <2/3");
-  if(leverage<5||leverage>20)hardReject.push("leverage outside 5x..20x contract");
+  if(leverage!==25)hardReject.push("leverage is not fixed at 25x");
   if(marginRiskPct>10)hardReject.push("SL risk exceeds 10% of margin");
-  if(rewardR[0]<2)hardReject.push("TP1 reward below 2R");
-  if(rewardR[1]<4)hardReject.push("TP2 reward below 4R");
-  if(rewardR[2]<6)hardReject.push("TP3 reward below 6R");
+  if(reward1<30)hardReject.push("TP1 reward below 30% margin");
+  if(reward2<60)hardReject.push("TP2 reward below 60% margin");
+  if(reward3<120)hardReject.push("TP3 reward below 120% margin");
+  if(Math.abs(entry-plan.sl)/entry>0.004000001)hardReject.push("SL exceeds fixed 0.4% price geometry");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
 
