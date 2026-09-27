@@ -462,8 +462,10 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const entry = entryCalibration.entry;
 
   // Layer 2: structural stop candidate. Risk engine validates its affordability.
-  const maxRisk = entry * 0.01;
-  const minAtrRisk = atr * 0.35;
+  // Structural SL is downstream of Entry calibration and must fit the fixed 25x/10% margin risk ceiling.
+  // This does NOT alter Entry calibration; it only constrains the separate SL geometry layer.
+  const maxRisk = entry * 0.004;
+  const minAtrRisk = Math.min(atr * 0.35, maxRisk);
   let sl;
   if (action === "LONG") {
     const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
