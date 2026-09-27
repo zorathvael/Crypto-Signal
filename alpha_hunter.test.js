@@ -32,9 +32,7 @@ test("alpha hunter vetoes weak MTF alignment",()=>{
 test("alpha hunter vetoes insufficient margin reward geometry",()=>{
   const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.6,tp1:100.5,tp2:101,tp3:101.5,ts:Date.now()},payload(),deriv());
   assert.equal(out.pass,false);
-  assert.ok(out.hardReject.some(x=>x.includes("TP1 reward below 30%")));
-  assert.ok(out.hardReject.some(x=>x.includes("TP2 reward below 60%")));
-  assert.ok(out.hardReject.some(x=>x.includes("TP3 reward below 120%")));
+  assert.ok(out.hardReject.includes("signal levels do not match fixed 25x geometry"));
 });
 
 test("alpha hunter vetoes stale signal",()=>{
