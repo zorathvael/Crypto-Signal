@@ -131,9 +131,9 @@ test("discovery candidates use the margin reward geometry contract", () => {
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
   const risk = Math.abs(out.entry - out.sl);
-  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * 5 - 25) < 1e-9);
-  assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * 5 - 50) < 1e-9);
-  assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * 5 - 100) < 1e-9);
+  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.25) < 1e-9);
+  assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * out.leverage - 0.50) < 1e-9);
+  assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * out.leverage - 1.00) < 1e-9);
 });
 
 test("discovery candidates respect the 5x risk-plan SL ceiling", () => {
