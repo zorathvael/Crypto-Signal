@@ -96,7 +96,7 @@ get_signals (up to 50 recent candidates)
     ↓
 age/status/level/crypto validation
     ↓
-bounded validation targets (default 10, configurable up to 20)
+bounded validation targets (default 20, configurable up to 20)
     ↓
 get_derivatives (batched)
     ↓
@@ -114,6 +114,10 @@ Binance Square
 ```
 
 The pipeline deliberately uses TraderSpy's screener and tracked-symbol universe before signal validation. A stale signal is never accepted merely because its timestamp is present: signals older than the normal delivery window can survive candidate selection only when current multi-timeframe technical and derivatives data still validate the setup. The tracked-symbol check is combined with an explicit non-crypto denylist so tokenized equities, metals, and other known non-crypto instruments do not enter the crypto delivery path.
+
+### Candidate funnel optimization
+
+The discovery stage can screen up to 100 tracked futures symbols and return up to 50 liquid candidates, but validating only 10 of those candidates created an unnecessary bottleneck: many potentially valid setups never reached the technical/derivatives gate. The active default is now **20 validation targets**. This widens opportunity coverage without weakening the final validation criteria, fixed 25x geometry, freshness rules, Alpha Hunter gate, or delivery deduplication. The validation target count remains hard-bounded at 20 to keep MCP usage predictable.
 
 ## Signal normalization
 
@@ -244,7 +248,7 @@ TRADERSPY_MAX_AGE_MIN: "120"
 TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
 TRADERSPY_DISCOVERY_UNIVERSE: "100"
 TRADERSPY_DISCOVERY_LIMIT: "50"
-TRADERSPY_VALIDATION_TARGETS: "10"
+TRADERSPY_VALIDATION_TARGETS: "20"
 TRADERSPY_VALIDATION_MIN_SCORE: "88"
 TRADERSPY_STALE_MIN_SCORE: "90"
 ```
@@ -317,13 +321,13 @@ Test adapter mencakup:
 
 ## Cost / call discipline
 
-Pipeline tidak memanggil tool detail yang tidak diperlukan. Discovery dan validation tetap bounded pada default 10 validation targets:
+Pipeline tidak memanggil tool detail yang tidak diperlukan. Discovery dan validation tetap bounded pada default 20 validation targets:
 
 - 1 `get_tracked_symbols`
 - 1 `screen_symbols` across up to 100 high-volume futures
 - 1 `get_signals` request for up to 50 recent candidates
 - 1 batched `get_derivatives` request for the validation targets
-- up to 10 `get_technical_indicators` calls when all validation targets require validation
+- up to 20 `get_technical_indicators` calls when all validation targets require validation
 - up to 2 `get_signal_details` calls for the strongest published candidates
 
 This keeps the deep validation stage small while making the candidate universe substantially broader than the previous 20-signal-only importer.
