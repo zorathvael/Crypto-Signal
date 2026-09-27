@@ -444,24 +444,33 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
   const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
 
-  const minRisk = Math.max(atr * 1.5, entry * 0.004);
+  // The trade-plan layer has a hard 5x minimum leverage and a 10% margin
+  // risk budget, so the maximum admissible SL distance is 2% at 5x.
+  // Discovery must respect that contract before entering Alpha Hunter; otherwise
+  // we waste validation calls on candidates that can never become publishable.
+  const maxRisk = entry * 0.02;
+  const minAtrRisk = atr * 0.5;
   let sl;
   let tp1;
   let tp2;
   let tp3;
 
   if (action === "LONG") {
-    const support = supports.find(x => x < entry && entry - x >= atr * 0.75);
-    const resistance = resistances.filter(x => x > entry);
-    sl = support != null && entry - support <= atr * 2.5 ? support : entry - minRisk;
+    const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
+    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
+    if (support != null) sl = support;
+    else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
+    else return null;
     const risk = entry - sl;
     tp1 = entry + risk * 2;
     tp2 = entry + risk * 4;
     tp3 = entry + risk * 6;
   } else {
-    const resistance = resistances.find(x => x > entry && x - entry >= atr * 0.75);
-    const support = supports.filter(x => x < entry).sort((a,b) => b-a);
-    sl = resistance != null && resistance - entry <= atr * 2.5 ? resistance : entry + minRisk;
+    const resistance = resistances.find(x => x > entry && x - entry >= minAtrRisk && x - entry <= maxRisk);
+    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
+    if (resistance != null) sl = resistance;
+    else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
+    else return null;
     const risk = sl - entry;
     tp1 = entry - risk * 2;
     tp2 = entry - risk * 4;
