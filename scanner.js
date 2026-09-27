@@ -3050,13 +3050,13 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
-  // Hard execution gate: every published trade must have the fixed 25x geometry.
-  // Signals whose structural SL exceeds the 0.4% price-risk ceiling are NO-TRADE.
+  // Hard execution gate: every published trade must satisfy the 5x..20x geometry.
+  // Signals whose structural SL cannot fit the 0.50 USDT risk budget at >=5x are NO-TRADE.
   // Entry calibration remains independent from this post-entry geometry gate.
   postSignals = postSignals.filter((s) => {
     try {
       const plan = calculateTradePlan(s);
-      if (plan.leverage !== 25) {
+      if (plan.leverage < 5 || plan.leverage > 20) {
         console.warn(`Skip ${s.base} ${s.action}: invalid leverage ${plan.leverage}x`);
         return false;
       }
