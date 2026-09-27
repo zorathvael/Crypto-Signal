@@ -53,3 +53,15 @@ test("short reward targets mirror price movement", () => {
   assert.equal(plan.tp2, 100 / 1.10);
   assert.equal(plan.tp3, 100 / 1.20);
 });
+
+
+test("entry calibration is independent from margin reward geometry", () => {
+  const { calibrateEntry } = require("./entry_calibration");
+  const result = calibrateEntry({
+    action: "LONG", livePrice: 100, technicalPrice: 100, atr: 2,
+    supports: [99], resistances: [103],
+  });
+  assert.equal(result.pass, true);
+  assert.equal(result.entry, 99.3);
+  assert.equal(result.mode, "SUPPORT_CALIBRATED");
+});
