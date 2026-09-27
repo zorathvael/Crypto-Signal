@@ -194,6 +194,13 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   if(evidence.source==="insufficient")reasons.push("historical evidence insufficient");
 
   const hardReject=[];
+  const geometryTolerance = Math.max(entry * 1e-6, 1e-8);
+  if (Math.abs(sl - plan.sl) > geometryTolerance ||
+      Math.abs(tp1 - plan.tp1) > geometryTolerance ||
+      Math.abs(tp2 - plan.tp2) > geometryTolerance ||
+      Math.abs(tp3 - plan.tp3) > geometryTolerance) {
+    hardReject.push("signal levels do not match fixed 25x geometry");
+  }
   if(aligned<2)hardReject.push("MTF alignment <2/3");
   if(leverage!==25)hardReject.push("leverage is not fixed at 25x");
   if(marginRiskPct>10)hardReject.push("SL risk exceeds 10% of margin");
