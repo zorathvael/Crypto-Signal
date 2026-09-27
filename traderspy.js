@@ -444,33 +444,46 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
   const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
 
-  const minRisk = Math.max(atr * 1.5, entry * 0.004);
+  // The trade-plan layer has a hard 5x minimum leverage and a 10% margin
+  // risk budget, so the maximum admissible SL distance is 2% at 5x.
+  // Discovery must respect that contract before entering Alpha Hunter; otherwise
+  // we waste validation calls on candidates that can never become publishable.
+  const maxRisk = entry * 0.02;
+  const minAtrRisk = atr * 0.5;
   let sl;
   let tp1;
   let tp2;
   let tp3;
 
   if (action === "LONG") {
-    const support = supports.find(x => x < entry && entry - x >= atr * 0.75);
-    const resistance = resistances.filter(x => x > entry);
-    sl = support != null && entry - support <= atr * 2.5 ? support : entry - minRisk;
+    const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
+    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
+    if (support != null) sl = support;
+    else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
+    else return null;
     const risk = entry - sl;
-    tp1 = resistance.find(x => x > entry && x - entry >= risk * 1.5) || entry + risk * 1.5;
-    tp2 = resistance.find(x => x > tp1) || entry + risk * 2.5;
-    tp3 = resistance.find(x => x > tp2) || entry + risk * 3.5;
+    tp1 = entry + risk * 2;
+    tp2 = entry + risk * 4;
+    tp3 = entry + risk * 6;
   } else {
-    const resistance = resistances.find(x => x > entry && x - entry >= atr * 0.75);
-    const support = supports.filter(x => x < entry).sort((a,b) => b-a);
-    sl = resistance != null && resistance - entry <= atr * 2.5 ? resistance : entry + minRisk;
+    const resistance = resistances.find(x => x > entry && x - entry >= minAtrRisk && x - entry <= maxRisk);
+    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
+    if (resistance != null) sl = resistance;
+    else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
+    else return null;
     const risk = sl - entry;
-    tp1 = support.find(x => entry - x >= risk * 1.5) || entry - risk * 1.5;
-    tp2 = support.find(x => x < tp1) || entry - risk * 2.5;
-    tp3 = support.find(x => x < tp2) || entry - risk * 3.5;
+    tp1 = entry - risk * 2;
+    tp2 = entry - risk * 4;
+    tp3 = entry - risk * 6;
   }
 
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
-  if (!Number.isFinite(rr) || rr < 1.5 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
+  // Alpha Hunter's hard geometry contract is 2R / 4R / 6R.
+  // Structure is used to derive the stop; targets are deterministic R multiples
+  // so discovery candidates cannot be rejected later for an internally-created
+  // geometry mismatch.
+  if (!Number.isFinite(rr) || Math.abs(rr - 2) > 1e-9 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
 
   const ageValidUntil = now + 60 * 60 * 1000;
   return {
@@ -630,7 +643,11 @@ async function getTraderSpyIntelligence(options = {}){
     let signal=target.published;
     if(!signal){
       signal=buildScreenCandidate(target.discovery,technicalPayload,now,target.discovery.bias==="bullish"?"LONG":target.discovery.bias==="bearish"?"SHORT":target.discovery.trend==="up"?"LONG":target.discovery.trend==="down"?"SHORT":null);
-      if(!signal)continue;
+      if(!signal){
+        candidateBuildRejected++;
+        continue;
+      }
+      candidatesBuilt++;
     }
 
     const technical=technicalValidation(signal,technicalPayload);

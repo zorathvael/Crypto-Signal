@@ -184,6 +184,21 @@ Public trade geometry is normalized to:
 
 The repository keeps the internal sizing/risk gate for validation safety, but those sizing values are not part of the public signal message.
 
+## Discovery candidate geometry
+
+Discovery candidates are not allowed to create a geometry that the final Alpha Hunter gate will reject itself.
+
+For every candidate generated from screen_symbols:
+- SL is derived from current ATR/structure.
+- TP1 is exactly **2R**.
+- TP2 is exactly **4R**.
+- TP3 is exactly **6R**.
+- The candidate builder is counted explicitly as built or buildRejected in the runtime funnel.
+- Discovery candidates are rejected before deep validation when ATR/structure volatility cannot produce an SL within the 2% maximum distance required by the 5x minimum-leverage risk budget.
+
+
+This keeps discovery → validation internally consistent and makes the funnel metrics meaningful.
+
 ## Alpha Hunter v3 — conditional edge selection
 
 Alpha Hunter memakai conditional empirical evidence dari outcome tracker, bukan hanya score teknikal.

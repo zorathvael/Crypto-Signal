@@ -112,6 +112,59 @@ test("derivatives validation rejects extreme adverse crowding", () => {
 });
 
 
+test("discovery candidates use the Alpha Hunter 2R/4R/6R geometry contract", () => {
+  const discovery = {
+    symbol: "ETHUSDT",
+    base: "ETH",
+    bias: "bullish",
+    trend: "up",
+    score: 10,
+  };
+  const payload = {
+    price: 100,
+    timeframes: [
+      { interval: "15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:2},levels:{support:[{price:96}],resistance:[{price:104}]}} },
+      { interval: "4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+    ],
+  };
+  const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
+  assert.ok(out);
+  const risk = Math.abs(out.entry - out.sl);
+  assert.ok(Math.abs((out.tp1 - out.entry) / risk - 2) < 1e-9);
+  assert.ok(Math.abs((out.tp2 - out.entry) / risk - 4) < 1e-9);
+  assert.ok(Math.abs((out.tp3 - out.entry) / risk - 6) < 1e-9);
+  assert.equal(out.rr, 2);
+});
+
+test("discovery candidates respect the 5x risk-plan SL ceiling", () => {
+  const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
+  const payload = {
+    price:100,
+    timeframes:[
+      { interval:"15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:2},levels:{support:[]}} },
+      { interval:"4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+    ],
+  };
+  const out=buildScreenCandidate(discovery,payload,NOW,"LONG");
+  assert.ok(out);
+  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.02);
+});
+
+test("discovery candidates with excessive volatility are rejected before validation", () => {
+  const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
+  const payload = {
+    price:100,
+    timeframes:[
+      { interval:"15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:5},levels:{support:[]}} },
+      { interval:"4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+    ],
+  };
+  assert.equal(buildScreenCandidate(discovery,payload,NOW,"LONG"),null);
+});
+
 test("discovery candidates are rejected when multi-timeframe data has no directional confluence", () => {
   const signal = normalizeSignal(sample({ coin: "SOLUSDT" }), NOW);
   const payload = {
