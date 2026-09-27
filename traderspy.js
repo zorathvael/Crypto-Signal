@@ -567,6 +567,10 @@ async function getTraderSpyIntelligence(options = {}){
   });
   const discovery=normalizeDiscoveryRows(discoveryPayload).filter(x=>trackedSymbols.has(x.symbol));
 
+  // Keep the discovery funnel observable. A large tracked universe is useful
+  // only if enough candidates are handed to the validation stage.
+  console.log("TraderSpy discovery: tracked="+trackedSymbols.size+" screened="+discovery.length+" validationTargetCap="+clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||20),1,20));
+
   const signalPayload=await callTool(url,sessionId,callId++,"get_signals",{
     limit:clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT||50),1,50),
     skip:0,
@@ -596,7 +600,11 @@ async function getTraderSpyIntelligence(options = {}){
     return {signal,discovery:d||{score:0,rank:999},rankScore:signal.qualityScore+recencyBonus+discoveryBonus};
   }).sort((a,b)=>b.rankScore-a.rankScore||b.signal.ts-a.signal.ts);
 
-  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||10),1,20);
+  // Broaden the validation funnel: the screener can surface up to 50 liquid
+  // candidates, but validating only 10 meant most of the available opportunity
+  // never reached technical/derivatives validation. Keep the cap bounded so MCP
+  // usage remains predictable while giving the scanner materially wider coverage.
+  const maxTargets=clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||20),1,20);
   const targets=[];
   const used=new Set();
 
