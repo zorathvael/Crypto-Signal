@@ -32,7 +32,7 @@ function calculateTradePlan(signal, options = {}) {
 
   const riskBudgetUsdt = marginUsdt * riskFraction;
   const maxSlDistancePct = riskBudgetUsdt / (marginUsdt * MIN_LEVERAGE);
-  if (slDistancePct > maxSlDistancePct) {
+  if (slDistancePct > maxSlDistancePct + 1e-9) {
     throw new Error(`SL distance ${(slDistancePct * 100).toFixed(3)}% exceeds risk budget at ${MIN_LEVERAGE}x`);
   }
 
