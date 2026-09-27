@@ -172,17 +172,20 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
-## Telegram trade geometry
+## Margin-based trade geometry
 
-Telegram does not display margin, leverage, position notional, or USDT risk suggestions.
+Production level contract:
+- Margin: **10 USDT**
+- Maximum SL risk: **5% of margin = 0.50 USDT**
+- Leverage: **5x–20x**
+- TP1: **+25% of margin**
+- TP2: **+50% of margin**
+- TP3: **+100% of margin**
 
-Public trade geometry is normalized to:
-- **TP1 = 2R**
-- **TP2 = 4R**
-- **TP3 = 6R**
-- R is the distance between Entry and SL.
+Price levels are derived from these margin percentages through the selected leverage. For example, at 5x leverage, -5% margin corresponds to about -1% price movement and +25% margin corresponds to about +5% price movement.
 
-The repository keeps the internal sizing/risk gate for validation safety, but those sizing values are not part of the public signal message.
+Public channels show actual entry/SL/TP prices and margin-based percentages. R:R is no longer the public level-setting contract.
+
 
 ## Discovery candidate geometry
 
