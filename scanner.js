@@ -2018,7 +2018,7 @@ function formatSquareCoinBlock(s) {
     `🚀 TP3: ${formatPrice(plan?.tp3 || s.tp3 || s.tp2)}\n` +
     `💵 Margin ${plan?.marginUsdt ?? 5} USDT · Leverage ${plan?.leverage ?? "—"}x\n` +
     `🛑 Risk ${plan?.riskMarginPercent ?? 10}% margin · SL ${plan?.slDistancePercent?.toFixed(2) ?? "—"}% price\n` +
-    `🎯 Reward ${(plan?.rewardMarginPcts || [30,60,120]).join("% / ")}% margin` +
+    `🎯 Reward ${(plan?.rewardRMultiples || [2,4,6]).join("R / ")}R` +
     (s.ev && s.ev.netRr != null ? `\nNet R~${s.ev.netRr}` : "") +
     `\n` +
     `\n` +
