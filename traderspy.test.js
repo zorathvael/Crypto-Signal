@@ -18,7 +18,7 @@ function sample(overrides = {}) {
       { label: "TP1", type: "tp1", pct: 2 },
       { label: "TP2", type: "tp2", pct: 3 },
       { label: "TP3", type: "tp3", pct: 4 },
-      { label: "SL", type: "sl", pct: 1 },
+      { label: "SL", type: "sl", pct: 0.4 },
     ],
     triggeredConditions: ["RSI 55", "EMA reclaim"],
     resolutionStatus: "pending",
@@ -37,17 +37,17 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.ok(out);
   assert.equal(out.action, "LONG");
   assert.equal(out.entry, 100);
-  assert.equal(out.sl, 99);
-  assert.equal(out.tp1, 105);
-  assert.ok(Math.abs(out.tp2 - 110) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 120) < 1e-9);
-  assert.equal(out.rr, 5);
+  assert.equal(out.sl, 99.6);
+  assert.equal(out.tp1, 101.2);
+  assert.ok(Math.abs(out.tp2 - 102.4) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 104.8) < 1e-9);
+  assert.equal(out.rr, 3);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
-  assert.equal(out.riskPct, 1);
-  assert.equal(out.marginRiskPct, 5);
-  assert.equal(out.leverage, 5);
-  assert.deepEqual(out.rewardMarginPcts, [25, 50, 100]);
+  assert.equal(out.riskPct, 0.4);
+  assert.equal(out.marginRiskPct, 10);
+  assert.equal(out.leverage, 25);
+  assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
 });
 
 test("normalizes a SHORT signal with mirrored levels", () => {
@@ -58,12 +58,12 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   }), NOW);
   assert.ok(out);
   assert.equal(out.action, "SHORT");
-  assert.equal(out.sl, 202);
-  assert.ok(Math.abs(out.tp1 - 200 / 1.05) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 200 / 1.10) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 200 / 1.20) < 1e-9);
-  assert.ok(out.rr >= 2 && out.rr <= 6);
-  assert.ok(Math.abs(out.rr - 4.76) < 0.01);
+  assert.equal(out.sl, 200.8);
+  assert.ok(Math.abs(out.tp1 - 197.6) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 195.2) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 190.4) < 1e-9);
+  assert.ok(out.rr >= 2);
+  assert.ok(Math.abs(out.rr - 3) < 0.01);
 });
 
 test("rejects resolved, stale and non-crypto signals", () => {
@@ -137,12 +137,12 @@ test("discovery candidates use the margin reward geometry contract", () => {
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
   const risk = Math.abs(out.entry - out.sl);
-  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.25) < 1e-9);
-  assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * out.leverage - 0.50) < 1e-9);
-  assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * out.leverage - 1.00) < 1e-9);
+  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.30) < 1e-9);
+  assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * out.leverage - 0.60) < 1e-9);
+  assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * out.leverage - 1.20) < 1e-9);
 });
 
-test("discovery candidates respect the 5x risk-plan SL ceiling", () => {
+test("discovery candidates respect the fixed 25x risk-plan SL ceiling", () => {
   const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
   const payload = {
     price:100,
@@ -154,7 +154,7 @@ test("discovery candidates respect the 5x risk-plan SL ceiling", () => {
   };
   const out=buildScreenCandidate(discovery,payload,NOW,"LONG");
   assert.ok(out);
-  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.01);
+  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.004);
 });
 
 test("discovery candidates with excessive volatility are rejected before validation", () => {
