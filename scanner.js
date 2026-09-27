@@ -3051,22 +3051,37 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
-  // Hard execution gate: every published trade must satisfy the 5x..20x geometry.
-  // Signals whose structural SL cannot fit the 0.50 USDT risk budget at >=5x are NO-TRADE.
-  // Entry calibration remains independent from this post-entry geometry gate.
-  postSignals = postSignals.filter((s) => {
+  // Hard execution gate: every published trade must satisfy the fixed 25x geometry.
+  // Entry remains the provider-calibrated trigger; geometry is applied only after Entry.
+  postSignals = postSignals.map((s) => {
     try {
       const plan = calculateTradePlan(s);
-      if (plan.leverage < 5 || plan.leverage > 20) {
-        console.warn(`Skip ${s.base} ${s.action}: invalid leverage ${plan.leverage}x`);
-        return false;
-      }
-      return true;
+      return {
+        ...s,
+        entry: s.entry,
+        sl: plan.sl,
+        tp1: plan.tp1,
+        tp2: plan.tp2,
+        tp3: plan.tp3,
+        rr: plan.rr,
+        leverage: plan.leverage,
+        marginUsdt: plan.marginUsdt,
+        riskMarginPercent: plan.riskMarginPercent,
+        rewardMarginPcts: plan.rewardMarginPcts,
+        rewardPriceMovePcts: plan.rewardPriceMovePcts,
+        geometry: plan.geometry,
+        entryCalibration: s.entryCalibration || {
+          pass: true,
+          entry: s.entry,
+          mode: "PROVIDER_TRIGGER",
+          reasons: ["Entry supplied by validated intelligence source"],
+        },
+      };
     } catch (e) {
       console.warn(`NO TRADE ${s.base} ${s.action}: ${e.message}`);
-      return false;
+      return null;
     }
-  });
+  }).filter(Boolean);
 
   // Delivery policy: dedup is the only cross-scan suppression rule.
   // Do not truncate the validated set here and do not let loss streaks suppress
