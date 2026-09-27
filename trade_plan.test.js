@@ -12,15 +12,15 @@ test("10 USDT margin sizes leverage from 0.5% SL distance at 5% margin risk", ()
 });
 
 test("wider but valid SL floors at the 5x minimum", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 98 });
+  const plan = calculateTradePlan({ entry: 100, sl: 99 });
   assert.equal(plan.leverage, 5);
   assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
   assert.equal(plan.slLossUsdt, 0.5);
 });
 
-test("SL wider than 2% is rejected instead of falling below 5x", () => {
+test("SL wider than 1% is rejected instead of falling below 5x", () => {
   assert.throws(
-    () => calculateTradePlan({ entry: 100, sl: 97 }),
+    () => calculateTradePlan({ entry: 100, sl: 98 }),
     /exceeds risk budget at 5x/
   );
 });
@@ -38,7 +38,7 @@ test("invalid levels are rejected", () => {
 
 
 test("reward targets are percentages of margin converted through leverage", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 98, action: "LONG" });
+  const plan = calculateTradePlan({ entry: 100, sl: 99, action: "LONG" });
   assert.equal(plan.riskMarginPercent, 5);
   assert.equal(plan.leverage, 5);
   assert.deepEqual(plan.rewardMarginPcts, [25, 50, 100]);
@@ -48,7 +48,7 @@ test("reward targets are percentages of margin converted through leverage", () =
   assert.equal(plan.tp3, 120);
 });
 test("short reward targets mirror price movement", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 98, action: "SHORT" });
+  const plan = calculateTradePlan({ entry: 100, sl: 99, action: "SHORT" });
   assert.equal(plan.tp1, 100 / 1.05);
   assert.equal(plan.tp2, 100 / 1.10);
   assert.equal(plan.tp3, 100 / 1.20);
