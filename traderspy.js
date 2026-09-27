@@ -444,8 +444,8 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
   const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
 
-  // The trade-plan layer has a hard 5x minimum leverage and a 10% margin
-  // risk budget, so the maximum admissible SL distance is 2% at 5x.
+  // The trade-plan layer has a hard 5x minimum leverage and a 5% margin-risk
+  // budget, so the maximum admissible SL distance is 1% at 5x.
   // Discovery must respect that contract before entering Alpha Hunter; otherwise
   // we waste validation calls on candidates that can never become publishable.
   const maxRisk = entry * 0.01;
@@ -482,12 +482,14 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   }
 
   const risk = Math.abs(entry - sl);
-  const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
-  // Alpha Hunter's hard geometry contract is 2R / 4R / 6R.
-  // Structure is used to derive the stop; targets are deterministic R multiples
-  // so discovery candidates cannot be rejected later for an internally-created
-  // geometry mismatch.
-  if (!Number.isFinite(rr) || Math.abs(rr - 2) > 1e-9 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
+  const priceRiskPct = entry ? risk / entry * 100 : 0;
+  const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry))));
+  if (!Number.isFinite(leverage) || leverage < 5 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
+  const rewardMarginPcts = [
+    +(Math.abs(tp1 - entry) / entry * 100 * leverage).toFixed(2),
+    +(Math.abs(tp2 - entry) / entry * 100 * leverage).toFixed(2),
+    +(Math.abs(tp3 - entry) / entry * 100 * leverage).toFixed(2),
+  ];
 
   const ageValidUntil = now + 60 * 60 * 1000;
   return {
@@ -512,7 +514,10 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     tp2,
     tp3,
     rr: +rr.toFixed(2),
-    riskPct: +(risk / entry * 100).toFixed(3),
+    riskPct: +priceRiskPct.toFixed(3),
+    marginRiskPct: +(priceRiskPct * leverage).toFixed(2),
+    leverage,
+    rewardMarginPcts,
     regime: h4?.summary?.volatility ? { regime: h4.summary.volatility.state || "normal", atrPct: Number(h4.summary.volatility.atrPct || 0) } : null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
