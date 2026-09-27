@@ -462,7 +462,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
     else return null;
     const risk = entry - sl;
-    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry))));
+    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry) + 1e-9)));
     if (leverage < 5) return null;
     tp1 = entry * (1 + 0.25 / leverage);
     tp2 = entry * (1 + 0.50 / leverage);
@@ -474,7 +474,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
     else return null;
     const risk = sl - entry;
-    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry))));
+    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry) + 1e-9)));
     if (leverage < 5) return null;
     tp1 = entry / (1 + 0.25 / leverage);
     tp2 = entry / (1 + 0.50 / leverage);
@@ -483,7 +483,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
 
   const risk = Math.abs(entry - sl);
   const priceRiskPct = entry ? risk / entry * 100 : 0;
-  const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry))));
+  const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry) + 1e-9)));
   if (!Number.isFinite(leverage) || leverage < 5 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
   const rewardMarginPcts = [
     +(Math.abs(tp1 - entry) / entry * 100 * leverage).toFixed(2),
