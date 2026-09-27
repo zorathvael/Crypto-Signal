@@ -38,14 +38,14 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.equal(out.action, "LONG");
   assert.equal(out.entry, 100);
   assert.equal(out.sl, 99.6);
-  assert.equal(out.tp1, 101.2);
-  assert.ok(Math.abs(out.tp2 - 102.4) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 104.8) < 1e-9);
-  assert.equal(out.rr, 3);
+  assert.ok(Math.abs(out.tp1 - 100.8) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 101.6) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 102.4) < 1e-9);
+  assert.equal(out.rr, 2);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
   assert.equal(out.riskPct, 0.4);
-  assert.equal(out.marginRiskPct, 10);
+  assert.equal(out.marginRiskPct, 8);
   assert.ok(out.leverage >= 5 && out.leverage <= 20);
   assert.deepEqual(out.rewardRMultiples, [2, 4, 6]);
 });
@@ -59,11 +59,11 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   assert.ok(out);
   assert.equal(out.action, "SHORT");
   assert.equal(out.sl, 200.8);
-  assert.ok(Math.abs(out.tp1 - 197.6) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 195.2) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 190.4) < 1e-9);
-  assert.ok(out.rr >= 2);
-  assert.ok(Math.abs(out.rr - 3) < 0.01);
+  assert.ok(Math.abs(out.tp1 - 199.2) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 198.4) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 197.6) < 1e-9);
+  assert.equal(out.rr, 2);
+  assert.ok(out.leverage >= 5 && out.leverage <= 20);
 });
 
 test("rejects resolved, stale and non-crypto signals", () => {
@@ -141,7 +141,7 @@ test("discovery candidates use the margin reward geometry contract", () => {
   assert.ok(out.marginRiskPct <= 10);
   assert.deepEqual(out.rewardRMultiples, [2, 4, 6]);
   assert.equal(out.rr, 2);
-
+});
 test("discovery candidates respect the bounded 5x..20x risk-plan SL ceiling", () => {
   const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
   const payload = {
