@@ -699,7 +699,7 @@ async function getTraderSpyIntelligence(options = {}){
       signal.alpha=alpha;
     }
 
-    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT"));
+    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT")+" reasons="+(signal.validation?.reasons||[]).join(";"));
     if(signal.validation?.passed)validated.push(signal);
   }
 
