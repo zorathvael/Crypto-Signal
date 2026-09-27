@@ -116,7 +116,7 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const risk=Math.abs(entry-sl);
   const slPricePct=entry?risk/entry*100:0;
-  const leverage=Math.max(5,Math.min(20,Math.floor(0.05/(slPricePct/100)+1e-9)));
+  const leverage=Math.max(5,Math.min(25,Math.floor(0.05/(slPricePct/100)+1e-9)));
   const marginRiskPct=+(slPricePct*leverage).toFixed(2);
   const marginRewardPct=p=>entry&&leverage?+(Math.abs(p-entry)/entry*100*leverage).toFixed(2):0;
   const reward1=marginRewardPct(tp1),reward2=marginRewardPct(tp2),reward3=marginRewardPct(tp3);
