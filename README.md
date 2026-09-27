@@ -389,7 +389,7 @@ The active repository release is **v4.0.0** (`package.json`). Legacy comments/na
 
 ## CI regression fix
 
-The TraderSpy normalization path now always carries an explicit entry-calibration contract. When a provider signal does not include an independent technical calibration payload, the provider trigger is retained and the calibration metadata is marked `PROVIDER_TRIGGER` with no fabricated score. Screened candidates additionally reject cases where one ATR is at or above the fixed 0.4% price-risk envelope, because the volatility unit itself exceeds the executable geometry.
+The TraderSpy normalization path now always carries an explicit entry-calibration contract. When a provider signal does not include an independent technical calibration payload, the provider trigger is retained and the calibration metadata is marked `PROVIDER_TRIGGER` with no fabricated score. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
 
 ## Operational reliability rule
 
