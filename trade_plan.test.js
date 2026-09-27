@@ -2,59 +2,54 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { calculateTradePlan } = require("./trade_plan");
 
-test("5 USDT margin sizes leverage from 0.5% SL distance at 5% margin risk", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 99.5 });
+test("production geometry is fixed at 5 USDT margin and 25x leverage", () => {
+  const plan = calculateTradePlan({ entry: 100, sl: 99.6, action: "LONG" });
   assert.equal(plan.marginUsdt, 5);
-  assert.equal(plan.leverage, 10);
-  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
-  assert.equal(plan.notionalUsdt, 50);
-  assert.equal(plan.slLossUsdt, 0.25);
+  assert.equal(plan.leverage, 25);
+  assert.equal(plan.notionalUsdt, 125);
+  assert.equal(plan.riskMarginPercent, 10);
+  assert.equal(plan.riskBudgetUsdt, 0.5);
+  assert.equal(plan.slDistancePercent, 0.4);
+  assert.equal(plan.slLossUsdt, 0.5);
 });
 
-test("wider but valid SL floors at the 5x minimum", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 99 });
-  assert.equal(plan.leverage, 5);
-  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
-  assert.equal(plan.slLossUsdt, 0.25);
-});
-
-test("SL wider than 1% is rejected instead of falling below 5x", () => {
+test("SL wider than 0.4% is rejected rather than changing leverage", () => {
   assert.throws(
-    () => calculateTradePlan({ entry: 100, sl: 98 }),
-    /exceeds risk budget at 5x/
+    () => calculateTradePlan({ entry: 100, sl: 99.5, action: "LONG" }),
+    /fixed 25x risk geometry/
   );
 });
 
-test("narrow SL respects 20x leverage cap", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 99.9 });
-  assert.equal(plan.leverage, 20);
-  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
-  assert.ok(plan.slLossUsdt <= 0.25);
+test("narrow structural SL does not change the fixed 25x geometry", () => {
+  const plan = calculateTradePlan({ entry: 100, sl: 99.9, action: "LONG" });
+  assert.equal(plan.leverage, 25);
+  assert.equal(plan.slLossUsdt, 0.125);
+  assert.equal(plan.rewardMarginPcts.join(","), "30,60,120");
 });
 
-test("invalid levels are rejected", () => {
+test("LONG targets are exactly 30/60/120% of margin", () => {
+  const plan = calculateTradePlan({ entry: 100, sl: 99.6, action: "LONG" });
+  assert.deepEqual(plan.rewardMarginPcts, [30, 60, 120]);
+  assert.deepEqual(plan.rewardPriceMovePcts, [1.2, 2.4, 4.8]);
+  assert.equal(plan.tp1, 101.2);
+  assert.equal(plan.tp2, 102.4);
+  assert.equal(plan.tp3, 104.8);
+});
+
+test("SHORT targets use exact linear mirrored geometry", () => {
+  const plan = calculateTradePlan({ entry: 100, sl: 100.4, action: "SHORT" });
+  assert.equal(plan.slDistancePercent, 0.4);
+  assert.equal(plan.tp1, 98.8);
+  assert.equal(plan.tp2, 97.6);
+  assert.equal(plan.tp3, 95.2);
+});
+
+test("invalid levels and directions are rejected", () => {
   assert.throws(() => calculateTradePlan({ entry: 100, sl: 100 }), /non-zero/);
+  assert.throws(() => calculateTradePlan({ entry: 100, sl: 99.6, action: "SIDEWAYS" }), /LONG or SHORT/);
 });
 
-test("reward targets are percentages of margin converted through leverage", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 99, action: "LONG" });
-  assert.equal(plan.riskMarginPercent, 5);
-  assert.equal(plan.leverage, 5);
-  assert.deepEqual(plan.rewardMarginPcts, [25, 50, 100]);
-  assert.deepEqual(plan.rewardPriceMovePcts, [5, 10, 20]);
-  assert.equal(plan.tp1, 105);
-  assert.ok(Math.abs(plan.tp2 - 110) < 1e-9);
-  assert.equal(plan.tp3, 120);
-});
-
-test("short reward targets mirror price movement", () => {
-  const plan = calculateTradePlan({ entry: 100, sl: 99, action: "SHORT" });
-  assert.equal(plan.tp1, 100 / 1.05);
-  assert.equal(plan.tp2, 100 / 1.10);
-  assert.equal(plan.tp3, 100 / 1.20);
-});
-
-test("entry calibration is independent from margin reward geometry", () => {
+test("entry calibration remains independent from margin geometry", () => {
   const { calibrateEntry } = require("./entry_calibration");
   const result = calibrateEntry({
     action: "LONG", livePrice: 100, technicalPrice: 100, atr: 2,
@@ -63,4 +58,9 @@ test("entry calibration is independent from margin reward geometry", () => {
   assert.equal(result.pass, true);
   assert.equal(result.entry, 99.2);
   assert.equal(result.mode, "SUPPORT_CALIBRATED");
+
+  const plan = calculateTradePlan({ entry: result.entry, sl: result.entry * 0.996, action: "LONG" });
+  assert.equal(plan.entryGeometryIndependent, true);
+  assert.equal(plan.leverage, 25);
+  assert.equal(plan.tp1, result.entry * 1.012);
 });
