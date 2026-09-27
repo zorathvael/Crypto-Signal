@@ -112,7 +112,7 @@ test("derivatives validation rejects extreme adverse crowding", () => {
 });
 
 
-test("discovery candidates use the Alpha Hunter 2R/4R/6R geometry contract", () => {
+test("discovery candidates use the margin reward geometry contract", () => {
   const discovery = {
     symbol: "ETHUSDT",
     base: "ETH",
@@ -124,17 +124,16 @@ test("discovery candidates use the Alpha Hunter 2R/4R/6R geometry contract", () 
     price: 100,
     timeframes: [
       { interval: "15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:2},levels:{support:[{price:96}],resistance:[{price:104}]}} },
+      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:2},levels:{support:[{price:99.2}],resistance:[{price:104}]}} },
       { interval: "4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
   const risk = Math.abs(out.entry - out.sl);
-  assert.ok(Math.abs((out.tp1 - out.entry) / risk - 2) < 1e-9);
-  assert.ok(Math.abs((out.tp2 - out.entry) / risk - 4) < 1e-9);
-  assert.ok(Math.abs((out.tp3 - out.entry) / risk - 6) < 1e-9);
-  assert.equal(out.rr, 2);
+  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.25) < 1e-9);
+  assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * out.leverage - 0.50) < 1e-9);
+  assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * out.leverage - 1.00) < 1e-9);
 });
 
 test("discovery candidates respect the 5x risk-plan SL ceiling", () => {

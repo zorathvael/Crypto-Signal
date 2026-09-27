@@ -444,12 +444,12 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
   const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
 
-  // The trade-plan layer has a hard 5x minimum leverage and a 10% margin
-  // risk budget, so the maximum admissible SL distance is 2% at 5x.
+  // The trade-plan layer has a hard 5x minimum leverage and a 5% margin-risk
+  // budget, so the maximum admissible SL distance is 1% at 5x.
   // Discovery must respect that contract before entering Alpha Hunter; otherwise
   // we waste validation calls on candidates that can never become publishable.
-  const maxRisk = entry * 0.02;
-  const minAtrRisk = atr * 0.5;
+  const maxRisk = entry * 0.01;
+  const minAtrRisk = atr * 0.35;
   let sl;
   let tp1;
   let tp2;
@@ -457,14 +457,16 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
 
   if (action === "LONG") {
     const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
-    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
+    const fallbackRisk = Math.min(atr * 0.60, maxRisk);
     if (support != null) sl = support;
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
     else return null;
     const risk = entry - sl;
-    tp1 = entry + risk * 2;
-    tp2 = entry + risk * 4;
-    tp3 = entry + risk * 6;
+    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry) + 1e-9)));
+    if (leverage < 5) return null;
+    tp1 = entry * (1 + 0.25 / leverage);
+    tp2 = entry * (1 + 0.50 / leverage);
+    tp3 = entry * (1 + 1.00 / leverage);
   } else {
     const resistance = resistances.find(x => x > entry && x - entry >= minAtrRisk && x - entry <= maxRisk);
     const fallbackRisk = Math.min(atr * 0.75, maxRisk);
@@ -472,18 +474,23 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
     else return null;
     const risk = sl - entry;
-    tp1 = entry - risk * 2;
-    tp2 = entry - risk * 4;
-    tp3 = entry - risk * 6;
+    const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry) + 1e-9)));
+    if (leverage < 5) return null;
+    tp1 = entry / (1 + 0.25 / leverage);
+    tp2 = entry / (1 + 0.50 / leverage);
+    tp3 = entry / (1 + 1.00 / leverage);
   }
 
   const risk = Math.abs(entry - sl);
+  const priceRiskPct = entry ? risk / entry * 100 : 0;
+  const leverage = Math.max(5, Math.min(20, Math.floor(0.05 / (risk / entry) + 1e-9)));
+  if (!Number.isFinite(leverage) || leverage < 5 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
+  const rewardMarginPcts = [
+    +(Math.abs(tp1 - entry) / entry * 100 * leverage).toFixed(2),
+    +(Math.abs(tp2 - entry) / entry * 100 * leverage).toFixed(2),
+    +(Math.abs(tp3 - entry) / entry * 100 * leverage).toFixed(2),
+  ];
   const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
-  // Alpha Hunter's hard geometry contract is 2R / 4R / 6R.
-  // Structure is used to derive the stop; targets are deterministic R multiples
-  // so discovery candidates cannot be rejected later for an internally-created
-  // geometry mismatch.
-  if (!Number.isFinite(rr) || Math.abs(rr - 2) > 1e-9 || ![sl,tp1,tp2,tp3].every(Number.isFinite)) return null;
 
   const ageValidUntil = now + 60 * 60 * 1000;
   return {
@@ -508,7 +515,10 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     tp2,
     tp3,
     rr: +rr.toFixed(2),
-    riskPct: +(risk / entry * 100).toFixed(3),
+    riskPct: +priceRiskPct.toFixed(3),
+    marginRiskPct: +(priceRiskPct * leverage).toFixed(2),
+    leverage,
+    rewardMarginPcts,
     regime: h4?.summary?.volatility ? { regime: h4.summary.volatility.state || "normal", atrPct: Number(h4.summary.volatility.atrPct || 0) } : null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
@@ -679,7 +689,7 @@ async function getTraderSpyIntelligence(options = {}){
         derivativesScore:derivatives.score,
         detailScore:null,
         alphaScore:alpha.alphaScore,
-        alphaReasons:alpha.reasons,
+        alphaReasons:alpha.reasons,alphaHardReject:alpha.hardReject,
         reasons:[...(technical.reasons||[]),...(derivatives.reasons||[]),"candidate generated from TraderSpy live market data"]
       };
       signal.alpha=alpha;
@@ -689,7 +699,7 @@ async function getTraderSpyIntelligence(options = {}){
       signal.alpha=alpha;
     }
 
-    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT"));
+    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT")+" reasons="+(signal.validation?.reasons||[]).join(";")+" alphaVeto="+(signal.validation?.alphaHardReject||[]).join("|"));
     if(signal.validation?.passed)validated.push(signal);
   }
 

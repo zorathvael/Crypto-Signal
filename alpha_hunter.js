@@ -115,7 +115,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   if(![entry,sl,tp1,tp2,tp3].every(Number.isFinite))return{pass:false,alphaScore:0,reasons:["incomplete entry/SL/TP"],factors:{},hardReject:["incomplete entry/SL/TP"]};
 
   const risk=Math.abs(entry-sl);
-  const rr1=risk?Math.abs(tp1-entry)/risk:0,rr2=risk?Math.abs(tp2-entry)/risk:0,rr3=risk?Math.abs(tp3-entry)/risk:0;
+  const slPricePct=entry?risk/entry*100:0;
+  const leverage=Math.max(5,Math.min(20,Math.floor(0.05/(slPricePct/100)+1e-9)));
+  const marginRiskPct=+(slPricePct*leverage).toFixed(2);
+  const marginRewardPct=p=>entry&&leverage?+(Math.abs(p-entry)/entry*100*leverage).toFixed(2):0;
+  const reward1=marginRewardPct(tp1),reward2=marginRewardPct(tp2),reward3=marginRewardPct(tp3);
   const features=timeframeFeatures(technicalPayload);
   const aligned=features.filter(x=>x.direction===side).length;
   const opposing=features.filter(x=>x.direction===-side).length;
@@ -148,10 +152,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
     else if(entryAtrDistance>2){score-=10;reasons.push("entry >2 ATR from live price");}
   }
 
-  if(rr1>=2&&rr1<=6)score+=8;else score-=12;
-  if(rr2>=3.5&&rr2<=4.5)score+=4;else score-=4;
-  if(rr3>=5&&rr3<=6.5)score+=4;else score-=4;
-  reasons.push("R geometry "+rr1.toFixed(2)+"/"+rr2.toFixed(2)+"/"+rr3.toFixed(2));
+  if(marginRiskPct<=5)score+=4;else score-=20;
+  if(reward1>=25)score+=4;else score-=8;
+  if(reward2>=50)score+=4;else score-=6;
+  if(reward3>=100)score+=4;else score-=6;
+  reasons.push("margin geometry risk "+marginRiskPct.toFixed(1)+"% / rewards "+reward1.toFixed(0)+"/"+reward2.toFixed(0)+"/"+reward3.toFixed(0)+"%");
 
   const row=derivativesPayload instanceof Map
     ? derivativesPayload.get(String(signal.instId||"").toUpperCase())
@@ -184,9 +189,10 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const hardReject=[];
   if(aligned<2)hardReject.push("MTF alignment <2/3");
-  if(rr1<2||rr1>6)hardReject.push("TP1 R:R outside 2R-6R");
-  if(rr2<3.5||rr2>4.5)hardReject.push("TP2 not approximately 4R");
-  if(rr3<5.5||rr3>6.5)hardReject.push("TP3 not approximately 6R");
+  if(marginRiskPct>5)hardReject.push("SL risk exceeds 5% of margin");
+  if(reward1<25)hardReject.push("TP1 reward below 25% of margin");
+  if(reward2<50)hardReject.push("TP2 reward below 50% of margin");
+  if(reward3<100)hardReject.push("TP3 reward below 100% of margin");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
 
@@ -204,7 +210,7 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
     factors:{
       mtfAligned:aligned,mtfOpposing:opposing,
       entryAtrDistance:entryAtrDistance==null?null:+entryAtrDistance.toFixed(3),
-      rr1:+rr1.toFixed(2),rr2:+rr2.toFixed(2),rr3:+rr3.toFixed(2),
+      slPricePct:+slPricePct.toFixed(3),leverage,marginRiskPct:+marginRiskPct.toFixed(2),reward1:+reward1.toFixed(2),reward2:+reward2.toFixed(2),reward3:+reward3.toFixed(2),
       historical:evidence
     },
     reasons,hardReject

@@ -6,8 +6,9 @@
  * to respect the 10% margin risk budget at 5x are rejected instead of
  * silently falling back to 1x.
  */
-const MARGIN_USDT = 5;
-const RISK_FRACTION = 0.10;
+const MARGIN_USDT = 10;
+const RISK_FRACTION = 0.05;
+const REWARD_MARGIN_PCTS = [25, 50, 100];
 const MIN_LEVERAGE = 5;
 const MAX_LEVERAGE = 20;
 
@@ -31,7 +32,7 @@ function calculateTradePlan(signal, options = {}) {
 
   const riskBudgetUsdt = marginUsdt * riskFraction;
   const maxSlDistancePct = riskBudgetUsdt / (marginUsdt * MIN_LEVERAGE);
-  if (slDistancePct > maxSlDistancePct) {
+  if (slDistancePct > maxSlDistancePct + 1e-9) {
     throw new Error(`SL distance ${(slDistancePct * 100).toFixed(3)}% exceeds risk budget at ${MIN_LEVERAGE}x`);
   }
 
@@ -40,10 +41,25 @@ function calculateTradePlan(signal, options = {}) {
   const notionalUsdt = marginUsdt * leverage;
   const slLossUsdt = notionalUsdt * slDistancePct;
   const quantity = notionalUsdt / entry;
-
+  const action = String(signal?.action || "LONG").toUpperCase();
+  const rewardMarginPcts = Array.isArray(options.rewardMarginPcts)
+    ? options.rewardMarginPcts.map(Number).filter(Number.isFinite)
+    : REWARD_MARGIN_PCTS.slice();
+  if (!rewardMarginPcts.length || rewardMarginPcts.some((x) => x < 25)) {
+    throw new Error("Reward ladder requires at least 25% of margin per target");
+  }
+  const priceTargets = rewardMarginPcts.map((rewardMarginPct) => {
+    const priceMovePct = rewardMarginPct / leverage;
+    const multiplier = 1 + priceMovePct / 100;
+    return action === "SHORT" ? entry / multiplier : entry * multiplier;
+  });
+  const [tp1, tp2, tp3] = priceTargets;
   return {
-    marginUsdt, riskFraction, riskBudgetUsdt, leverage, notionalUsdt,
-    quantity, slDistancePct, slDistancePercent: slDistancePct * 100, slLossUsdt
+    marginUsdt, riskFraction, riskMarginPercent: riskFraction * 100,
+    riskBudgetUsdt, leverage, notionalUsdt, quantity,
+    slDistancePct, slDistancePercent: slDistancePct * 100, slLossUsdt,
+    rewardMarginPcts, rewardPriceMovePcts: rewardMarginPcts.map((x) => x / leverage),
+    tp1, tp2, tp3, geometry: "MARGIN_PERCENT"
   };
 }
 
