@@ -7,6 +7,7 @@
  * returns. Small samples are reported but do not veto a setup.
  */
 const clamp=(v,lo,hi)=>Math.min(Math.max(v,lo),hi);
+const { calculateTradePlan } = require("./trade_plan");
 const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null;};
 
 const HISTORY_AFTER_TS=Date.parse(process.env.ALPHA_HISTORY_AFTER_TS||"2026-09-18T00:00:00Z");
@@ -116,10 +117,14 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const risk=Math.abs(entry-sl);
   const slPricePct=entry?risk/entry*100:0;
-  const leverage=25;
+  let plan;
+  try { plan=calculateTradePlan({action:signal.action,entry,sl}); }
+  catch { return {pass:false,alphaScore:0,reasons:["trade geometry rejected"],factors:{},hardReject:["trade geometry rejected"]}; }
+  const leverage=plan.leverage;
   const marginRiskPct=+(slPricePct*leverage).toFixed(2);
   const marginRewardPct=p=>entry&&leverage?+(Math.abs(p-entry)/entry*100*leverage).toFixed(2):0;
   const reward1=marginRewardPct(tp1),reward2=marginRewardPct(tp2),reward3=marginRewardPct(tp3);
+  const rewardR=[tp1,tp2,tp3].map(p=>risk>0?Math.abs(p-entry)/risk:0);
   const features=timeframeFeatures(technicalPayload);
   const aligned=features.filter(x=>x.direction===side).length;
   const opposing=features.filter(x=>x.direction===-side).length;
@@ -153,10 +158,10 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
   }
 
   if(marginRiskPct<=10)score+=4;else score-=20;
-  if(reward1>=30)score+=4;else score-=8;
-  if(reward2>=60)score+=4;else score-=6;
-  if(reward3>=120)score+=4;else score-=6;
-  reasons.push("margin geometry risk "+marginRiskPct.toFixed(1)+"% / rewards "+reward1.toFixed(0)+"/"+reward2.toFixed(0)+"/"+reward3.toFixed(0)+"%");
+  if(rewardR[0]>=2)score+=4;else score-=8;
+  if(rewardR[1]>=4)score+=4;else score-=6;
+  if(rewardR[2]>=6)score+=4;else score-=6;
+  reasons.push("geometry risk "+marginRiskPct.toFixed(1)+"% margin / rewards "+rewardR.map(x=>x.toFixed(1)).join("/")+"R @ "+leverage+"x");
 
   const row=derivativesPayload instanceof Map
     ? derivativesPayload.get(String(signal.instId||"").toUpperCase())
@@ -189,11 +194,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const hardReject=[];
   if(aligned<2)hardReject.push("MTF alignment <2/3");
-  if(leverage!==25)hardReject.push("leverage geometry is not fixed at 25x");
+  if(leverage<5||leverage>20)hardReject.push("leverage outside 5x..20x contract");
   if(marginRiskPct>10)hardReject.push("SL risk exceeds 10% of margin");
-  if(reward1<30)hardReject.push("TP1 reward below 30% of margin");
-  if(reward2<60)hardReject.push("TP2 reward below 60% of margin");
-  if(reward3<120)hardReject.push("TP3 reward below 120% of margin");
+  if(rewardR[0]<2)hardReject.push("TP1 reward below 2R");
+  if(rewardR[1]<4)hardReject.push("TP2 reward below 4R");
+  if(rewardR[2]<6)hardReject.push("TP3 reward below 6R");
   if(entryAtrDistance!=null&&entryAtrDistance>2)hardReject.push("entry chase >2 ATR");
   if(ageMin>120)hardReject.push("signal stale");
 
