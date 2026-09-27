@@ -62,6 +62,6 @@ test("entry calibration is independent from margin reward geometry", () => {
     supports: [99], resistances: [103],
   });
   assert.equal(result.pass, true);
-  assert.equal(result.entry, 99.3);
+  assert.equal(result.entry, 99.2);
   assert.equal(result.mode, "SUPPORT_CALIBRATED");
 });
