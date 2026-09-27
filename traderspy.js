@@ -490,6 +490,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     +(Math.abs(tp2 - entry) / entry * 100 * leverage).toFixed(2),
     +(Math.abs(tp3 - entry) / entry * 100 * leverage).toFixed(2),
   ];
+  const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
 
   const ageValidUntil = now + 60 * 60 * 1000;
   return {
