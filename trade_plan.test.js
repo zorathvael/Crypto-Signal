@@ -6,7 +6,7 @@ test("10 USDT margin sizes leverage from 0.5% SL distance at 5% margin risk", ()
   const plan = calculateTradePlan({ entry: 100, sl: 99.5 });
   assert.equal(plan.marginUsdt, 10);
   assert.equal(plan.leverage, 10);
-  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
+  assert.ok(plan.leverage >= 5 && plan.leverage <= 25);
   assert.equal(plan.notionalUsdt, 100);
   assert.equal(plan.slLossUsdt, 0.5);
 });
@@ -14,7 +14,7 @@ test("10 USDT margin sizes leverage from 0.5% SL distance at 5% margin risk", ()
 test("wider but valid SL floors at the 5x minimum", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99 });
   assert.equal(plan.leverage, 5);
-  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
+  assert.ok(plan.leverage >= 5 && plan.leverage <= 25);
   assert.equal(plan.slLossUsdt, 0.5);
 });
 
@@ -25,10 +25,10 @@ test("SL wider than 1% is rejected instead of falling below 5x", () => {
   );
 });
 
-test("narrow SL respects 20x leverage cap", () => {
+test("narrow SL respects 25x leverage cap", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99.9 });
-  assert.equal(plan.leverage, 20);
-  assert.ok(plan.leverage >= 5 && plan.leverage <= 20);
+  assert.equal(plan.leverage, 25);
+  assert.ok(plan.leverage >= 5 && plan.leverage <= 25);
   assert.ok(plan.slLossUsdt <= 0.5);
 });
 
