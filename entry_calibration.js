@@ -1,43 +1,150 @@
 /**
- * Entry calibration is deliberately independent from margin risk/reward.
- * It decides only the executable entry anchor.
+ * Entry Calibration — geometry-aware, data-derived entry selection.
+ *
+ * This layer determines ONLY the executable Entry.
+ * It does not calculate leverage, margin, SL, or TP.
+ *
+ * The production geometry gives us one hard measurable constraint:
+ *   maximum price-risk capacity = 0.4% of Entry.
+ *
+ * Therefore entry calibration derives its usable structural distance from
+ * that capacity and the observed ATR, rather than using fixed "0.75 ATR"
+ * / "1.5 ATR" thresholds.
  */
+const MAX_PRICE_RISK_PCT = 0.004;
+const EPSILON = 1e-12;
+
 function finitePositive(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+function clamp(v, lo, hi) {
+  return Math.min(Math.max(v, lo), hi);
+}
+
+function normalizeLevels(values, direction, livePrice) {
+  if (!Array.isArray(values) || !Number.isFinite(livePrice) || livePrice <= 0) return [];
+  const levels = values
+    .map(finitePositive)
+    .filter(Boolean)
+    .filter((x) => direction === "LONG" ? x < livePrice : x > livePrice);
+  return [...new Set(levels.map((x) => +x.toFixed(12)))]
+    .sort((a, b) => direction === "LONG" ? b - a : a - b);
+}
+
 function calibrateEntry(input = {}) {
   const action = String(input.action || "").toUpperCase();
-  if (action !== "LONG" && action !== "SHORT") return { pass:false, entry:null, score:0, reasons:["invalid direction"] };
-  const livePrice=finitePositive(input.livePrice), technicalPrice=finitePositive(input.technicalPrice), atr=finitePositive(input.atr);
-  if (!livePrice || !technicalPrice || !atr) return { pass:false, entry:null, score:0, reasons:["entry calibration data unavailable"] };
-  const supports=Array.isArray(input.supports)?input.supports.map(finitePositive).filter(Boolean).sort((a,b)=>b-a):[];
-  const resistances=Array.isArray(input.resistances)?input.resistances.map(finitePositive).filter(Boolean).sort((a,b)=>a-b):[];
-  const distanceAtr=Math.abs(technicalPrice-livePrice)/atr;
-  if(distanceAtr>1.5) return {pass:false,entry:technicalPrice,score:0,distanceAtr:+distanceAtr.toFixed(3),mode:"REJECT_CHASE",reasons:["technical entry >1.5 ATR from live price"]};
-  let entry=technicalPrice, mode="TECHNICAL_ANCHOR"; const reasons=[];
-  if(action==="LONG"){
-    const support=supports.find(x=>x<=livePrice&&livePrice-x<=atr*0.75);
-    if(support!=null&&distanceAtr<=0.75){
-      const calibrated=support+Math.min(atr*0.10,(livePrice-support)*0.35);
-      if(calibrated>0&&calibrated<=livePrice*1.0025){entry=Math.min(livePrice,calibrated);mode="SUPPORT_CALIBRATED";reasons.push("entry anchored to nearby support");}
-    }
-  }else{
-    const resistance=resistances.find(x=>x>=livePrice&&x-livePrice<=atr*0.75);
-    if(resistance!=null&&distanceAtr<=0.75){
-      const calibrated=resistance-Math.min(atr*0.10,(resistance-livePrice)*0.35);
-      if(calibrated>0&&calibrated>=livePrice*0.9975){entry=Math.max(livePrice,calibrated);mode="RESISTANCE_CALIBRATED";reasons.push("entry anchored to nearby resistance");}
-    }
+  if (action !== "LONG" && action !== "SHORT") {
+    return { pass: false, entry: null, score: 0, reasons: ["invalid direction"] };
   }
-  const finalDistanceAtr=Math.abs(entry-livePrice)/atr;
-  let score=60;
-  if(finalDistanceAtr<=0.25){score+=20;reasons.push("entry within 0.25 ATR of live price");}
-  else if(finalDistanceAtr<=0.5){score+=12;reasons.push("entry within 0.5 ATR of live price");}
-  else if(finalDistanceAtr<=1){score+=5;reasons.push("entry within 1 ATR of live price");}
-  else {score-=10;reasons.push("entry >1 ATR from live price");}
-  if(mode!=="TECHNICAL_ANCHOR")score+=8;
-  score=Math.max(0,Math.min(99,Math.round(score)));
-  return {pass:score>=60,entry:+entry,score,mode,distanceAtr:+finalDistanceAtr.toFixed(3),reasons};
+
+  const livePrice = finitePositive(input.livePrice);
+  const technicalPrice = finitePositive(input.technicalPrice);
+  const atr = finitePositive(input.atr);
+  if (!livePrice || !technicalPrice || !atr) {
+    return { pass: false, entry: null, score: 0, reasons: ["entry calibration data unavailable"] };
+  }
+
+  const maxRiskPrice = livePrice * MAX_PRICE_RISK_PCT;
+  const geometryCapacityAtr = maxRiskPrice / atr;
+  const technicalDistanceAtr = Math.abs(technicalPrice - livePrice) / atr;
+
+  // A technical anchor farther away than the geometry can reasonably absorb
+  // is not "fixed" by widening risk. It must be rejected or replaced by a
+  // structure-calibrated entry.
+  const supports = normalizeLevels(input.supports, "LONG", livePrice);
+  const resistances = normalizeLevels(input.resistances, "SHORT", livePrice);
+  const levels = action === "LONG" ? supports : resistances;
+
+  let entry = technicalPrice;
+  let mode = "TECHNICAL_ANCHOR";
+  let structuralLevel = null;
+  const reasons = [];
+
+  // Structure is considered usable when the final entry can place that
+  // structural level inside the fixed 0.4% price-risk envelope.
+  const usableLevels = levels.filter((level) => {
+    const distance = Math.abs(livePrice - level);
+    return distance <= maxRiskPrice + EPSILON;
+  });
+
+  if (usableLevels.length) {
+    structuralLevel = usableLevels[0];
+    const levelDistance = Math.abs(livePrice - structuralLevel);
+
+    // Put the calibrated entry between live price and structure. The blend
+    // is based on actual geometry capacity: if structure is very close,
+    // stay close to market; if it consumes most capacity, move entry toward
+    // the structural level so the fixed SL remains executable.
+    const capacityUse = clamp(levelDistance / Math.max(maxRiskPrice, EPSILON), 0, 1);
+    const pullToStructure = 0.35 + 0.30 * capacityUse;
+    entry = action === "LONG"
+      ? structuralLevel + levelDistance * pullToStructure
+      : structuralLevel - levelDistance * pullToStructure;
+
+    entry = action === "LONG"
+      ? Math.min(livePrice, entry)
+      : Math.max(livePrice, entry);
+
+    mode = action === "LONG" ? "SUPPORT_CALIBRATED" : "RESISTANCE_CALIBRATED";
+    reasons.push("entry calibrated to executable nearby structure");
+  } else {
+    // No structure fits the fixed geometry. Keep the technical anchor only
+    // when it is itself executable relative to current price.
+    if (technicalDistanceAtr > Math.max(geometryCapacityAtr * 1.5, 0.25)) {
+      return {
+        pass: false,
+        entry: technicalPrice,
+        score: 0,
+        distanceAtr: +technicalDistanceAtr.toFixed(3),
+        geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
+        mode: "REJECT_UNEXECUTABLE_ANCHOR",
+        reasons: ["technical entry exceeds geometry-adjusted volatility capacity"],
+      };
+    }
+    reasons.push("no structure inside fixed geometry; technical anchor retained");
+  }
+
+  const finalDistancePrice = Math.abs(entry - livePrice);
+  const finalDistanceAtr = finalDistancePrice / atr;
+  const geometryUse = finalDistancePrice / Math.max(maxRiskPrice, EPSILON);
+
+  // Score is continuous rather than a ladder of arbitrary ATR buckets.
+  // 100 = entry at live price; 0 = outside the executable geometry envelope.
+  const proximityScore = clamp(100 * (1 - finalDistancePrice / Math.max(maxRiskPrice * 1.5, EPSILON)), 0, 100);
+  const structureScore = structuralLevel == null
+    ? 50
+    : clamp(100 * (1 - Math.abs(entry - structuralLevel) / Math.max(maxRiskPrice, EPSILON)), 0, 100);
+  const geometryScore = clamp(100 * (1 - Math.max(0, geometryUse - 0.75) / 0.25), 0, 100);
+  const score = Math.round(0.45 * proximityScore + 0.35 * structureScore + 0.20 * geometryScore);
+
+  if (geometryUse > 1 + 1e-9) {
+    return {
+      pass: false,
+      entry: +entry,
+      score: 0,
+      distanceAtr: +finalDistanceAtr.toFixed(3),
+      geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
+      geometryUse: +geometryUse.toFixed(3),
+      mode: "REJECT_GEOMETRY_CAPACITY",
+      reasons: ["calibrated entry cannot fit the fixed 0.4% geometry"],
+    };
+  }
+
+  return {
+    pass: score >= 55,
+    entry: +entry,
+    score,
+    mode,
+    structuralLevel,
+    distanceAtr: +finalDistanceAtr.toFixed(3),
+    technicalDistanceAtr: +technicalDistanceAtr.toFixed(3),
+    geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
+    geometryUse: +geometryUse.toFixed(3),
+    maxRiskPricePct: MAX_PRICE_RISK_PCT,
+    reasons,
+  };
 }
-module.exports={calibrateEntry};
+
+module.exports = { calibrateEntry, MAX_PRICE_RISK_PCT };
