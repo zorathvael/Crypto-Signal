@@ -177,46 +177,19 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
-## Independent entry calibration vs margin trade geometry
+## Independent entry calibration
 
-Production logic keeps **Entry calibration** and **margin trade geometry** as separate layers.
+Entry Calibration is a separate adaptive layer from Entry Geometry.
 
-**Entry calibration is NOT leverage geometry. `entry_calibration.js` decides only the executable Entry from live price, technical price, ATR, and nearby market structure. It does not use the 5 USDT margin, 25x leverage, SL budget, or TP percentages.
+- **Entry Geometry remains immutable:** 5 USDT margin, fixed 25x leverage, 0.4% maximum price-risk envelope, TP1/TP2/TP3 = 30/60/120% of margin.
+- Entry calibration derives its usable structural distance from the **actual geometry capacity in ATR units**:
+  `geometryCapacityAtr = (Entry × 0.4%) / ATR`.
+- Nearby support/resistance is usable only when it can fit inside that executable envelope.
+- The calibration score is continuous and combines market proximity, structural proximity, and geometry utilisation; it does not use fixed 0.75/1.5 ATR entry thresholds.
+- Closed outcomes now persist calibration score/distance/capacity so Alpha Hunter can learn an empirical calibration floor from observed outcomes.
+- The empirical floor uses smoothed historical outcome evidence and only activates after sufficient observations; before that, the system uses the calibrated cold-start floor.
 
-After Entry is fixed, the separate trade-plan engine receives **Entry + structural SL** and applies the fixed production contract:
-
-- Margin: **5 USDT**
-- Leverage: **25x fixed**
-- Notional: **125 USDT**
-- Maximum SL loss: **10% of margin = 0.50 USDT**
-- TP1: **+30% of margin = +1.50 USDT**
-- TP2: **+60% of margin = +3.00 USDT**
-- TP3: **+120% of margin = +6.00 USDT**
-
-At fixed 25x this corresponds to linear price distances:
-
-- SL: **0.4% max**
-- TP1: **1.2%**
-- TP2: **2.4%**
-- TP3: **4.8%**
-
-LONG and SHORT use mirrored linear price movement so the margin P&L geometry remains exact in both directions.
-
-```text
-market / MTF evidence
-        ↓
-ENTRY CALIBRATION
-        ↓
-fixed Entry
-        ↓
-structural SL
-        ↓
-TRADE GEOMETRY — 5 USDT / fixed 25x / max SL 10% margin
-        ↓
-TP1 30% / TP2 60% / TP3 120% margin
-```
-
-Changing the margin reward ladder must not modify Entry calibration. A structural SL wider than 0.4% is rejected; leverage is never changed to accommodate it.
+This makes threshold selection **measured by entry context**, rather than manually tightening or loosening arbitrary scanner thresholds.
 
 ## Alpha Hunter v3
 — conditional edge selection
