@@ -130,14 +130,14 @@ test("discovery candidates use the margin reward geometry contract", () => {
     price: 100,
     timeframes: [
       { interval: "15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:2},levels:{support:[{price:99.2}],resistance:[{price:104}]}} },
+      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.6}],resistance:[{price:104}]}} },
       { interval: "4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
   const risk = Math.abs(out.entry - out.sl);
-  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.30) < 1e-9);
+  assert.equal(out.leverage, 25);\n  assert.equal(out.marginRiskPct, 10);\n  assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);\n  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.30) < 1e-9);
   assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * out.leverage - 0.60) < 1e-9);
   assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * out.leverage - 1.20) < 1e-9);
 });
@@ -148,7 +148,7 @@ test("discovery candidates respect the fixed 25x risk-plan SL ceiling", () => {
     price:100,
     timeframes:[
       { interval:"15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:2},levels:{support:[]}} },
+      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[]}} },
       { interval:"4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
