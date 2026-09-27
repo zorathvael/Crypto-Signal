@@ -38,13 +38,16 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.equal(out.action, "LONG");
   assert.equal(out.entry, 100);
   assert.equal(out.sl, 99);
-  assert.equal(out.tp1, 102);
-  assert.equal(out.tp2, 104);
-  assert.equal(out.tp3, 106);
-  assert.equal(out.rr, 2);
+  assert.equal(out.tp1, 105);
+  assert.equal(out.tp2, 110);
+  assert.equal(out.tp3, 120);
+  assert.equal(out.rr, 5);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
-  assert.equal(out.riskPct, null);
+  assert.equal(out.riskPct, 1);
+  assert.equal(out.marginRiskPct, 5);
+  assert.equal(out.leverage, 5);
+  assert.deepEqual(out.rewardMarginPcts, [25, 50, 100]);
 });
 
 test("normalizes a SHORT signal with mirrored levels", () => {
@@ -56,8 +59,10 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   assert.ok(out);
   assert.equal(out.action, "SHORT");
   assert.equal(out.sl, 202);
-  assert.equal(out.tp1, 196);
-  assert.equal(out.rr, 2);
+  assert.ok(Math.abs(out.tp1 - 200 / 1.05) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 200 / 1.10) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 200 / 1.20) < 1e-9);
+  assert.equal(out.rr, 5);
 });
 
 test("rejects resolved, stale and non-crypto signals", () => {
@@ -148,7 +153,7 @@ test("discovery candidates respect the 5x risk-plan SL ceiling", () => {
   };
   const out=buildScreenCandidate(discovery,payload,NOW,"LONG");
   assert.ok(out);
-  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.02);
+  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.01);
 });
 
 test("discovery candidates with excessive volatility are rejected before validation", () => {
