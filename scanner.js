@@ -26,6 +26,7 @@ const positioning = require("./positioning");
 const { runTraderSpyScan } = require("./traderspy");
 const { getFallbackIntelligence } = require("./traderspy_fallback");
 const { calculateTradePlan } = require("./trade_plan");
+const { calibrateEntry } = require("./entry_calibration");
 
 const BITGET = "https://api.bitget.com";
 const BG_PRODUCT = "USDT-FUTURES";
@@ -35,7 +36,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 2.0;
+const MIN_RR = 3.0; // Production TP1 geometry is 3R at fixed 25x; level-builder RR is not the source of truth
 const CANDIDATE_LIMIT = 60; // v3.12.3 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
@@ -3452,13 +3453,13 @@ async function main() {
           levels = buildLevels(m5x, scored, c.mark, regime);
         }
       }
-      if (!levels || levels.mode === "WAIT" || !levels.rr || levels.rr < MIN_RR) {
+      if (!levels || levels.mode === "WAIT") {
         watches.push({
           base: c.base,
           action: scored.action,
           score: scored.probability,
           setup: "SCALP_15M",
-          reason: !levels || levels.mode === "WAIT" ? "belum zona entry" : ("rr below minimum 2R (rr=" + (levels.rr != null ? levels.rr.toFixed(2) : "?") + ")"),
+          reason: "belum zona entry",
         });
         funnel.levelsFail++;
         continue;
@@ -3468,11 +3469,65 @@ async function main() {
         watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: "SCALP_15M", reason: "mode entry tidak valid" });
         continue;
       }
-      // Market entry only if score kuat
-      if (modeStr.includes("_MKT") && scored.probability < 80) {
-        watches.push({ base: c.base, action: scored.action, score: scored.probability, setup: "SCALP_15M", reason: "MKT butuh score>=80" });
+      // Entry Calibration is a distinct layer. It may refine the candidate entry,
+      // but it never receives or uses the margin/leverage geometry.
+      const calibrated = calibrateEntry({
+        action: scored.action,
+        livePrice: c.mark,
+        technicalPrice: levels.entry,
+        atr: atr(m15x) || atr(m5x) || c.mark * 0.005,
+        supports: [scored.m15?.lower, scored.m5?.lower].filter(Number.isFinite),
+        resistances: [scored.m15?.upper, scored.m5?.upper].filter(Number.isFinite),
+      });
+      if (!calibrated.pass || !Number.isFinite(calibrated.entry)) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: scored.probability,
+          setup: scored.setup || "SCALP_15M",
+          reason: "entry calibration rejected: " + (calibrated.reasons || []).join("; "),
+        });
+        funnel.levelsFail++;
         continue;
       }
+
+      // Entry Geometry is deliberately downstream and fixed. It does not calibrate
+      // Entry and it never changes leverage to accommodate a wider structural SL.
+      let geometry;
+      try {
+        geometry = calculateTradePlan({
+          action: scored.action,
+          entry: calibrated.entry,
+          sl: levels.sl,
+        });
+      } catch (e) {
+        watches.push({
+          base: c.base,
+          action: scored.action,
+          score: scored.probability,
+          setup: scored.setup || "SCALP_15M",
+          reason: "fixed 25x geometry rejected: " + e.message,
+        });
+        funnel.levelsFail++;
+        continue;
+      }
+
+      levels = {
+        ...levels,
+        entry: calibrated.entry,
+        sl: geometry.sl,
+        tp1: geometry.tp1,
+        tp2: geometry.tp2,
+        tp3: geometry.tp3,
+        rr: geometry.rr,
+        geometry: geometry.geometry,
+        leverage: geometry.leverage,
+        marginUsdt: geometry.marginUsdt,
+        riskMarginPercent: geometry.riskMarginPercent,
+        rewardMarginPcts: geometry.rewardMarginPcts,
+        rewardPriceMovePcts: geometry.rewardPriceMovePcts,
+        entryCalibration: calibrated,
+      };
 
       const evInfo = estimateEV(levels.rr, levels.entry);
       if (!evInfo || evInfo.netRr < 1.0) {
@@ -3523,6 +3578,13 @@ async function main() {
         book: scored.book,
         regime: scored.regime,
         riskPct,
+        leverage: geometry.leverage,
+        marginUsdt: geometry.marginUsdt,
+        riskMarginPercent: geometry.riskMarginPercent,
+        rewardMarginPcts: geometry.rewardMarginPcts,
+        rewardPriceMovePcts: geometry.rewardPriceMovePcts,
+        entryCalibration: calibrated,
+        geometry: geometry.geometry,
         volConfirm: !!scored.volConfirm,
         persistent: false,
         score: scored.probability,
