@@ -689,7 +689,7 @@ async function getTraderSpyIntelligence(options = {}){
         derivativesScore:derivatives.score,
         detailScore:null,
         alphaScore:alpha.alphaScore,
-        alphaReasons:alpha.reasons,
+        alphaReasons:alpha.reasons,alphaHardReject:alpha.hardReject,
         reasons:[...(technical.reasons||[]),...(derivatives.reasons||[]),"candidate generated from TraderSpy live market data"]
       };
       signal.alpha=alpha;
@@ -699,7 +699,7 @@ async function getTraderSpyIntelligence(options = {}){
       signal.alpha=alpha;
     }
 
-    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT")+" reasons="+(signal.validation?.reasons||[]).join(";"));
+    console.log("TraderSpy validation: "+signal.base+" "+signal.action+" source="+(signal.generatedCandidate?"candidate":"published")+" tech="+technical.score+" deriv="+derivatives.score+" alpha="+(signal.validation?.alphaScore||0)+" final="+signal.qualityScore+" "+(signal.validation?.passed?"PASS":"REJECT")+" reasons="+(signal.validation?.reasons||[]).join(";")+" alphaVeto="+(signal.validation?.alphaHardReject||[]).join("|"));
     if(signal.validation?.passed)validated.push(signal);
   }
 
