@@ -387,6 +387,10 @@ Selalu validasi level, kondisi pasar, leverage, biaya, slippage, dan risiko sebe
 The active repository release is **v4.0.0** (`package.json`). Legacy comments/names from older scanner generations are not part of the public v4.0 presentation.
 
 
+## CI regression fix
+
+The TraderSpy normalization path now always carries an explicit entry-calibration contract. When a provider signal does not include an independent technical calibration payload, the provider trigger is retained and the calibration metadata is marked `PROVIDER_TRIGGER` with no fabricated score. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
+
 ## Operational reliability rule
 
 Perubahan produksi wajib diperlakukan sebagai perubahan runtime, bukan hanya perubahan kode. Sebelum merge: cek syntax, unit test, workflow dry-run, konsumsi quota/tool call, error-path provider, delivery fan-out, dedup, batching Square, dan sinkronisasi README. Jangan menaikkan validation target tanpa menghitung dampaknya terhadap quota harian. Jika provider quota habis, runtime harus berhenti aman tanpa duplicate post, tanpa outcome mutation, dan tanpa crash yang tidak terkontrol.
