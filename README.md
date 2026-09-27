@@ -135,7 +135,7 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 - LONG: SL di bawah entry, TP di atas entry
 - SHORT: SL di atas entry, TP di bawah entry
 - Margin: 5 USDT
-- Maximum risk: 5% margin = 0.50 USDT
+- Maximum risk: 5% margin = 0.25 USDT
 - Leverage: 5x–20x
 - TP1/TP2/TP3: 25% / 50% / 100% margin
 
@@ -195,8 +195,8 @@ market / MTF evidence → ENTRY CALIBRATION → Entry
 ## Margin-based trade geometry
 
 Production level contract:
-- Margin: **10 USDT**
-- Maximum SL risk: **5% of margin = 0.50 USDT**
+- Margin: **5 USDT**
+- Maximum SL risk: **5% of margin = 0.25 USDT**
 - Leverage: **5x–20x**
 - TP1: **+25% of margin**
 - TP2: **+50% of margin**
@@ -302,7 +302,7 @@ Runtime environment:
 
 ```yaml
 TRADERSPY_ONLY: "true"
-TRADERSPY_SIGNAL_LIMIT: "20"
+TRADERSPY_SIGNAL_LIMIT: "50"
 TRADERSPY_MAX_AGE_MIN: "120"
 TRADERSPY_MIN_SCORE: "80"
 ```
@@ -380,11 +380,11 @@ Pipeline fail-closed:
 ```
 TraderSpy unavailable
         ↓
-NO VALID SIGNAL
+HTTP 429 / quota exhausted → bounded Binance fallback
         ↓
-NO synthetic fallback
+Fallback validated → same delivery contract
         ↓
-NO post
+Other provider/auth errors → NO VALID SIGNAL
 ```
 
 Kesalahan authentication, malformed response, missing entry/SL/TP, expired signal, resolved signal, dan symbol non-crypto tidak boleh berubah menjadi signal valid.
