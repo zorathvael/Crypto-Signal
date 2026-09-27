@@ -275,6 +275,9 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     riskPct: +plan.slDistancePercent.toFixed(3),
     marginRiskPct: plan.riskMarginPercent,
     leverage,
+    entryCalibrationScore: entryCalibration.score,
+    entryCalibrationDistanceAtr: entryCalibration.distanceAtr,
+    entryCalibrationGeometryCapacityAtr: entryCalibration.geometryCapacityAtr,
     rewardMarginPcts,
     regime: null,
     book: null,
@@ -461,26 +464,11 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   if (!entryCalibration.pass) return null;
   const entry = entryCalibration.entry;
 
-  // Layer 2: structural stop candidate. Risk engine validates its affordability.
-  // Structural SL is downstream of Entry calibration and must fit the fixed 25x/10% margin risk ceiling.
-  // This does NOT alter Entry calibration; it only constrains the separate SL geometry layer.
+  // Layer 2: geometry is deterministic and downstream of Entry Calibration.
+  // No ATR-based SL threshold is used here. The fixed 25x geometry owns the
+  // executable SL envelope; structure was already used to calibrate Entry.
   const maxRisk = entry * 0.004;
-  if (atr * 0.35 > maxRisk) return null;
-  const minAtrRisk = atr * 0.35;
-  let sl;
-  if (action === "LONG") {
-    const support = supports.find(x => x < entry && entry - x >= minAtrRisk && entry - x <= maxRisk);
-    const fallbackRisk = Math.min(atr * 0.60, maxRisk);
-    if (support != null) sl = support;
-    else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry - fallbackRisk;
-    else return null;
-  } else {
-    const resistance = resistances.find(x => x > entry && x - entry >= minAtrRisk && x - entry <= maxRisk);
-    const fallbackRisk = Math.min(atr * 0.75, maxRisk);
-    if (resistance != null) sl = resistance;
-    else if (fallbackRisk >= minAtrRisk && fallbackRisk > 0) sl = entry + fallbackRisk;
-    else return null;
-  }
+  const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
 
   // Layer 3: single production risk/reward engine. It owns leverage and TP geometry.
   let plan;
