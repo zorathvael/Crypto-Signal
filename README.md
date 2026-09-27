@@ -135,7 +135,7 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 - LONG: SL di bawah entry, TP di atas entry
 - SHORT: SL di atas entry, TP di bawah entry
 - Margin: 5 USDT
-- Maximum risk: 5% margin = 0.25 USDT
+- Maximum risk: 10% margin = 0.50 USDT
 - Leverage: 25x fixed
 - TP1/TP2/TP3: 30% / 60% / 120% margin
 
