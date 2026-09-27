@@ -1,18 +1,31 @@
 /**
- * Production trade-plan geometry for Crypto-Signal.
- * Margin: 5 USDT. Leverage: integer 5x..20x. Max loss: 0.50 USDT.
- * Targets: 2R / 4R / 6R from the structural SL.
+ * Production trade-plan geometry for Crypto-Signal v4.0.
  *
- * Leverage is selected from the structural SL so planned loss stays within
- * the 0.50 USDT budget. A setup requiring less than 5x is rejected.
- * Entry calibration and trade geometry remain separate layers.
+ * Entry calibration and trade geometry are independent layers.
+ * This module NEVER calibrates or moves Entry. It receives the already-calibrated
+ * Entry and applies the fixed production margin geometry.
+ *
+ * Fixed contract:
+ *   Margin = 5 USDT
+ *   Leverage = 25x
+ *   Notional = 125 USDT
+ *   Max SL loss = 10% of margin = 0.50 USDT
+ *   TP1 = 30% margin = 1.50 USDT
+ *   TP2 = 60% margin = 3.00 USDT
+ *   TP3 = 120% margin = 6.00 USDT
+ *
+ * At 125 USDT notional: SL max = 0.4%, TP1 = 1.2%, TP2 = 2.4%, TP3 = 4.8%.
+ * A structural SL wider than 0.4% is rejected. Leverage is never changed.
  */
 const MARGIN_USDT = 5;
-const MIN_LEVERAGE = 5;
-const MAX_LEVERAGE = 20;
+const LEVERAGE = 25;
 const RISK_MARGIN_PERCENT = 10;
+const RISK_BUDGET_USDT = 0.5;
 const RISK_FRACTION = 0.10;
-const REWARD_R_MULTIPLES = [2, 4, 6];
+const NOTIONAL_USDT = MARGIN_USDT * LEVERAGE;
+const MAX_SL_PRICE_PCT = RISK_BUDGET_USDT / NOTIONAL_USDT;
+const REWARD_MARGIN_PCTS = [30, 60, 120];
+const REWARD_PRICE_MOVE_PCTS = [1.2, 2.4, 4.8];
 const EPSILON = 1e-9;
 
 function finitePositive(value) {
@@ -20,64 +33,52 @@ function finitePositive(value) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function calculateTradePlan(signal) {
-  const entry = finitePositive(signal?.entry);
-  const sl = finitePositive(signal?.sl);
-  if (!entry || !sl) throw new Error("Trade plan requires valid entry and SL");
+function calculateTradePlan(signal = {}) {
+  const entry = finitePositive(signal.entry);
+  const structuralSl = finitePositive(signal.sl);
+  if (!entry || !structuralSl) throw new Error("Trade plan requires valid calibrated entry and structural SL");
 
-  const action = String(signal?.action || "LONG").toUpperCase();
-  if (action !== "LONG" && action !== "SHORT") {
-    throw new Error("Trade plan requires LONG or SHORT action");
+  const action = String(signal.action || "LONG").toUpperCase();
+  if (action !== "LONG" && action !== "SHORT") throw new Error("Trade plan requires LONG or SHORT action");
+
+  const distancePct = Math.abs(entry - structuralSl) / entry;
+  if (!(distancePct > 0)) throw new Error("Trade plan requires non-zero entry-to-SL distance");
+  if (distancePct > MAX_SL_PRICE_PCT + EPSILON) {
+    throw new Error(`Structural SL distance ${(distancePct * 100).toFixed(3)}% exceeds fixed 25x geometry max ${(MAX_SL_PRICE_PCT * 100).toFixed(3)}%`);
   }
 
-  const slDistancePct = Math.abs(entry - sl) / entry;
-  if (!(slDistancePct > 0)) throw new Error("Trade plan requires non-zero entry-to-SL distance");
-
-  const riskLimitedLeverage = Math.floor((RISK_FRACTION / slDistancePct) + EPSILON);
-  if (riskLimitedLeverage < MIN_LEVERAGE) {
-    throw new Error(`SL distance ${(slDistancePct * 100).toFixed(3)}% requires leverage below the 5x minimum`);
-  }
-
-  const leverage = Math.min(MAX_LEVERAGE, riskLimitedLeverage);
-  const notionalUsdt = MARGIN_USDT * leverage;
-  const riskBudgetUsdt = MARGIN_USDT * RISK_FRACTION;
-  const maxSlDistancePct = riskBudgetUsdt / notionalUsdt;
-  if (slDistancePct > maxSlDistancePct + EPSILON) {
-    throw new Error(`SL distance ${(slDistancePct * 100).toFixed(3)}% exceeds the selected ${leverage}x risk geometry`);
-  }
-
-  const quantity = notionalUsdt / entry;
-  const slLossUsdt = notionalUsdt * slDistancePct;
-  const riskPriceDistance = Math.abs(entry - sl);
-  const priceTargets = REWARD_R_MULTIPLES.map((r) => {
-    const move = riskPriceDistance * r;
-    return action === "SHORT" ? entry - move : entry + move;
+  const sl = action === "SHORT" ? entry * (1 + MAX_SL_PRICE_PCT) : entry * (1 - MAX_SL_PRICE_PCT);
+  const targets = REWARD_PRICE_MOVE_PCTS.map((pct) => {
+    const move = pct / 100;
+    return action === "SHORT" ? entry * (1 - move) : entry * (1 + move);
   });
-  const [tp1, tp2, tp3] = priceTargets;
+  const [tp1, tp2, tp3] = targets;
+  const quantity = NOTIONAL_USDT / entry;
 
   return {
     marginUsdt: MARGIN_USDT,
+    leverage: LEVERAGE,
+    notionalUsdt: NOTIONAL_USDT,
+    quantity,
     riskFraction: RISK_FRACTION,
     riskMarginPercent: RISK_MARGIN_PERCENT,
-    riskBudgetUsdt,
-    leverage,
-    minLeverage: MIN_LEVERAGE,
-    maxLeverage: MAX_LEVERAGE,
-    notionalUsdt,
-    quantity,
-    slDistancePct,
-    slDistancePercent: slDistancePct * 100,
-    slLossUsdt,
-    maxSlDistancePct,
-    maxSlDistancePercent: maxSlDistancePct * 100,
-    rewardRMultiples: REWARD_R_MULTIPLES.slice(),
-    rewardMarginPcts: REWARD_R_MULTIPLES.map((r) => +(r * slDistancePct * 100 * leverage).toFixed(4)),
-    rewardPriceMovePcts: REWARD_R_MULTIPLES.map((r) => +(r * slDistancePct * 100).toFixed(6)),
+    riskBudgetUsdt: RISK_BUDGET_USDT,
+    structuralSl,
+    sl,
+    slDistancePct: MAX_SL_PRICE_PCT,
+    slDistancePercent: MAX_SL_PRICE_PCT * 100,
+    slLossUsdt: RISK_BUDGET_USDT,
+    maxSlDistancePct: MAX_SL_PRICE_PCT,
+    maxSlDistancePercent: MAX_SL_PRICE_PCT * 100,
+    rewardMarginPcts: REWARD_MARGIN_PCTS.slice(),
+    rewardPriceMovePcts: REWARD_PRICE_MOVE_PCTS.slice(),
+    rewardRMultiples: [3, 6, 12],
     tp1, tp2, tp3,
-    rr: REWARD_R_MULTIPLES[0],
-    geometry: "STRUCTURAL_SL_R_MULTIPLE_5_TO_20X",
+    rr: 3,
+    geometry: "FIXED_MARGIN_5USDT_25X_10_30_60_120",
     entryGeometryIndependent: true,
+    entryUnchanged: true,
   };
 }
 
-module.exports = { calculateTradePlan };
+module.exports = { calculateTradePlan, MARGIN_USDT, LEVERAGE, RISK_MARGIN_PERCENT, RISK_BUDGET_USDT, REWARD_MARGIN_PCTS };
