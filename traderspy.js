@@ -229,6 +229,19 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
   const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
   const risk = Math.abs(entry - sl);
   const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
+  const entryCalibration = {
+    pass: true,
+    entry,
+    score: null,
+    mode: "PROVIDER_TRIGGER",
+    structuralLevel: null,
+    distanceAtr: null,
+    technicalDistanceAtr: null,
+    geometryCapacityAtr: null,
+    geometryUse: null,
+    maxRiskPricePct: 0.004,
+    reasons: ["provider trigger retained; no independent technical calibration payload was supplied"],
+  };
   if (![sl, tp1, tp2, tp3, rr, leverage].every(Number.isFinite) || rr <= 0) return null;
 
   const createdMs = Date.parse(String(raw?.createdAt || ""));
@@ -468,7 +481,13 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   // No ATR-based SL threshold is used here. The fixed 25x geometry owns the
   // executable SL envelope; structure was already used to calibrate Entry.
   const maxRisk = entry * 0.004;
-  const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
+
+  // The fixed 0.4% price-risk envelope is also the measurable volatility
+  // capacity. If one ATR already exceeds the entire envelope, a market entry
+  // cannot be executed with the production geometry without relying on
+  // sub-ATR noise; reject the candidate before validation.
+  const atrCapacity = Number(h1?.indicators?.atr?.value);
+  if (Number.isFinite(atrCapacity) && atrCapacity > 0 && atrCapacity >= maxRisk) return null;  const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
 
   // Layer 3: single production risk/reward engine. It owns leverage and TP geometry.
   let plan;
