@@ -217,15 +217,19 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
 
   const isLong = action === "buy";
   const sl = isLong ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100);
-  // Public trade geometry is normalized to the repository's R-multiple model.
-  // TraderSpy target percentages remain preserved in traderSpy.targetPct for audit.
+  // Entry remains the provider's trigger price. The provider SL is preserved as
+  // the structural stop input. Only the production trade-plan layer may derive
+  // leverage and TP prices from the margin contract.
+  let plan;
+  try {
+    plan = calculateTradePlan({ action: isLong ? "LONG" : "SHORT", entry, sl });
+  } catch {
+    return null;
+  }
+  const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
   const risk = Math.abs(entry - sl);
-  if (!(risk > 0)) return null;
-  const tp1 = isLong ? entry + risk * 2 : entry - risk * 2;
-  const tp2 = isLong ? entry + risk * 4 : entry - risk * 4;
-  const tp3 = isLong ? entry + risk * 6 : entry - risk * 6;
-  const rr = 2;
-  if (![sl, tp1, tp2, tp3, rr].every(Number.isFinite) || rr <= 0) return null;
+  const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
+  if (![sl, tp1, tp2, tp3, rr, leverage].every(Number.isFinite) || rr <= 0) return null;
 
   const createdMs = Date.parse(String(raw?.createdAt || ""));
   const ts = Number.isFinite(createdMs) ? createdMs : now;
@@ -268,7 +272,10 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     tp2,
     tp3,
     rr: +rr.toFixed(2),
-    riskPct: null,
+    riskPct: +plan.slDistancePercent.toFixed(3),
+    marginRiskPct: plan.riskMarginPercent,
+    leverage,
+    rewardMarginPcts,
     regime: null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
@@ -285,6 +292,7 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
       resolutionStatus: status,
       triggeredConditions: Array.isArray(raw?.triggeredConditions) ? raw.triggeredConditions : [],
       targetPct: { tp1: tp1Pct, tp2: tp2Pct, tp3: tp3Pct, sl: slPct },
+      geometry: "MARGIN_PERCENT",
     },
   };
 }
