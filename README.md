@@ -177,7 +177,7 @@ Environment variables dapat mengubah:
 Production level contract:
 - Margin: **10 USDT**
 - Maximum SL risk: **5% of margin = 0.50 USDT**
-- Leverage: **5x–20x**
+- Leverage: **5x–25x**
 - TP1: **+25% of margin**
 - TP2: **+50% of margin**
 - TP3: **+100% of margin**
