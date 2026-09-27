@@ -136,8 +136,9 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 - SHORT: SL di atas entry, TP di bawah entry
 - Margin: 5 USDT
 - Maximum risk: 10% margin = 0.50 USDT
-- Leverage: 5x–20x fixed
-- TP1/TP2/TP3: 2R / 4R / 6R
+- Leverage: **25x fixed**
+- Maximum SL loss: **10% margin = 0.50 USDT**
+- TP1/TP2/TP3: **30% / 60% / 120% of margin**
 
 R:R tetap tersedia sebagai metrik diagnostik/outcome, tetapi tidak lagi menjadi pengendali Entry/SL/TP.
 
@@ -180,21 +181,21 @@ Environment variables dapat mengubah:
 
 Production logic keeps **Entry calibration** and **margin trade geometry** as separate layers.
 
-**Entry calibration is NOT leverage geometry.** `entry_calibration.js` decides only the executable Entry from live price, technical price, ATR, and nearby market structure. It does not use the 5 USDT margin, 5x–20x leverage, SL budget, or TP percentages.
+**Entry calibration is NOT leverage geometry. `entry_calibration.js` decides only the executable Entry from live price, technical price, ATR, and nearby market structure. It does not use the 5 USDT margin, 25x leverage, SL budget, or TP percentages.
 
 After Entry is fixed, the separate trade-plan engine receives **Entry + structural SL** and applies the fixed production contract:
 
 - Margin: **5 USDT**
-- Leverage: **5x–20x fixed**
+- Leverage: **25x fixed**
 - Notional: **125 USDT**
 - Maximum SL loss: **10% of margin = 0.50 USDT**
 - TP1: **+30% of margin = +1.50 USDT**
 - TP2: **+60% of margin = +3.00 USDT**
 - TP3: **+120% of margin = +6.00 USDT**
 
-At 5x–20x this corresponds to linear price distances:
+At fixed 25x this corresponds to linear price distances:
 
-- SL: **0.4%**
+- SL: **0.4% max**
 - TP1: **1.2%**
 - TP2: **2.4%**
 - TP3: **4.8%**
@@ -210,12 +211,12 @@ fixed Entry
         ↓
 structural SL
         ↓
-TRADE GEOMETRY — 5 USDT / 5x–20x / max SL 10% margin
+TRADE GEOMETRY — 5 USDT / fixed 25x / max SL 10% margin
         ↓
 TP1 30% / TP2 60% / TP3 120% margin
 ```
 
-Changing the margin reward ladder must not modify Entry calibration. A structural SL wider than 0.4% is rejected rather than silently changing leverage or risk.
+Changing the margin reward ladder must not modify Entry calibration. A structural SL wider than 0.4% is rejected; leverage is never changed to accommodate it.
 
 ## Alpha Hunter v3
 — conditional edge selection
@@ -334,7 +335,7 @@ Test adapter mencakup:
 - LONG normalization
 - SHORT normalization
 - TP/SL conversion
-- margin geometry validation (5% risk, 30/60/120% reward)
+- fixed margin geometry validation (10% risk, 30/60/120% reward, fixed 25x)
 - quality score
 - stale signal rejection
 - resolved signal rejection
