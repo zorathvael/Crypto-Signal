@@ -194,6 +194,8 @@ For every candidate generated from screen_symbols:
 - TP2 is exactly **4R**.
 - TP3 is exactly **6R**.
 - The candidate builder is counted explicitly as built or buildRejected in the runtime funnel.
+- Discovery candidates are rejected before deep validation when ATR/structure volatility cannot produce an SL within the 2% maximum distance required by the 5x minimum-leverage risk budget.
+
 
 This keeps discovery → validation internally consistent and makes the funnel metrics meaningful.
 
