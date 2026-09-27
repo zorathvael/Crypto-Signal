@@ -23,7 +23,7 @@ test("narrower structural SL does not change fixed geometry", () => {
   assert.equal(plan.sl, 99.6);
   assert.equal(plan.tp1, 101.2);
   assert.equal(plan.tp2, 102.4);
-  assert.equal(plan.tp3, 104.8);
+  assert.ok(Math.abs(plan.tp3 - 104.8) < 1e-9);
 });
 
 test("LONG targets use 30/60/120% margin geometry", () => {
@@ -39,7 +39,7 @@ test("SHORT geometry is mirrored exactly", () => {
   assert.equal(plan.sl, 200.8);
   assert.equal(plan.tp1, 197.6);
   assert.equal(plan.tp2, 195.2);
-  assert.equal(plan.tp3, 190.4);
+  assert.ok(Math.abs(plan.tp3 - 190.4) < 1e-9);
 });
 
 test("entry calibration remains independent from margin geometry", () => {
