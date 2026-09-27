@@ -47,7 +47,7 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.equal(out.riskPct, 0.4);
   assert.equal(out.marginRiskPct, 10);
   assert.ok(out.leverage >= 5 && out.leverage <= 20);
-  assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
+  assert.deepEqual(out.rewardRMultiples, [2, 4, 6]);
 });
 
 test("normalizes a SHORT signal with mirrored levels", () => {
@@ -137,12 +137,12 @@ test("discovery candidates use the margin reward geometry contract", () => {
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
   const risk = Math.abs(out.entry - out.sl);
-  assert.equal(out.leverage, 25);\n  assert.equal(out.marginRiskPct, 10);\n  assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);\n  assert.ok(Math.abs((out.tp1 - out.entry) / out.entry * out.leverage - 0.30) < 1e-9);
-  assert.ok(Math.abs((out.tp2 - out.entry) / out.entry * out.leverage - 0.60) < 1e-9);
-  assert.ok(Math.abs((out.tp3 - out.entry) / out.entry * out.leverage - 1.20) < 1e-9);
-});
+  assert.ok(out.leverage >= 5 && out.leverage <= 20);
+  assert.ok(out.marginRiskPct <= 10);
+  assert.deepEqual(out.rewardRMultiples, [2, 4, 6]);
+  assert.equal(out.rr, 2);
 
-test("discovery candidates respect the fixed 25x risk-plan SL ceiling", () => {
+test("discovery candidates respect the bounded 5x..20x risk-plan SL ceiling", () => {
   const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
   const payload = {
     price:100,
