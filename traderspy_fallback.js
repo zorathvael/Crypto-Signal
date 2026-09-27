@@ -222,7 +222,7 @@ async function buildSignals(snapshot,provider,marketLoader) {
     const lv=levels(market.k1h,side,tfs[1].atr);
     let plan;
     try { plan=calculateTradePlan({action:side,entry:lv.entry,sl:lv.sl}); } catch(e) { console.warn("Fixed 25x geometry reject "+d.symbol+": "+e.message); continue; }
-    const risk=Math.abs(plan.entry??lv.entry-plan.sl), rr=plan.rr;
+    const risk=Math.abs(lv.entry-plan.sl), rr=plan.rr;
     if(!Number.isFinite(rr)||rr<3) continue;
     const ds=derivativeScore(side,market.oi,market.funding,market.depth); if(ds.adverse) continue;
     const disc=Math.min(10,Math.round(Math.log10(Math.max(d.quoteVolume,1))-6)),cs=candidateScore(disc,tfs,ds.score,rr);
