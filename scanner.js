@@ -2948,6 +2948,12 @@ function registerNewSignals(log, signals) {
       tp2: s.tp2,
       tp3: s.tp3,
       rr: s.rr,
+      entryCalibrationScore: Number.isFinite(Number(s.entryCalibrationScore ?? s.entryCalibration?.score))
+        ? Number(s.entryCalibrationScore ?? s.entryCalibration.score) : null,
+      entryCalibrationDistanceAtr: Number.isFinite(Number(s.entryCalibrationDistanceAtr ?? s.entryCalibration?.distanceAtr))
+        ? Number(s.entryCalibrationDistanceAtr ?? s.entryCalibration.distanceAtr) : null,
+      entryCalibrationGeometryCapacityAtr: Number.isFinite(Number(s.entryCalibrationGeometryCapacityAtr ?? s.entryCalibration?.geometryCapacityAtr))
+        ? Number(s.entryCalibrationGeometryCapacityAtr ?? s.entryCalibration.geometryCapacityAtr) : null,
       regime: s.regime ? s.regime.regime : null,
       validUntil: s.validUntil || new Date(now + SIGNAL_VALID_MS).toISOString(),
       horizons: {},

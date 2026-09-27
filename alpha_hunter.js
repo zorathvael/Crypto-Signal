@@ -109,6 +109,36 @@ function empiricalEvidence(history,signal){
   };
 }
 
+function calibratedEntryFloor(history, fallback = 55) {
+  const closed = Array.isArray(history?.closed) ? history.closed : [];
+  const rows = closed.filter((r) => Number.isFinite(Number(r.entryCalibrationScore)) && (
+    String(r.outcome || "").startsWith("WIN") || r.outcome === "LOSS_SL"
+  ));
+  if (rows.length < 12) return { floor: fallback, sampleSize: rows.length, source: "cold_start" };
+
+  const bins = [
+    { lo: 55, hi: 64 }, { lo: 65, hi: 74 }, { lo: 75, hi: 84 },
+    { lo: 85, hi: 94 }, { lo: 95, hi: 100 },
+  ];
+  const stats = bins.map((b) => {
+    const x = rows.filter((r) => Number(r.entryCalibrationScore) >= b.lo && Number(r.entryCalibrationScore) <= b.hi);
+    const wins = x.filter((r) => String(r.outcome).startsWith("WIN")).length;
+    const losses = x.filter((r) => r.outcome === "LOSS_SL").length;
+    const n = wins + losses;
+    const avgR = n ? x.reduce((s, r) => s + (Number(r.rMultiple) || (r.outcome === "LOSS_SL" ? -1 : 0)), 0) / n : 0;
+    // Laplace smoothing prevents a tiny winning bin from becoming the threshold.
+    const smoothedWinRate = (wins + 1) / (n + 2);
+    return { ...b, n, avgR, smoothedWinRate };
+  });
+
+  // Select the lowest observed calibration band with enough evidence and
+  // positive fee-aware expectancy. This is a measured threshold, not a manual
+  // tightening/loosening knob.
+  const eligible = stats.filter((s) => s.n >= 5 && (s.smoothedWinRate * 1.5 - (1 - s.smoothedWinRate)) > 0 && s.avgR > 0);
+  if (!eligible.length) return { floor: fallback, sampleSize: rows.length, source: "fallback_no_positive_band", bands: stats };
+  return { floor: eligible[0].lo, sampleSize: rows.length, source: "empirical_calibration", bands: stats };
+}
+
 function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(),history=null){
   const side=direction(signal);
   if(!side)return{pass:false,alphaScore:0,reasons:["invalid direction"],factors:{},hardReject:["invalid direction"]};
@@ -187,6 +217,18 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
 
   const evidence=empiricalEvidence(history,signal);
   score+=evidence.scoreDelta;
+
+  const entryCalibrationScore = n(signal.entryCalibrationScore ?? signal.entryCalibration?.score);
+  const calibrationModel = calibratedEntryFloor(history, 55);
+  if (entryCalibrationScore != null) {
+    if (entryCalibrationScore >= calibrationModel.floor) {
+      score += Math.min(8, Math.max(0, (entryCalibrationScore - calibrationModel.floor) * 0.18));
+      reasons.push("entry calibration threshold=" + calibrationModel.floor + " (" + calibrationModel.source + ")");
+    } else {
+      score -= 8;
+      reasons.push("entry calibration below measured floor");
+    }
+  }
   if(evidence.edge==="positive")reasons.push("historical conditional edge positive");
   if(evidence.edge==="negative")reasons.push("historical conditional edge negative");
   if(evidence.flowDelta>0)reasons.push("historical H15 follow-through positive");
@@ -226,7 +268,11 @@ function calculateAlpha(signal,technicalPayload,derivativesPayload,now=Date.now(
       mtfAligned:aligned,mtfOpposing:opposing,
       entryAtrDistance:entryAtrDistance==null?null:+entryAtrDistance.toFixed(3),
       slPricePct:+slPricePct.toFixed(3),leverage,marginRiskPct:+marginRiskPct.toFixed(2),reward1:+reward1.toFixed(2),reward2:+reward2.toFixed(2),reward3:+reward3.toFixed(2),
-      historical:evidence
+      historical:evidence,
+      entryCalibrationScore: entryCalibrationScore == null ? null : +entryCalibrationScore.toFixed(2),
+      entryCalibrationFloor: calibrationModel.floor,
+      entryCalibrationSample: calibrationModel.sampleSize,
+      entryCalibrationSource: calibrationModel.source
     },
     reasons,hardReject
   };
