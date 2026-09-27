@@ -136,8 +136,8 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 - SHORT: SL di atas entry, TP di bawah entry
 - Margin: 5 USDT
 - Maximum risk: 10% margin = 0.50 USDT
-- Leverage: 25x fixed
-- TP1/TP2/TP3: 30% / 60% / 120% margin
+- Leverage: 5x–20x fixed
+- TP1/TP2/TP3: 2R / 4R / 6R
 
 R:R tetap tersedia sebagai metrik diagnostik/outcome, tetapi tidak lagi menjadi pengendali Entry/SL/TP.
 
@@ -180,19 +180,19 @@ Environment variables dapat mengubah:
 
 Production logic keeps **Entry calibration** and **margin trade geometry** as separate layers.
 
-**Entry calibration is NOT leverage geometry.** `entry_calibration.js` decides only the executable Entry from live price, technical price, ATR, and nearby market structure. It does not use the 5 USDT margin, 25x leverage, SL budget, or TP percentages.
+**Entry calibration is NOT leverage geometry.** `entry_calibration.js` decides only the executable Entry from live price, technical price, ATR, and nearby market structure. It does not use the 5 USDT margin, 5x–20x leverage, SL budget, or TP percentages.
 
 After Entry is fixed, the separate trade-plan engine receives **Entry + structural SL** and applies the fixed production contract:
 
 - Margin: **5 USDT**
-- Leverage: **25x fixed**
+- Leverage: **5x–20x fixed**
 - Notional: **125 USDT**
 - Maximum SL loss: **10% of margin = 0.50 USDT**
 - TP1: **+30% of margin = +1.50 USDT**
 - TP2: **+60% of margin = +3.00 USDT**
 - TP3: **+120% of margin = +6.00 USDT**
 
-At 25x this corresponds to linear price distances:
+At 5x–20x this corresponds to linear price distances:
 
 - SL: **0.4%**
 - TP1: **1.2%**
@@ -210,7 +210,7 @@ fixed Entry
         ↓
 structural SL
         ↓
-TRADE GEOMETRY — 5 USDT / 25x / max SL 10% margin
+TRADE GEOMETRY — 5 USDT / 5x–20x / max SL 10% margin
         ↓
 TP1 30% / TP2 60% / TP3 120% margin
 ```
