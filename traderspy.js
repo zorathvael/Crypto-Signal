@@ -267,7 +267,7 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     setup: `TRADERSPY · ${String(raw?.strategyName || "Signal")}`,
     mode: `TRADERSPY_${String(raw?.timeframe || "NA").toUpperCase()}`,
     entry,
-    sl,
+    sl: plan.sl,
     tp1,
     tp2,
     tp3,
