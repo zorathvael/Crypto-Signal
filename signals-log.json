@@ -1,6 +1,184 @@
 {
   "open": [
     {
+      "id": "WLD_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "WLD",
+      "instId": "WLDUSDT",
+      "action": "SHORT",
+      "fingerprint": "WLD|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 0.5113,
+      "sl": 0.5138564999999999,
+      "tp1": 0.5036305,
+      "tp2": 0.495961,
+      "tp3": 0.48062199999999994,
+      "rr": 3,
+      "entryCalibrationScore": 98,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.205,
+      "validUntil": "2026-09-28T11:35:25.458Z",
+      "horizons": {}
+    },
+    {
+      "id": "ONDO_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "ONDO",
+      "instId": "ONDOUSDT",
+      "action": "SHORT",
+      "fingerprint": "ONDO|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 0.5158,
+      "sl": 0.518379,
+      "tp1": 0.508063,
+      "tp2": 0.500326,
+      "tp3": 0.484852,
+      "rr": 3,
+      "entryCalibrationScore": 99,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.104,
+      "validUntil": "2026-09-28T11:35:25.322Z",
+      "horizons": {}
+    },
+    {
+      "id": "NEAR_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "SHORT",
+      "fingerprint": "NEAR|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 5.0199,
+      "sl": 5.044999499999999,
+      "tp1": 4.9446015,
+      "tp2": 4.8693029999999995,
+      "tp3": 4.718705999999999,
+      "rr": 3,
+      "entryCalibrationScore": 81,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.197,
+      "validUntil": "2026-09-28T11:35:25.163Z",
+      "horizons": {}
+    },
+    {
+      "id": "SUI_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "SUI",
+      "instId": "SUIUSDT",
+      "action": "SHORT",
+      "fingerprint": "SUI|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 1.1722,
+      "sl": 1.1780609999999998,
+      "tp1": 1.154617,
+      "tp2": 1.1370339999999999,
+      "tp3": 1.1018679999999998,
+      "rr": 3,
+      "entryCalibrationScore": 96,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.205,
+      "validUntil": "2026-09-28T11:35:24.993Z",
+      "horizons": {}
+    },
+    {
+      "id": "ZEC_LONG_1790591753466",
+      "ts": 1790591753466,
+      "base": "ZEC",
+      "instId": "ZECUSDT",
+      "action": "LONG",
+      "fingerprint": "ZEC|LONG|TRADERSPY_COMPATIBLE_MTF|-0.50|1.50|3.00|6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_SUPPORT",
+      "probability": 99,
+      "entry": 1556.62,
+      "sl": 1548.8368999999998,
+      "tp1": 1579.9692999999997,
+      "tp2": 1603.3185999999998,
+      "tp3": 1650.0172,
+      "rr": 3,
+      "entryCalibrationScore": 99,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.39,
+      "validUntil": "2026-09-28T11:35:24.848Z",
+      "horizons": {}
+    },
+    {
+      "id": "SOL_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "SOL",
+      "instId": "SOLUSDT",
+      "action": "SHORT",
+      "fingerprint": "SOL|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 118.429,
+      "sl": 119.02114499999999,
+      "tp1": 116.652565,
+      "tp2": 114.87613,
+      "tp3": 111.32325999999999,
+      "rr": 3,
+      "entryCalibrationScore": 92,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.453,
+      "validUntil": "2026-09-28T11:35:24.568Z",
+      "horizons": {}
+    },
+    {
+      "id": "ETH_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "ETH",
+      "instId": "ETHUSDT",
+      "action": "SHORT",
+      "fingerprint": "ETH|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 2652.21,
+      "sl": 2665.4710499999997,
+      "tp1": 2612.42685,
+      "tp2": 2572.6437,
+      "tp3": 2493.0773999999997,
+      "rr": 3,
+      "entryCalibrationScore": 95,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.723,
+      "validUntil": "2026-09-28T11:35:24.270Z",
+      "horizons": {}
+    },
+    {
+      "id": "BTC_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "BTC",
+      "instId": "BTCUSDT",
+      "action": "SHORT",
+      "fingerprint": "BTC|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 82927.6,
+      "sl": 83342.238,
+      "tp1": 81683.686,
+      "tp2": 80439.772,
+      "tp3": 77951.944,
+      "rr": 3,
+      "entryCalibrationScore": 100,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.907,
+      "validUntil": "2026-09-28T11:35:24.131Z",
+      "horizons": {}
+    }
+  ],
+  "closed": [
+    {
       "id": "KORU_SHORT_1790575777867",
       "ts": 1790575777867,
       "base": "KORU",
@@ -32,10 +210,13 @@
           "price": 20.5515,
           "at": 1790579700000
         }
-      }
-    }
-  ],
-  "closed": [
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.72,
+      "exit": 20.35995,
+      "closedAt": 1790586000000,
+      "costR": 0.28
+    },
     {
       "id": "DATAIP_LONG_1790554234040",
       "ts": 1790554234040,
@@ -3812,19 +3993,19 @@
     }
   ],
   "stats": {
-    "total": 71,
-    "wins": 18,
+    "total": 72,
+    "wins": 19,
     "losses": 25,
     "expired": 28,
-    "sumR": -3.230000000000001,
+    "sumR": -0.5100000000000011,
     "bySetup": {
       "TRADERSPY_CANDIDATE": {
-        "n": 22,
-        "wins": 4,
+        "n": 23,
+        "wins": 5,
         "losses": 12,
-        "sumR": -5.040000000000001,
-        "winrate": 25,
-        "avgR": -0.32
+        "sumR": -2.320000000000001,
+        "winrate": 29.4,
+        "avgR": -0.14
       },
       "TRADERSPY_COMPATIBLE_MTF": {
         "n": 18,
@@ -3860,6 +4041,14 @@
       }
     },
     "byAction": {
+      "SHORT": {
+        "n": 13,
+        "wins": 2,
+        "losses": 4,
+        "sumR": 0.6399999999999995,
+        "winrate": 33.3,
+        "avgR": 0.11
+      },
       "LONG": {
         "n": 59,
         "wins": 17,
@@ -3867,19 +4056,11 @@
         "sumR": -1.1499999999999972,
         "winrate": 44.7,
         "avgR": -0.03
-      },
-      "SHORT": {
-        "n": 12,
-        "wins": 1,
-        "losses": 4,
-        "sumR": -2.08,
-        "winrate": 20,
-        "avgR": -0.42
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 41.9,
-    "avgR": -0.08
+    "winrate": 43.2,
+    "avgR": -0.01
   }
 }
