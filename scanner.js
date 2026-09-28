@@ -3042,7 +3042,7 @@ async function runTraderSpyPipeline() {
     if (e?.quota || e?.code === "HTTP_429") {
       console.warn("TraderSpy daily quota exhausted — activating TraderSpy-compatible Binance fallback.");
       try {
-        const fallback = await getFallbackIntelligence();
+        const fallback = await getFallbackIntelligence({ history: outcomeLog });
         signals = fallback.signals;
         intelligenceSource = "TraderSpy-compatible fallback";
         console.log(
