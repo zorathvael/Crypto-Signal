@@ -1,6 +1,31 @@
 {
   "open": [
     {
+      "id": "DATAIP_LONG_1790554234040",
+      "ts": 1790554234040,
+      "base": "DATAIP",
+      "instId": "DATAIPUSDT",
+      "action": "LONG",
+      "fingerprint": "DATAIP|LONG|TRADERSPY_CANDIDATE|-0.40|1.20|2.40|4.80",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 0.235,
+      "sl": 0.23406,
+      "tp1": 0.23781999999999998,
+      "tp2": 0.24064,
+      "tp3": 0.24628,
+      "rr": 3,
+      "entryCalibrationScore": 83,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.469,
+      "regime": "normal",
+      "validUntil": "2026-09-28T01:09:50.714Z",
+      "horizons": {}
+    }
+  ],
+  "closed": [
+    {
       "id": "NEAR_LONG_1790554234040",
       "ts": 1790554234040,
       "base": "NEAR",
@@ -21,7 +46,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.208,
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -1.669,
+          "price": 5.3500499999999995,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": -3.303,
+          "price": 5.31485,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 5.364456,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "PENGU_LONG_1790554234040",
@@ -44,7 +85,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.249,
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 2.086,
+          "price": 0.010324,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": 0.475,
+          "price": 0.010258,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.65,
+      "exit": 0.010361421765879366,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "SOON_LONG_1790554234040",
@@ -67,7 +124,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.112,
       "regime": "expanded",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 1.1,
+          "price": 0.33085,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": -6.944,
+          "price": 0.32025000000000003,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 0.32808240000000005,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "GRT_LONG_1790554234040",
@@ -90,7 +163,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.163,
       "regime": "expanded",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -4.804,
+          "price": 0.03522,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": -10.269,
+          "price": 0.03443499999999999,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 0.03576636,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "PUMP_LONG_1790554234040",
@@ -113,7 +202,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.238,
       "regime": "expanded",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -1.189,
+          "price": 0.0051285,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": -1.455,
+          "price": 0.005123,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 0.005132388,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "SEI_LONG_1790554234040",
@@ -136,7 +241,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.292,
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 11.657,
+          "price": 0.082715,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": 16.355,
+          "price": 0.0842,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.65,
+      "exit": 0.07997836,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "ONDO_LONG_1790554234040",
@@ -159,7 +280,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.268,
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -4.615,
+          "price": 0.5769500000000001,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": -9.633,
+          "price": 0.56515,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 0.5854488,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "SUI_LONG_1790554234040",
@@ -182,30 +319,23 @@
       "entryCalibrationGeometryCapacityAtr": 0.295,
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
-    },
-    {
-      "id": "DATAIP_LONG_1790554234040",
-      "ts": 1790554234040,
-      "base": "DATAIP",
-      "instId": "DATAIPUSDT",
-      "action": "LONG",
-      "fingerprint": "DATAIP|LONG|TRADERSPY_CANDIDATE|-0.40|1.20|2.40|4.80",
-      "setup": "TRADERSPY_CANDIDATE",
-      "mode": "TRADERSPY_MTF",
-      "probability": 99,
-      "entry": 0.235,
-      "sl": 0.23406,
-      "tp1": 0.23781999999999998,
-      "tp2": 0.24064,
-      "tp3": 0.24628,
-      "rr": 3,
-      "entryCalibrationScore": 83,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.469,
-      "regime": "normal",
-      "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 3.236,
+          "price": 1.27965,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": 0.989,
+          "price": 1.2683,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.65,
+      "exit": 1.2784596000000001,
+      "closedAt": 1790554500000,
+      "costR": 0.35
     },
     {
       "id": "ADA_LONG_1790554234040",
@@ -228,10 +358,24 @@
       "entryCalibrationGeometryCapacityAtr": 0.412,
       "regime": "compressed",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 0.833,
+          "price": 0.25585,
+          "at": 1790555400000
+        },
+        "h60": {
+          "r": 0.294,
+          "price": 0.25529999999999997,
+          "at": 1790558100000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 0.25398,
+      "closedAt": 1790555400000,
+      "costR": 0.35
+    },
     {
       "id": "DASH_LONG_1790493372390",
       "ts": 1790493372390,
@@ -3457,19 +3601,19 @@
     }
   ],
   "stats": {
-    "total": 56,
-    "wins": 14,
-    "losses": 15,
+    "total": 65,
+    "wins": 17,
+    "losses": 21,
     "expired": 27,
-    "sumR": -0.4700000000000002,
+    "sumR": -0.6200000000000006,
     "bySetup": {
       "TRADERSPY_CANDIDATE": {
-        "n": 7,
-        "wins": 0,
-        "losses": 2,
-        "sumR": -2.28,
-        "winrate": 0,
-        "avgR": -1.14
+        "n": 16,
+        "wins": 3,
+        "losses": 8,
+        "sumR": -2.4300000000000006,
+        "winrate": 27.3,
+        "avgR": -0.22
       },
       "TRADERSPY_COMPATIBLE_MTF": {
         "n": 18,
@@ -3506,12 +3650,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 46,
-        "wins": 14,
-        "losses": 12,
-        "sumR": 2.91,
-        "winrate": 53.8,
-        "avgR": 0.11
+        "n": 55,
+        "wins": 17,
+        "losses": 18,
+        "sumR": 2.76,
+        "winrate": 48.6,
+        "avgR": 0.08
       },
       "SHORT": {
         "n": 10,
@@ -3524,7 +3668,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 48.3,
+    "winrate": 44.7,
     "avgR": -0.02
   }
 }
