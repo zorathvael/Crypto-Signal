@@ -36,18 +36,19 @@ test("normalizes a LONG signal without inventing probability", () => {
   const out = normalizeSignal(sample(), NOW);
   assert.ok(out);
   assert.equal(out.action, "LONG");
-  assert.equal(out.entry, 100);
-  assert.equal(out.sl, 99.5);
-  assert.ok(Math.abs(out.tp1 - 101.5) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 103) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 106) < 1e-9);
-  assert.equal(out.rr, 3);
+  assert.equal(out.providerTriggerPrice, 100);
+  assert.equal(out.entry, null);
+  assert.equal(out.sl, null);
+  assert.equal(out.tp1, null);
+  assert.equal(out.tp2, null);
+  assert.equal(out.tp3, null);
+  assert.equal(out.rr, null);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
-  assert.equal(out.riskPct, 0.5);
-  assert.equal(out.marginRiskPct, 10);
-  assert.equal(out.leverage, 20);
-  assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
+  assert.equal(out.riskPct, null);
+  assert.equal(out.marginRiskPct, null);
+  assert.equal(out.leverage, null);
+  assert.equal(out.rewardMarginPcts, null);
 });
 
 test("normalizes a SHORT signal with mirrored levels", () => {
@@ -58,13 +59,13 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   }), NOW);
   assert.ok(out);
   assert.equal(out.action, "SHORT");
-  assert.ok(Math.abs(out.sl - 201) < 1e-9);
-  assert.ok(Math.abs(out.tp1 - 197) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 194) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 188) < 1e-9);
-  assert.equal(out.rr, 3);
-  assert.equal(out.leverage, 20);
-  assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
+  assert.equal(out.sl, null);
+  assert.equal(out.tp1, null);
+  assert.equal(out.tp2, null);
+  assert.equal(out.tp3, null);
+  assert.equal(out.rr, null);
+  assert.equal(out.leverage, null);
+  assert.equal(out.rewardMarginPcts, null);
 });
 
 test("rejects resolved, stale and non-crypto signals", () => {
