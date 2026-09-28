@@ -819,6 +819,7 @@ module.exports = {
   getTraderSpySignals,
   normalizeDiscoveryRows,
   buildScreenCandidate,
+  recalibratePublishedSignal,
   technicalValidation,
   derivativesValidation,
 };
