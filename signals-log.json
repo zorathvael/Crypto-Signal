@@ -56,6 +56,29 @@
           "at": 1790574300000
         }
       }
+    },
+    {
+      "id": "KORU_SHORT_1790575777867",
+      "ts": 1790575777867,
+      "base": "KORU",
+      "instId": "KORUUSDT",
+      "action": "SHORT",
+      "fingerprint": "KORU|SHORT|TRADERSPY_CANDIDATE|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 20.67,
+      "sl": 20.77335,
+      "tp1": 20.35995,
+      "tp2": 20.0499,
+      "tp3": 19.4298,
+      "rr": 3,
+      "entryCalibrationScore": 85,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.526,
+      "regime": "compressed",
+      "validUntil": "2026-09-28T07:09:22.305Z",
+      "horizons": {}
     }
   ],
   "closed": [
