@@ -22,7 +22,9 @@
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
       "horizons": {}
-    },
+    }
+  ],
+  "closed": [
     {
       "id": "LINK_LONG_1790564636785",
       "ts": 1790564636785,
@@ -44,10 +46,19 @@
       "entryCalibrationGeometryCapacityAtr": 0.425,
       "regime": "normal",
       "validUntil": "2026-09-28T04:03:39.272Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": -2.747,
+          "price": 13.952000000000002,
+          "at": 1790566200000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 14.050571999999999,
+      "closedAt": 1790565300000,
+      "costR": 0.35
+    },
     {
       "id": "NEAR_LONG_1790554234040",
       "ts": 1790554234040,
@@ -3624,19 +3635,19 @@
     }
   ],
   "stats": {
-    "total": 65,
+    "total": 66,
     "wins": 17,
-    "losses": 21,
+    "losses": 22,
     "expired": 27,
-    "sumR": -0.6200000000000006,
+    "sumR": -1.9700000000000002,
     "bySetup": {
       "TRADERSPY_CANDIDATE": {
-        "n": 16,
+        "n": 17,
         "wins": 3,
-        "losses": 8,
-        "sumR": -2.4300000000000006,
-        "winrate": 27.3,
-        "avgR": -0.22
+        "losses": 9,
+        "sumR": -3.7800000000000002,
+        "winrate": 25,
+        "avgR": -0.32
       },
       "TRADERSPY_COMPATIBLE_MTF": {
         "n": 18,
@@ -3673,12 +3684,12 @@
     },
     "byAction": {
       "LONG": {
-        "n": 55,
+        "n": 56,
         "wins": 17,
-        "losses": 18,
-        "sumR": 2.76,
-        "winrate": 48.6,
-        "avgR": 0.08
+        "losses": 19,
+        "sumR": 1.4100000000000001,
+        "winrate": 47.2,
+        "avgR": 0.04
       },
       "SHORT": {
         "n": 10,
@@ -3691,7 +3702,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 44.7,
-    "avgR": -0.02
+    "winrate": 43.6,
+    "avgR": -0.05
   }
 }
