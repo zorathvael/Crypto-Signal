@@ -24,35 +24,6 @@
       "horizons": {}
     },
     {
-      "id": "KORU_SHORT_1790569008231",
-      "ts": 1790569008231,
-      "base": "KORU",
-      "instId": "KORUUSDT",
-      "action": "SHORT",
-      "fingerprint": "KORU|SHORT|TRADERSPY_CANDIDATE|0.40|-1.20|-2.40|-4.80",
-      "setup": "TRADERSPY_CANDIDATE",
-      "mode": "TRADERSPY_MTF",
-      "probability": 99,
-      "entry": 21.04,
-      "sl": 21.12416,
-      "tp1": 20.78752,
-      "tp2": 20.53504,
-      "tp3": 20.030079999999998,
-      "rr": 3,
-      "entryCalibrationScore": 83,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.522,
-      "regime": "compressed",
-      "validUntil": "2026-09-28T05:16:34.834Z",
-      "horizons": {
-        "h15": {
-          "r": 0.345,
-          "price": 21.011,
-          "at": 1790570700000
-        }
-      }
-    },
-    {
       "id": "BZ_LONG_1790570497155",
       "ts": 1790570497155,
       "base": "BZ",
@@ -78,8 +49,54 @@
           "r": 0.162,
           "price": 99.12,
           "at": 1790571600000
+        },
+        "h60": {
+          "r": 0.475,
+          "price": 99.275,
+          "at": 1790574300000
         }
       }
+    }
+  ],
+  "closed": [
+    {
+      "id": "KORU_SHORT_1790569008231",
+      "ts": 1790569008231,
+      "base": "KORU",
+      "instId": "KORUUSDT",
+      "action": "SHORT",
+      "fingerprint": "KORU|SHORT|TRADERSPY_CANDIDATE|0.40|-1.20|-2.40|-4.80",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 21.04,
+      "sl": 21.12416,
+      "tp1": 20.78752,
+      "tp2": 20.53504,
+      "tp3": 20.030079999999998,
+      "rr": 3,
+      "entryCalibrationScore": 83,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.522,
+      "regime": "compressed",
+      "validUntil": "2026-09-28T05:16:34.834Z",
+      "horizons": {
+        "h15": {
+          "r": 0.345,
+          "price": 21.011,
+          "at": 1790570700000
+        },
+        "h60": {
+          "r": 3.054,
+          "price": 20.783,
+          "at": 1790573400000
+        }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.65,
+      "exit": 20.78752,
+      "closedAt": 1790572500000,
+      "costR": 0.35
     },
     {
       "id": "ONDO_LONG_1790572799516",
@@ -102,10 +119,19 @@
       "entryCalibrationGeometryCapacityAtr": 0.199,
       "regime": "normal",
       "validUntil": "2026-09-28T06:19:44.928Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {
+        "h15": {
+          "r": 0.328,
+          "price": 0.58065,
+          "at": 1790574300000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 0.5768015,
+      "closedAt": 1790573400000,
+      "costR": 0.28
+    },
     {
       "id": "TRUMP_SHORT_1790569008231",
       "ts": 1790569008231,
@@ -3744,19 +3770,19 @@
     }
   ],
   "stats": {
-    "total": 67,
-    "wins": 17,
-    "losses": 23,
+    "total": 69,
+    "wins": 18,
+    "losses": 24,
     "expired": 27,
-    "sumR": -3.3200000000000007,
+    "sumR": -1.9500000000000006,
     "bySetup": {
       "TRADERSPY_CANDIDATE": {
-        "n": 18,
-        "wins": 3,
-        "losses": 10,
-        "sumR": -5.130000000000001,
-        "winrate": 23.1,
-        "avgR": -0.39
+        "n": 20,
+        "wins": 4,
+        "losses": 11,
+        "sumR": -3.7600000000000007,
+        "winrate": 26.7,
+        "avgR": -0.25
       },
       "TRADERSPY_COMPATIBLE_MTF": {
         "n": 18,
@@ -3793,25 +3819,25 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 11,
-        "wins": 0,
+        "n": 12,
+        "wins": 1,
         "losses": 4,
-        "sumR": -4.7299999999999995,
-        "winrate": 0,
-        "avgR": -1.18
+        "sumR": -2.08,
+        "winrate": 20,
+        "avgR": -0.42
       },
       "LONG": {
-        "n": 56,
+        "n": 57,
         "wins": 17,
-        "losses": 19,
-        "sumR": 1.4100000000000001,
-        "winrate": 47.2,
-        "avgR": 0.04
+        "losses": 20,
+        "sumR": 0.12999999999999967,
+        "winrate": 45.9,
+        "avgR": 0
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 42.5,
-    "avgR": -0.08
+    "winrate": 42.9,
+    "avgR": -0.05
   }
 }
