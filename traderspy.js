@@ -119,13 +119,33 @@ async function postMcp(url, body, sessionId) {
     headers["MCP-Protocol-Version"] = "2025-11-25";
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
-  });
-  const text = await res.text();
+  const maxAttempts = Number(process.env.TRADERSPY_HTTP_RETRIES || 3);
+  let res;
+  let text = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30000),
+      });
+      text = await res.text();
+    } catch (e) {
+      if (attempt >= maxAttempts) throw e;
+      await new Promise(resolve => setTimeout(resolve, 500 * (2 ** (attempt - 1))));
+      continue;
+    }
+    // Cloudflare/origin 502/503/504 responses are transient transport failures.
+    // Retry them before declaring the scan failed. Never retry quota/auth/client errors.
+    if ([502,503,504].includes(res.status) && attempt < maxAttempts) {
+      console.warn(`TraderSpy MCP transient HTTP ${res.status}; retry ${attempt}/${maxAttempts - 1}`);
+      await new Promise(resolve => setTimeout(resolve, 750 * (2 ** (attempt - 1))));
+      continue;
+    }
+    break;
+  }
+  if (!res) throw new Error("TraderSpy MCP request produced no HTTP response");
   if (!res.ok) {
     const suffix = text ? `: ${text.slice(0, 300)}` : "";
     const err=new Error(`TraderSpy MCP HTTP ${res.status}${suffix}`); err.code=`HTTP_${res.status}`; if(res.status===429) err.quota=true; throw err;
