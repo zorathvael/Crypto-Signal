@@ -137,6 +137,9 @@ test("discovery candidates use the margin reward geometry contract", () => {
   };
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
+  assert.equal(out.entry, 100);
+  assert.equal(out.timingCalibration.mode, "ENTRY_NOW_SUPPORT");
+  assert.equal(out.timingCalibration.structuralSl, 99.5);
   const risk = Math.abs(out.entry - out.sl);
   assert.equal(out.leverage, 20);
   assert.ok(out.marginRiskPct <= 10);
