@@ -163,6 +163,40 @@ function tfAnalysis(c) {
   return {direction,score,rsi:r,atr:a,adx:d,pressure,slope,last,e9,e21,prevE9,prevE21};
 }
 
+function derivativeScore(side, oi, funding, depth) {
+  const o=n(oi?.openInterest);
+  const f=n(funding?.lastFundingRate);
+  const bid=n(depth?.bids?.[0]?.[1]), ask=n(depth?.asks?.[0]?.[1]);
+  let score=0, adverse=false;
+  if(Number.isFinite(f)){
+    if(side==="LONG" && f>0.0005){score-=4;adverse=true;}
+    else if(side==="SHORT" && f<-0.0005){score-=4;adverse=true;}
+    else score+=2;
+  }
+  if(Number.isFinite(o)&&o>0)score+=2;
+  if(Number.isFinite(bid)&&Number.isFinite(ask)&&bid>0&&ask>0){
+    const imbalance=(bid-ask)/(bid+ask);
+    if(side==="LONG"&&imbalance>0.03)score+=4;
+    else if(side==="SHORT"&&imbalance<-0.03)score+=4;
+    else score+=1;
+  }
+  return {score:Math.max(0,Math.min(10,score)),adverse};
+}
+
+function candidateScore(discovery, tfs, deriv, rr) {
+  const dirs=tfs.map(x=>x.direction).filter(x=>x!=="NEUTRAL");
+  const side=dirs.length>=2 && dirs.filter(x=>x===dirs[0]).length>=2 ? dirs[0] : null;
+  if(!side)return {side:null,score:0};
+  const aligned=tfs.filter(x=>x.direction===side).length;
+  let score=72;
+  score+=Math.min(8,discovery);
+  score+=aligned>=3?8:aligned===2?5:0;
+  score+=tfs.reduce((s,x)=>s+(x.adx>=20?2:0),0);
+  score+=Math.max(0,deriv);
+  if(rr>=2.5)score+=4; else if(rr>=2)score+=2;
+  return {side,score:Math.min(99,Math.round(score))};
+}
+
 function nearestExecutableStructure(c, side, livePrice) {
   if (!Array.isArray(c) || c.length < 20 || !Number.isFinite(livePrice) || livePrice <= 0) return null;
   const maxDistance = livePrice * 0.005;
