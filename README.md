@@ -400,9 +400,13 @@ Pipeline fail-closed:
 ```
 TraderSpy unavailable
         ↓
-HTTP 429 / quota exhausted → bounded Binance fallback
+HTTP 429 / quota exhausted → bounded public Futures fallback
         ↓
-Fallback validated → same delivery contract
+Bitget/Binance market data → MTF + OI/funding/order-book sanity
+        ↓
+ENTRY NOW timing calibration → executable structure ≤ 0.5%
+        ↓
+Fixed 20x geometry → same delivery contract
         ↓
 Other provider/auth errors → NO VALID SIGNAL
 ```
@@ -437,7 +441,7 @@ The active repository release is **v4.0.0** (`package.json`). Legacy comments/na
 
 ## CI regression fix
 
-The TraderSpy normalization path now separates provider discovery price from production Entry. Published signals are recalibrated after fresh 15M/1H/4H technical data arrives: live market price becomes `Entry`, directional support/resistance becomes structural timing evidence, and the immutable 20x trade geometry derives executable SL/TP. If fresh timing data or an executable structural level is unavailable, the published signal is rejected fail-closed rather than retaining a stale provider trigger. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
+The TraderSpy normalization path now separates provider discovery price from production Entry. Published signals are recalibrated after fresh 15M/1H/4H technical data arrives: live market price becomes `Entry`, directional support/resistance becomes structural timing evidence, and the immutable 20x trade geometry derives executable SL/TP. If fresh timing data or an executable structural level is unavailable, the published signal is rejected fail-closed rather than retaining a stale provider trigger. The quota fallback now applies the same ENTRY NOW timing rule: Entry is the latest live market price, and support/resistance is accepted only when it lies inside the immutable 0.5% price-risk envelope. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
 
 ## Operational reliability rule
 
