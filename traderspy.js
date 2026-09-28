@@ -448,7 +448,7 @@ function recalibratePublishedSignal(signal, technicalPayload) {
     timingCalibration: timing,
     traderSpy: {
       ...(signal.traderSpy || {}),
-      providerTriggerPrice: signal.entry,
+      providerTriggerPrice: signal.providerTriggerPrice,
       geometry: "MARGIN_PERCENT",
     },
   };
