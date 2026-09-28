@@ -18,7 +18,7 @@ function sample(overrides = {}) {
       { label: "TP1", type: "tp1", pct: 2 },
       { label: "TP2", type: "tp2", pct: 3 },
       { label: "TP3", type: "tp3", pct: 4 },
-      { label: "SL", type: "sl", pct: 0.4 },
+      { label: "SL", type: "sl", pct: 0.5 },
     ],
     triggeredConditions: ["RSI 55", "EMA reclaim"],
     resolutionStatus: "pending",
@@ -37,16 +37,16 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.ok(out);
   assert.equal(out.action, "LONG");
   assert.equal(out.entry, 100);
-  assert.equal(out.sl, 99.6);
-  assert.ok(Math.abs(out.tp1 - 101.2) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 102.4) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 104.8) < 1e-9);
+  assert.equal(out.sl, 99.5);
+  assert.ok(Math.abs(out.tp1 - 101.5) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 103) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 106) < 1e-9);
   assert.equal(out.rr, 3);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
-  assert.equal(out.riskPct, 0.4);
+  assert.equal(out.riskPct, 0.5);
   assert.equal(out.marginRiskPct, 10);
-  assert.equal(out.leverage, 25);
+  assert.equal(out.leverage, 20);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
 });
 
@@ -58,12 +58,12 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   }), NOW);
   assert.ok(out);
   assert.equal(out.action, "SHORT");
-  assert.equal(out.sl, 200.8);
-  assert.ok(Math.abs(out.tp1 - 197.6) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 195.2) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 190.4) < 1e-9);
+  assert.ok(Math.abs(out.sl - 201) < 1e-9);
+  assert.ok(Math.abs(out.tp1 - 197) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 194) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 188) < 1e-9);
   assert.equal(out.rr, 3);
-  assert.equal(out.leverage, 25);
+  assert.equal(out.leverage, 20);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
 });
 
@@ -131,31 +131,34 @@ test("discovery candidates use the margin reward geometry contract", () => {
     price: 100,
     timeframes: [
       { interval: "15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.6}],resistance:[{price:104}]}} },
+      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.5}],resistance:[{price:104}]}} },
       { interval: "4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
+  assert.equal(out.entry, 100);
+  assert.equal(out.timingCalibration.mode, "ENTRY_NOW_SUPPORT");
+  assert.equal(out.timingCalibration.structuralSl, 99.5);
   const risk = Math.abs(out.entry - out.sl);
-  assert.equal(out.leverage, 25);
+  assert.equal(out.leverage, 20);
   assert.ok(out.marginRiskPct <= 10);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
   assert.equal(out.rr, 3);
 });
-test("discovery candidates respect the fixed 25x risk-plan SL ceiling", () => {
+test("discovery candidates respect the fixed 20x risk-plan SL ceiling", () => {
   const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
   const payload = {
     price:100,
     timeframes:[
       { interval:"15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[]}} },
+      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.5}],resistance:[]}} },
       { interval:"4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
   const out=buildScreenCandidate(discovery,payload,NOW,"LONG");
   assert.ok(out);
-  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.004000001);
+  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.005000001);
 });
 
 test("discovery candidates with excessive volatility are rejected before validation", () => {

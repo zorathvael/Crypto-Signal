@@ -5,27 +5,27 @@
  * This module NEVER calibrates or moves Entry. It receives the already-calibrated
  * Entry and applies the fixed production margin geometry.
  *
- * Fixed contract:
+ * Fixed production contract:
  *   Margin = 5 USDT
- *   Leverage = 25x
- *   Notional = 125 USDT
+ *   Leverage = 20x
+ *   Notional = 100 USDT
  *   Max SL loss = 10% of margin = 0.50 USDT
  *   TP1 = 30% margin = 1.50 USDT
  *   TP2 = 60% margin = 3.00 USDT
  *   TP3 = 120% margin = 6.00 USDT
  *
- * At 125 USDT notional: SL max = 0.4%, TP1 = 1.2%, TP2 = 2.4%, TP3 = 4.8%.
- * A structural SL wider than 0.4% is rejected. Leverage is never changed.
+ * At 100 USDT notional: SL max = 0.5%, TP1 = 1.5%, TP2 = 3.0%, TP3 = 6.0%.
+ * A structural SL wider than 0.5% is rejected. Leverage is never changed.
  */
 const MARGIN_USDT = 5;
-const LEVERAGE = 25;
+const LEVERAGE = 20;
 const RISK_MARGIN_PERCENT = 10;
 const RISK_BUDGET_USDT = 0.5;
 const RISK_FRACTION = 0.10;
 const NOTIONAL_USDT = MARGIN_USDT * LEVERAGE;
 const MAX_SL_PRICE_PCT = RISK_BUDGET_USDT / NOTIONAL_USDT;
 const REWARD_MARGIN_PCTS = [30, 60, 120];
-const REWARD_PRICE_MOVE_PCTS = [1.2, 2.4, 4.8];
+const REWARD_PRICE_MOVE_PCTS = [1.5, 3.0, 6.0];
 const EPSILON = 1e-9;
 
 function finitePositive(value) {
@@ -44,7 +44,7 @@ function calculateTradePlan(signal = {}) {
   const distancePct = Math.abs(entry - structuralSl) / entry;
   if (!(distancePct > 0)) throw new Error("Trade plan requires non-zero entry-to-SL distance");
   if (distancePct > MAX_SL_PRICE_PCT + EPSILON) {
-    throw new Error(`Structural SL distance ${(distancePct * 100).toFixed(3)}% exceeds fixed 25x geometry max ${(MAX_SL_PRICE_PCT * 100).toFixed(3)}%`);
+    throw new Error(`Structural SL distance ${(distancePct * 100).toFixed(3)}% exceeds fixed 20x geometry max ${(MAX_SL_PRICE_PCT * 100).toFixed(3)}%`);
   }
 
   const sl = action === "SHORT" ? entry * (1 + MAX_SL_PRICE_PCT) : entry * (1 - MAX_SL_PRICE_PCT);
@@ -75,7 +75,7 @@ function calculateTradePlan(signal = {}) {
     rewardRMultiples: [3, 6, 12],
     tp1, tp2, tp3,
     rr: 3,
-    geometry: "FIXED_MARGIN_5USDT_25X_10_30_60_120",
+    geometry: "FIXED_MARGIN_5USDT_20X_10_30_60_120",
     entryGeometryIndependent: true,
     entryUnchanged: true,
   };

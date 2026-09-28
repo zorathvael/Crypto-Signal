@@ -33,13 +33,13 @@ test("fallback levels provide a structural stop and production geometry owns TP/
   const lv=levels(c,"LONG");
   assert.ok(lv.sl<lv.entry);
   assert.ok(Number.isFinite(lv.entry));
-  const plan=calculateTradePlan({action:"LONG",entry:100,sl:99.6});
-  assert.equal(plan.leverage,25);
+  const plan=calculateTradePlan({action:"LONG",entry:100,sl:99.5});
+  assert.equal(plan.leverage,20);
   assert.equal(plan.marginUsdt,5);
-  assert.equal(plan.sl,99.6);
-  assert.equal(Number(((plan.tp1-100)/100*100).toFixed(6)),1.2);
-  assert.equal(Number(((plan.tp2-100)/100*100).toFixed(6)),2.4);
-  assert.equal(Number(((plan.tp3-100)/100*100).toFixed(6)),4.8);
+  assert.equal(plan.sl,99.5);
+  assert.equal(Number(((plan.tp1-100)/100*100).toFixed(6)),1.5);
+  assert.equal(Number(((plan.tp2-100)/100*100).toFixed(6)),3);
+  assert.equal(Number(((plan.tp3-100)/100*100).toFixed(6)),6);
 });
 
 
