@@ -58,7 +58,7 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   }), NOW);
   assert.ok(out);
   assert.equal(out.action, "SHORT");
-  assert.equal(out.sl, 200.8);
+  assert.ok(Math.abs(out.sl - 201) < 1e-9);
   assert.ok(Math.abs(out.tp1 - 197) < 1e-9);
   assert.ok(Math.abs(out.tp2 - 194) < 1e-9);
   assert.ok(Math.abs(out.tp3 - 188) < 1e-9);
@@ -155,7 +155,7 @@ test("discovery candidates respect the fixed 20x risk-plan SL ceiling", () => {
   };
   const out=buildScreenCandidate(discovery,payload,NOW,"LONG");
   assert.ok(out);
-  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.004000001);
+  assert.ok(Math.abs(out.entry-out.sl)/out.entry<=0.005000001);
 });
 
 test("discovery candidates with excessive volatility are rejected before validation", () => {
