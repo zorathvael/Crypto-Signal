@@ -149,7 +149,7 @@ test("discovery candidates respect the fixed 20x risk-plan SL ceiling", () => {
     price:100,
     timeframes:[
       { interval:"15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[]}} },
+      { interval:"1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.5}],resistance:[]}} },
       { interval:"4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
