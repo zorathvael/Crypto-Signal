@@ -136,7 +136,7 @@ TraderSpy memberikan:
 - createdAt
 - triggered conditions
 
-Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL sumber menjadi structural-stop input, lalu satu-satunya production trade-plan engine menghitung leverage dan TP dari margin contract:
+Crypto-Signal memperlakukan trigger price provider sebagai discovery/reference saja. Sebelum publication, setiap published signal wajib melewati Timing Calibration menggunakan harga market live + ATR + support/resistance terbaru. Entry production kemudian selalu berasal dari live market price; structural level menjadi bukti timing/structural-SL, lalu satu-satunya production trade-plan engine menghitung executable SL dan TP dari margin contract:
 
 - LONG: SL di bawah entry, TP di atas entry
 - SHORT: SL di atas entry, TP di bawah entry
@@ -378,7 +378,7 @@ This keeps the deep validation stage small while making the candidate universe s
 
 Tujuannya:
 - menjaga candidate discovery tetap bounded (maksimal 50 candidate discovery)
-- menjaga validation default tetap 10 target agar quota TraderSpy tidak terbuang
+- menjaga validation default tetap 20 target agar coverage tetap lebar dengan batas quota yang terukur
 - menghindari pemanggilan data redundan
 - menggunakan signal engine TraderSpy langsung sebagai source of truth
 - tidak membuang signal valid hanya karena batas delivery channel
@@ -437,7 +437,7 @@ The active repository release is **v4.0.0** (`package.json`). Legacy comments/na
 
 ## CI regression fix
 
-The TraderSpy normalization path now always carries an explicit entry-calibration contract. When a provider signal does not include an independent technical calibration payload, the provider trigger is retained and the calibration metadata is marked `PROVIDER_TRIGGER` with no fabricated score. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
+The TraderSpy normalization path now separates provider discovery price from production Entry. Published signals are recalibrated after fresh 15M/1H/4H technical data arrives: live market price becomes `Entry`, directional support/resistance becomes structural timing evidence, and the immutable 20x trade geometry derives executable SL/TP. If fresh timing data or an executable structural level is unavailable, the published signal is rejected fail-closed rather than retaining a stale provider trigger. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
 
 ## Operational reliability rule
 
