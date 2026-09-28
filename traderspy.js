@@ -227,7 +227,7 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     return null;
   }
   const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
-  const risk = Math.abs(entry - sl);
+  const risk = Math.abs(entry - plan.sl);
   const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
   const entryCalibration = {
     pass: true,
