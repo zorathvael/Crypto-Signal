@@ -76,7 +76,7 @@ Default fallback budget:
 
 Fallback tidak mengklaim mereplikasi proprietary internals TraderSpy. Ia mereplikasi **observable validation contract dan decision structure** yang digunakan repository ini untuk menjaga bentuk/aturan signal tetap kompatibel.
 
-Fallback geometry is now wired directly to `trade_plan.js`: structural stops are checked against the immutable 0.4% maximum, while the production engine remains the sole owner of the fixed 20x SL/TP geometry. This prevents a missing-module runtime failure and prevents the fallback from inventing a separate TP/SL contract.
+Fallback geometry is now wired directly to `trade_plan.js`: structural stops are checked against the immutable 0.5% maximum, while the production engine remains the sole owner of the fixed 20x SL/TP geometry. This prevents a missing-module runtime failure and prevents the fallback from inventing a separate TP/SL contract.
 
 ## TraderSpy adapter
 
@@ -187,9 +187,9 @@ Environment variables dapat mengubah:
 
 Entry Calibration is a separate adaptive layer from Entry Geometry.
 
-- **Entry Geometry remains immutable:** 5 USDT margin, fixed 20x leverage, 0.4% maximum price-risk envelope, TP1/TP2/TP3 = 30/60/120% of margin.
+- **Entry Geometry remains immutable:** 5 USDT margin, fixed 20x leverage, 0.5% maximum price-risk envelope, TP1/TP2/TP3 = 30/60/120% of margin.
 - Entry calibration derives its usable structural distance from the **actual geometry capacity in ATR units**:
-  `geometryCapacityAtr = (Entry × 0.4%) / ATR`.
+  `geometryCapacityAtr = (Entry × 0.5%) / ATR`.
 - Nearby support/resistance is usable only when it can fit inside that executable envelope.
 - The calibration score is continuous and combines market proximity, structural proximity, and geometry utilisation; it does not use fixed 0.75/1.5 ATR entry thresholds.
 - Closed outcomes now persist calibration score/distance/capacity so Alpha Hunter can learn an empirical calibration floor from observed outcomes.
