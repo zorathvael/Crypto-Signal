@@ -21,7 +21,7 @@ test("narrower structural SL does not change fixed geometry", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99.9, action: "LONG" });
   assert.equal(plan.leverage, 20);
   assert.equal(plan.sl, 99.5);
-  assert.equal(plan.tp1, 101.5);
+  assert.ok(Math.abs(plan.tp1 - 101.5) < 1e-9);
   assert.equal(plan.tp2, 103);
   assert.ok(Math.abs(plan.tp3 - 106) < 1e-9);
 });
@@ -36,9 +36,9 @@ test("LONG targets use 30/60/120% margin geometry", () => {
 test("SHORT geometry is mirrored exactly", () => {
   const plan = calculateTradePlan({ entry: 200, sl: 200.8, action: "SHORT" });
   assert.equal(plan.leverage, 20);
-  assert.equal(plan.sl, 200.8);
-  assert.equal(plan.tp1, 197);
-  assert.equal(plan.tp2, 194);
+  assert.ok(Math.abs(plan.sl - 201) < 1e-9);
+  assert.ok(Math.abs(plan.tp1 - 197) < 1e-9);
+  assert.ok(Math.abs(plan.tp2 - 194) < 1e-9);
   assert.ok(Math.abs(plan.tp3 - 188) < 1e-9);
 });
 
