@@ -11,7 +11,7 @@
  * that capacity and the observed ATR, rather than using fixed "0.75 ATR"
  * / "1.5 ATR" thresholds.
  */
-const MAX_PRICE_RISK_PCT = 0.004;
+const MAX_PRICE_RISK_PCT = 0.005;
 // Execution viability is measured against observed volatility, not a legacy
 // absolute ATR threshold: the fixed price-risk envelope must cover at least
 // 10% of one ATR. Below that ratio, the geometry is too small to represent a
