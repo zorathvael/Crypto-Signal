@@ -22,6 +22,7 @@ const DEFAULT_MIN_SCORE = 80;
 const { calculateAlpha } = require("./alpha_hunter");
 const { calibrateTiming } = require("./timing_calibration");
 const { calculateTradePlan } = require("./trade_plan");
+const { featureSnapshot, calibrateSignal } = require("./calibration");
 
 const NON_CRYPTO_BASES = new Set([
   "AAPL", "AMZN", "AMD", "COIN", "GOOG", "GOOGL", "META", "MSFT", "MSTR", "NFLX",
@@ -372,17 +373,24 @@ function derivativesValidation(signal,payload){
   return {pass:!adverse,score:Math.max(0,Math.min(score,12)),reasons};
 }
 
-function applyValidation(signal,discovery,technical,derivatives,detail,alpha){
+function applyValidation(signal,discovery,technical,derivatives,detail,alpha,calibration){
   const ds=Number(detail?.aiReview?.score);
-  let score=Number(signal.qualityScore||0)+Math.min(Number(discovery?.score||0),10)+Number(technical?.score||0)+Number(derivatives?.score||0);
-  if(Number.isFinite(ds))score+=Math.round(Math.max(0,Math.min(ds,10))*0.5);
+  let rawScore=Number(signal.qualityScore||0)+Math.min(Number(discovery?.score||0),10)+Number(technical?.score||0)+Number(derivatives?.score||0);
+  if(Number.isFinite(ds))rawScore+=Math.round(Math.max(0,Math.min(ds,10))*0.5);
   const ageMin=Math.max(0,(Date.now()-signal.ts)/60000);
   const stale=ageMin>Number(process.env.TRADERSPY_MAX_AGE_MIN||DEFAULT_MAX_AGE_MIN);
-  const threshold=stale?Number(process.env.TRADERSPY_STALE_MIN_SCORE||90):Number(process.env.TRADERSPY_VALIDATION_MIN_SCORE||88);
-  const finalScore=Math.min(99,Math.round(score));
-  return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&alpha?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,alphaScore:Number(alpha?.alphaScore||0),alphaReasons:alpha?.reasons||[],reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
+  const minProbability=Number(process.env.CALIBRATED_MIN_PROB||45);
+  const maxNegativeR=Number(process.env.CALIBRATED_MAX_NEGATIVE_R||-0.25);
+  const finalScore=Number(calibration?.probability||0);
+  const expectedR=Number(calibration?.expectedR||0);
+  const passed=technical?.pass===true&&derivatives?.pass===true&&alpha?.pass===true&&finalScore>=minProbability&&expectedR>=maxNegativeR&&!stale;
+  return {...signal,qualityScore:finalScore,probability:finalScore,rawQualityScore:Math.min(99,Math.round(rawScore)),calibration,
+    validation:{passed,stale,ageMin:+ageMin.toFixed(1),threshold:minProbability,expectedR,discoveryScore:Number(discovery?.score||0),
+      technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?Number(ds):null,
+      alphaScore:Number(alpha?.alphaScore||0),calibrationScore:finalScore,calibrationSource:calibration?.source||"unknown",
+      reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?["aiReview="+detail.aiReview.decision]:[]),
+        "calibrated probability="+finalScore+"% expectedR="+expectedR]}};
 }
-
 
 function recalibratePublishedSignal(signal, technicalPayload) {
   const tfs = timeframeMap(technicalPayload);
@@ -731,6 +739,8 @@ async function getTraderSpyIntelligence(options = {}){
 
     const technical=technicalValidation(signal,technicalPayload);
     const derivatives=derivativesValidation(signal,derivativesBySymbol);
+    const derivativeRow=derivativesBySymbol instanceof Map ? derivativesBySymbol.get(String(signal.instId||"").toUpperCase()) : null;
+    const calibrationFeatures=featureSnapshot({signal,technical:technicalPayload,derivatives:{row:derivativeRow},alpha:null});
 
     let detail=null;
     if(target.published && validated.length<2){
@@ -747,9 +757,15 @@ async function getTraderSpyIntelligence(options = {}){
       const finalScore=Math.min(99,Math.round(72+baseScore+technical.score+derivatives.score+(detail?.aiReview?.score||0)*0.5));
       signal.qualityScore=finalScore;
       signal.probability=finalScore;
-      signal.traderSpy.validationScore=finalScore;
+      const calibration=calibrateSignal(options.history,calibrationFeatures,finalScore);
+      signal.traderSpy.validationScore=calibration.probability;
+      signal.qualityScore=calibration.probability;
+      signal.probability=calibration.probability;
+      signal.rawQualityScore=finalScore;
+      signal.calibration=calibration;
+      signal.calibrationFeatures=calibrationFeatures;
       signal.validation={
-        passed:technical.pass&&derivatives.pass&&alpha.pass&&finalScore>=Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
+        passed:technical.pass&&derivatives.pass&&alpha.pass&&calibration.probability>=Number(process.env.CALIBRATED_MIN_PROB||45)&&calibration.expectedR>=Number(process.env.CALIBRATED_MAX_NEGATIVE_R||-0.25),
         stale:false,
         ageMin:0,
         threshold:Number(process.env.TRADERSPY_CANDIDATE_MIN_SCORE||88),
@@ -764,7 +780,9 @@ async function getTraderSpyIntelligence(options = {}){
       signal.alpha=alpha;
     }else{
       const alpha = calculateAlpha(signal, technicalPayload, derivativesBySymbol, now, options.history);
-      signal=applyValidation(signal,target.discovery,technical,derivatives,detail,alpha);
+      const calibration=calibrateSignal(options.history,calibrationFeatures,signal.qualityScore);
+      signal.calibrationFeatures=calibrationFeatures;
+      signal=applyValidation(signal,target.discovery,technical,derivatives,detail,alpha,calibration);
       signal.alpha=alpha;
     }
 
