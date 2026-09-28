@@ -186,7 +186,9 @@ function nearestExecutableStructure(c, side, livePrice) {
 
 function levels(c, side) {
   const entry = c?.at?.(-1)?.close;
-  const structuralSl = nearestExecutableStructure(c, side, entry);
+  const structuralSl = side === "LONG"
+    ? Math.min(...c.slice(-40).map(x => x.low))
+    : Math.max(...c.slice(-40).map(x => x.high));
   return { entry, sl: structuralSl };
 }
 
