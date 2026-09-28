@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeSignal, signalQualityScore, normalizeDiscoveryRows, buildScreenCandidate, technicalValidation, derivativesValidation } = require("./traderspy");
+const { normalizeSignal, signalQualityScore, normalizeDiscoveryRows, buildScreenCandidate, recalibratePublishedSignal, technicalValidation, derivativesValidation } = require("./traderspy");
 
 const NOW = Date.parse("2026-09-26T00:00:00Z");
 
@@ -185,4 +185,35 @@ test("discovery candidates are rejected when multi-timeframe data has no directi
     ]
   };
   assert.equal(technicalValidation(signal, payload).pass, false);
+});
+
+
+test("published signals are recalibrated from live market price before validation", () => {
+  const signal = normalizeSignal(sample({ price: 99 }), NOW);
+  assert.ok(signal);
+  assert.equal(signal.entry, 99);
+
+  const payload = {
+    price: 100,
+    timeframes: [
+      { interval: "15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
+      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{
+        atr:{value:1},
+        levels:{support:[{price:99.7}],resistance:[{price:101}]}
+      }},
+      { interval: "4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} }
+    ]
+  };
+
+  const out = recalibratePublishedSignal(signal, payload);
+  assert.ok(out);
+  assert.equal(out.entry, 100);
+  assert.equal(out.mode, "ENTRY_NOW_SUPPORT");
+  assert.equal(out.timingCalibration.structuralSl, 99.7);
+  assert.equal(out.traderSpy.providerTriggerPrice, 99);
+  assert.equal(out.leverage, 20);
+  assert.equal(out.sl, 99.5);
+  assert.equal(out.tp1, 101.5);
+  assert.equal(out.tp2, 103);
+  assert.equal(out.tp3, 106);
 });
