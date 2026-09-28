@@ -20,7 +20,7 @@ const DEFAULT_SIGNAL_LIMIT = 50;
 const DEFAULT_MAX_AGE_MIN = 120;
 const DEFAULT_MIN_SCORE = 80;
 const { calculateAlpha } = require("./alpha_hunter");
-const { calibrateEntry } = require("./entry_calibration");
+const { calibrateTiming } = require("./timing_calibration");
 const { calculateTradePlan } = require("./trade_plan");
 
 const NON_CRYPTO_BASES = new Set([
@@ -470,23 +470,21 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const supports = Array.isArray(levels.support) ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => b-a) : [];
   const resistances = Array.isArray(levels.resistance) ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite).sort((a,b) => a-b) : [];
 
-  // Layer 1: ENTRY CALIBRATION. No margin percentage or TP formula belongs here.
-  const entryCalibration = calibrateEntry({
+  // Layer 1: TIMING CALIBRATION. It owns adaptive Entry + structural-SL timing only.
+  const entryCalibration = calibrateTiming({
     action, livePrice: technicalPrice, technicalPrice, atr, supports, resistances,
   });
   if (!entryCalibration.pass) return null;
   const entry = entryCalibration.entry;
 
-  // Layer 2: geometry is deterministic and downstream of Entry Calibration.
-  // No ATR-based SL threshold is used here. The fixed 20x geometry owns the
-  // executable SL envelope; structure was already used to calibrate Entry.
-  const maxRisk = entry * 0.005;
-
-  const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
+  // Layer 2: TRADE GEOMETRY. Deterministic; it never calibrates timing.
+  // Timing supplies the structural SL. Geometry derives executable SL/TP from Entry.
+  const structuralSl = entryCalibration.structuralSl;
+  if (!Number.isFinite(structuralSl) || structuralSl <= 0) return null;
 
   // Layer 3: single production risk/reward engine. It owns leverage and TP geometry.
   let plan;
-  try { plan = calculateTradePlan({ action, entry, sl }); } catch { return null; }
+  try { plan = calculateTradePlan({ action, entry, sl: structuralSl }); } catch { return null; }
   const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
   const risk = Math.abs(entry - sl);
   const priceRiskPct = entry ? risk / entry * 100 : 0;
@@ -521,6 +519,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     leverage,
     rewardMarginPcts,
     entryCalibration,
+    timingCalibration: entryCalibration,
     regime: h4?.summary?.volatility ? { regime: h4.summary.volatility.state || "normal", atrPct: Number(h4.summary.volatility.atrPct || 0) } : null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
