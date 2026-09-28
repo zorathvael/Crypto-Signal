@@ -11,7 +11,7 @@ function deriv(){
 }
 
 test("alpha hunter passes aligned margin geometry",()=>{
-  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.6,tp1:101.2,tp2:102.4,tp3:104.8,ts:Date.now()},payload(),deriv());
+  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.5,tp1:101.5,tp2:103,tp3:106,ts:Date.now()},payload(),deriv());
   assert.equal(out.pass,true);
   assert.ok(out.alphaScore>=72);
   assert.equal(out.factors.mtfAligned,3);
@@ -24,19 +24,19 @@ test("alpha hunter passes aligned margin geometry",()=>{
 
 test("alpha hunter vetoes weak MTF alignment",()=>{
   const p=payload();for (const i of [1, 2]) { p.timeframes[i].summary.bias="bearish"; p.timeframes[i].summary.trend.direction="down"; p.timeframes[i].summary.trend.emaStack="bearish"; p.timeframes[i].indicators.supertrend.trend="down"; }
-  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.6,tp1:101.2,tp2:102.4,tp3:104.8,ts:Date.now()},p,deriv());
+  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.5,tp1:101.5,tp2:103,tp3:106,ts:Date.now()},p,deriv());
   assert.equal(out.pass,false);
   assert.ok(out.hardReject.includes("MTF alignment <2/3"));
 });
 
 test("alpha hunter vetoes insufficient margin reward geometry",()=>{
-  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.6,tp1:100.5,tp2:101,tp3:101.5,ts:Date.now()},payload(),deriv());
+  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.5,tp1:100.5,tp2:101,tp3:101.5,ts:Date.now()},payload(),deriv());
   assert.equal(out.pass,false);
-  assert.ok(out.hardReject.includes("signal levels do not match fixed 25x geometry"));
+  assert.ok(out.hardReject.includes("signal levels do not match fixed 20x geometry"));
 });
 
 test("alpha hunter vetoes stale signal",()=>{
-  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.6,tp1:101.2,tp2:102.4,tp3:104.8,ts:Date.now()-121*60000},payload(),deriv());
+  const out=calculateAlpha({action:"LONG",instId:"BTCUSDT",entry:100,sl:99.5,tp1:101.5,tp2:103,tp3:106,ts:Date.now()-121*60000},payload(),deriv());
   assert.equal(out.pass,false);
   assert.ok(out.hardReject.includes("signal stale"));
 });
@@ -45,7 +45,7 @@ test("alpha hunter vetoes stale signal",()=>{
 test("alpha hunter uses historical positive edge only after minimum sample",()=>{
   const closed=[];
   for(let i=0;i<12;i++) closed.push({ts:Date.now()-i*3600000,base:"BTC",action:"LONG",setup:"SCALP_MTF",outcome:i<8?"WIN_TP1":"LOSS_SL",rMultiple:i<8?1.5:-1});
-  const out=calculateAlpha({action:"LONG",setup:"SCALP_MTF",instId:"BTCUSDT",entry:100,sl:99.6,tp1:101.2,tp2:102.4,tp3:104.8,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
+  const out=calculateAlpha({action:"LONG",setup:"SCALP_MTF",instId:"BTCUSDT",entry:100,sl:99.5,tp1:101.5,tp2:103,tp3:106,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
   assert.equal(out.factors.historical.sampleSize,12);
   assert.equal(out.factors.historical.edge,"positive");
   assert.equal(out.factors.historical.scoreDelta,6);
@@ -67,7 +67,7 @@ test("alpha hunter uses conditional quality-bucket edge before generic action ed
   const closed=[];
   for(let i=0;i<14;i++) closed.push({ts:Date.now()-i*3600000,base:"BTC"+i,action:"LONG",setup:"OTHER",probability:80+i%9,outcome:i<10?"WIN_TP1":"LOSS_SL",rMultiple:i<10?1.4:-1,horizons:{h15:{r:i<10?0.35:-0.05}}});
   for(let i=0;i<12;i++) closed.push({ts:Date.now()-i*7200000,base:"ETH"+i,action:"LONG",setup:"OTHER",probability:95,outcome:i<5?"WIN_TP1":"LOSS_SL",rMultiple:i<5?1.2:-1});
-  const out=calculateAlpha({action:"LONG",setup:"NEW_SETUP",instId:"BTCUSDT",qualityScore:84,entry:100,sl:99.6,tp1:101.2,tp2:102.4,tp3:104.8,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
+  const out=calculateAlpha({action:"LONG",setup:"NEW_SETUP",instId:"BTCUSDT",qualityScore:84,entry:100,sl:99.5,tp1:101.5,tp2:103,tp3:106,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
   assert.equal(out.factors.historical.source,"quality_bucket_action");
   assert.ok(out.factors.historical.scoreDelta>0);
   assert.equal(out.factors.historical.bucket,"80_89");
@@ -77,7 +77,7 @@ test("alpha hunter ignores legacy non-crypto and pre-baseline outcomes",()=>{
   const closed=[];
   for(let i=0;i<30;i++) closed.push({ts:Date.parse("2026-09-10T00:00:00Z")+i*3600000,base:"AAPL",action:"LONG",setup:"SCALP_MTF",outcome:"LOSS_SL",rMultiple:-1});
   for(let i=0;i<30;i++) closed.push({ts:Date.parse("2026-09-20T00:00:00Z")+i*3600000,base:"BTC",action:"LONG",setup:"OTHER",outcome:"WIN_TP1",rMultiple:1.5});
-  const out=calculateAlpha({action:"LONG",setup:"NEW_SETUP",instId:"BTCUSDT",entry:100,sl:99.6,tp1:101.2,tp2:102.4,tp3:104.8,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
+  const out=calculateAlpha({action:"LONG",setup:"NEW_SETUP",instId:"BTCUSDT",entry:100,sl:99.5,tp1:101.5,tp2:103,tp3:106,ts:Date.now()},payload(),deriv(),Date.now(),{closed});
   assert.equal(out.factors.historical.sampleSize,30);
   assert.equal(out.factors.historical.edge,"positive");
 });
