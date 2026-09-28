@@ -1,6 +1,30 @@
 {
   "open": [
     {
+      "id": "NEAR_LONG_1790597654993",
+      "ts": 1790597654993,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "LONG",
+      "fingerprint": "NEAR|LONG|TRADERSPY_COMPATIBLE_MTF|-0.50|1.50|3.00|6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_SUPPORT",
+      "probability": 99,
+      "entry": 5.1676,
+      "sl": 5.141762,
+      "tp1": 5.245114,
+      "tp2": 5.322628,
+      "tp3": 5.4776560000000005,
+      "rr": 3,
+      "entryCalibrationScore": 95,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.209,
+      "validUntil": "2026-09-28T13:14:08.825Z",
+      "horizons": {}
+    }
+  ],
+  "closed": [
+    {
       "id": "ZEC_LONG_1790591753466",
       "ts": 1790591753466,
       "base": "ZEC",
@@ -25,8 +49,18 @@
           "r": 0.416,
           "price": 1559.855,
           "at": 1790593200000
+        },
+        "h60": {
+          "r": 1.376,
+          "price": 1567.33,
+          "at": 1790595900000
         }
-      }
+      },
+      "outcome": "WIN_TP1",
+      "rMultiple": 2.72,
+      "exit": 1579.9692999999997,
+      "closedAt": 1790596800000,
+      "costR": 0.28
     },
     {
       "id": "SOL_SHORT_1790591753466",
@@ -53,8 +87,18 @@
           "r": -0.188,
           "price": 118.5405,
           "at": 1790593200000
+        },
+        "h60": {
+          "r": -0.482,
+          "price": 118.7145,
+          "at": 1790595900000
         }
-      }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 119.02114499999999,
+      "closedAt": 1790596800000,
+      "costR": 0.28
     },
     {
       "id": "ETH_SHORT_1790591753466",
@@ -81,8 +125,18 @@
           "r": -0.48,
           "price": 2658.5699999999997,
           "at": 1790593200000
+        },
+        "h60": {
+          "r": -1.115,
+          "price": 2667,
+          "at": 1790595900000
         }
-      }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 2665.4710499999997,
+      "closedAt": 1790594100000,
+      "costR": 0.28
     },
     {
       "id": "BTC_SHORT_1790591753466",
@@ -109,11 +163,19 @@
           "r": -0.241,
           "price": 83027.45,
           "at": 1790593200000
+        },
+        "h60": {
+          "r": -0.472,
+          "price": 83123.5,
+          "at": 1790595900000
         }
-      }
-    }
-  ],
-  "closed": [
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 83342.238,
+      "closedAt": 1790596800000,
+      "costR": 0.28
+    },
     {
       "id": "WLD_SHORT_1790591753466",
       "ts": 1790591753466,
@@ -4061,19 +4123,19 @@
     }
   ],
   "stats": {
-    "total": 76,
-    "wins": 19,
-    "losses": 29,
+    "total": 80,
+    "wins": 20,
+    "losses": 32,
     "expired": 28,
-    "sumR": -5.629999999999998,
+    "sumR": -6.749999999999994,
     "bySetup": {
       "TRADERSPY_COMPATIBLE_MTF": {
-        "n": 22,
-        "wins": 1,
-        "losses": 4,
-        "sumR": -3.71,
-        "winrate": 20,
-        "avgR": -0.74
+        "n": 26,
+        "wins": 2,
+        "losses": 7,
+        "sumR": -4.83,
+        "winrate": 22.2,
+        "avgR": -0.54
       },
       "TRADERSPY_CANDIDATE": {
         "n": 23,
@@ -4109,26 +4171,26 @@
       }
     },
     "byAction": {
-      "SHORT": {
-        "n": 17,
-        "wins": 2,
-        "losses": 8,
-        "sumR": -4.4799999999999995,
-        "winrate": 20,
-        "avgR": -0.45
-      },
       "LONG": {
-        "n": 59,
-        "wins": 17,
+        "n": 60,
+        "wins": 18,
         "losses": 21,
-        "sumR": -1.1499999999999972,
-        "winrate": 44.7,
-        "avgR": -0.03
+        "sumR": 1.5700000000000003,
+        "winrate": 46.2,
+        "avgR": 0.04
+      },
+      "SHORT": {
+        "n": 20,
+        "wins": 2,
+        "losses": 11,
+        "sumR": -8.32,
+        "winrate": 15.4,
+        "avgR": -0.64
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 39.6,
-    "avgR": -0.12
+    "winrate": 38.5,
+    "avgR": -0.13
   }
 }
