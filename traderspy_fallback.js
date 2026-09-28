@@ -19,7 +19,7 @@
 
 const DEFAULT_BITGET_BASE = "https://api.bitget.com";
 const DEFAULT_BINANCE_FUTURES_BASES = ["https://fapi.binance.com","https://fapi1.binance.com","https://fapi2.binance.com","https://fapi3.binance.com","https://fapi4.binance.com"];
-const DEFAULT_TARGETS = 6;
+const DEFAULT_TARGETS = 10;
 const DEFAULT_MIN_SCORE = 88;
 const { calculateTradePlan } = require("./trade_plan");
 
