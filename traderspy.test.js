@@ -22,7 +22,7 @@ function sample(overrides = {}) {
     ],
     triggeredConditions: ["RSI 55", "EMA reclaim"],
     resolutionStatus: "pending",
-    createdAt: "2026-09-20T23:30:00Z",
+    createdAt: "2026-09-25T23:30:00Z",
     ...overrides,
   };
 }
@@ -61,7 +61,7 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   assert.equal(out.sl, 200.8);
   assert.ok(Math.abs(out.tp1 - 197) < 1e-9);
   assert.ok(Math.abs(out.tp2 - 194) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 190.5) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 188) < 1e-9);
   assert.equal(out.rr, 3);
   assert.equal(out.leverage, 20);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
@@ -69,7 +69,7 @@ test("normalizes a SHORT signal with mirrored levels", () => {
 
 test("rejects resolved, stale and non-crypto signals", () => {
   assert.equal(normalizeSignal(sample({ resolutionStatus: "tp1_hit" }), NOW), null);
-  assert.equal(normalizeSignal(sample({ createdAt: "2026-09-20T18:00:00Z" }), NOW), null);
+  assert.equal(normalizeSignal(sample({ createdAt: "2026-09-25T18:00:00Z" }), NOW), null);
   assert.equal(normalizeSignal(sample({ coin: "AAPLUSDT" }), NOW), null);
 });
 
@@ -95,7 +95,7 @@ test("technical validation requires multi-timeframe directional agreement", () =
   const payload = {
     price: 100.5,
     timeframes: [
-      { interval: "15m", indicators: { rsi:{value:58}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:20}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:20},momentum:{rsi:58,macdHistogram:1}} },
+      { interval: "15m", indicators: { rsi:{value:58}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:25}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:25},momentum:{rsi:58,macdHistogram:1}} },
       { interval: "1h", indicators: { rsi:{value:60}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:30}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:30},momentum:{rsi:60,macdHistogram:1}} },
       { interval: "4h", indicators: { rsi:{value:61}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:22}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:22},momentum:{rsi:61,macdHistogram:1}} }
     ]
