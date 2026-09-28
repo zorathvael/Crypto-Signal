@@ -23,6 +23,7 @@ const DEFAULT_TARGETS = 10;
 const DEFAULT_MIN_SCORE = 88;
 const { calculateTradePlan } = require("./trade_plan");
 const { calibrateTiming } = require("./timing_calibration");
+const { featureSnapshot, calibrateSignal } = require("./calibration");
 
 const NON_CRYPTO = new Set(["AAPL","AMZN","AMD","COIN","GOOG","GOOGL","META","MSFT","MSTR","NFLX","NVDA","PLTR","TSLA","SOXL","CRCL","XAU","XAG"]);
 
@@ -241,7 +242,7 @@ function fallbackTiming(candles15, candles1h, side, livePrice) {
   return timing.pass ? timing : null;
 }
 
-async function buildSignals(snapshot,provider,marketLoader) {
+async function buildSignals(snapshot,provider,marketLoader,options={}) {
   const ranked=snapshot.ranked,targetLimit=clamp(Number(process.env.FALLBACK_TARGETS||DEFAULT_TARGETS),1,10),targets=ranked.slice(0,targetLimit),out=[];
   for(const d of targets) try {
     const market=await marketLoader(d.symbol);
@@ -270,6 +271,31 @@ async function buildSignals(snapshot,provider,marketLoader) {
     const technicalScore=tfs.reduce((s,x)=>s+Math.max(0,x.score),0);
     const timingBonus=Math.round(Math.max(0,Math.min(10,(timing.timingScore||timing.score||0)/10)));
     const finalScore=Math.min(99,Math.round(cs.score + timingBonus));
+    const bidQty=n(market.depth?.bids?.[0]?.[1]), askQty=n(market.depth?.asks?.[0]?.[1]);
+    const orderFlowProxy=Number.isFinite(bidQty)&&Number.isFinite(askQty)&&askQty>0?bidQty/askQty:null;
+    const technicalPayload={price:timing.entry,timeframes:[
+      {interval:"15m",summary:{bias:tfs[0].direction==="LONG"?"bullish":tfs[0].direction==="SHORT"?"bearish":"neutral",trend:{direction:tfs[0].direction==="LONG"?"up":tfs[0].direction==="SHORT"?"down":"flat"}},indicators:{atr:{value:tfs[0].atr}}},
+      {interval:"1h",summary:{bias:tfs[1].direction==="LONG"?"bullish":tfs[1].direction==="SHORT"?"bearish":"neutral",trend:{direction:tfs[1].direction==="LONG"?"up":tfs[1].direction==="SHORT"?"down":"flat"}},indicators:{atr:{value:tfs[1].atr}}},
+      {interval:"4h",summary:{bias:tfs[2].direction==="LONG"?"bullish":tfs[2].direction==="SHORT"?"bearish":"neutral",trend:{direction:tfs[2].direction==="LONG"?"up":tfs[2].direction==="SHORT"?"down":"flat"}},indicators:{atr:{value:tfs[2].atr}}}
+    ]};
+    const calibrationFeatures=featureSnapshot({
+      signal:{action:side,setup:"TRADERSPY_COMPATIBLE_MTF",qualityScore:finalScore,
+        entryCalibrationScore:timing.timingScore||timing.score||0,
+        entryCalibrationDistanceAtr:timing.distanceAtr},
+      technical:technicalPayload,
+      derivatives:{row:{
+        funding:{ratePct:Number(market.funding?.lastFundingRate)*100},
+        positioning:{takerBuySellRatio:orderFlowProxy,globalLongPct:null},
+        openInterest:{regime:"unknown"}
+      }}
+    });
+    const calibration=calibrateSignal(options.history,calibrationFeatures,finalScore);
+    const calibratedMin=Number(process.env.CALIBRATED_MIN_PROB||45);
+    const maxNegativeR=Number(process.env.CALIBRATED_MAX_NEGATIVE_R||-0.25);
+    if(calibration.probability<calibratedMin||calibration.expectedR<maxNegativeR) {
+      console.warn("Fallback calibration reject "+d.symbol+": probability="+calibration.probability+" expectedR="+calibration.expectedR);
+      continue;
+    }
     if(finalScore<threshold) continue;
 
     out.push({
@@ -279,8 +305,11 @@ async function buildSignals(snapshot,provider,marketLoader) {
       base:d.symbol.replace(/USDT$/,""),
       instId:d.symbol,
       action:side,
-      probability:finalScore,
-      qualityScore:finalScore,
+      probability:calibration.probability,
+      qualityScore:calibration.probability,
+      rawQualityScore:finalScore,
+      calibration,
+      calibrationFeatures,
       signalStrength:finalScore>=96?"very_strong":finalScore>=90?"strong":"moderate",
       importance:d.quoteVolume>=50000000?"high":"medium",
       strategyName:"TraderSpy-Compatible MTF",
@@ -336,13 +365,13 @@ async function buildSignals(snapshot,provider,marketLoader) {
   return {signals:out,discovered:ranked.length,fetched:ranked.length,validated:out.length,validationCalls:targets.length,source:provider.toLowerCase()};
 }
 
-async function getFallbackIntelligence() {
+async function getFallbackIntelligence(options={}) {
   const providers=[
     ["Bitget",bitgetSnapshot,bitgetMarket],
     ["Binance",async()=>{const info=await binance("/fapi/v1/exchangeInfo");const symbols=(info.symbols||[]).filter(s=>s.status==="TRADING"&&s.quoteAsset==="USDT"&&s.contractType==="PERPETUAL"&&!NON_CRYPTO.has(String(s.baseAsset||"").toUpperCase())).map(s=>s.symbol);const tickers=await binance("/fapi/v1/ticker/24hr");const universe=new Map(symbols.map(s=>[s,true]));const ranked=(Array.isArray(tickers)?tickers:[]).filter(t=>universe.has(t.symbol)).map(t=>({symbol:t.symbol,quoteVolume:n(t.quoteVolume)||0,change:n(t.priceChangePercent)||0,price:n(t.lastPrice)})).filter(x=>x.quoteVolume>5000000&&Number.isFinite(x.price)).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,Math.max(DEFAULT_TARGETS,Number(process.env.FALLBACK_DISCOVERY_LIMIT||20)));return {ranked,provider:"Binance"}},async (symbol)=>{const [k15,k1h,k4h,oi,funding,depth]=await Promise.all([binance("/fapi/v1/klines",{symbol,interval:"15m",limit:100}),binance("/fapi/v1/klines",{symbol,interval:"1h",limit:100}),binance("/fapi/v1/klines",{symbol,interval:"4h",limit:100}),binance("/fapi/v1/openInterest",{symbol}),binance("/fapi/v1/premiumIndex",{symbol}),binance("/fapi/v1/depth",{symbol,limit:5})]);return {k15:parseKlines(k15),k1h:parseKlines(k1h),k4h:parseKlines(k4h),oi,funding,depth}}]];
   let lastErr=null;
   for(const [provider,discover,loader] of providers) {
-    try { console.log("Fallback provider: "+provider); const snapshot=await discover(); const result=await buildSignals(snapshot,provider,loader); if(result.signals.length>0)return result; lastErr=new Error(provider+" returned zero validated signals"); }
+    try { console.log("Fallback provider: "+provider); const snapshot=await discover(); const result=await buildSignals(snapshot,provider,loader,options); if(result.signals.length>0)return result; lastErr=new Error(provider+" returned zero validated signals"); }
     catch(e){lastErr=e;console.warn("Fallback provider "+provider+" unavailable: "+e.message);}
   }
   throw lastErr||new Error("No public market-data provider available");
