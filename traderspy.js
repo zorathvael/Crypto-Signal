@@ -206,8 +206,8 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
   const base = symbol.slice(0, -4);
   if (!base || NON_CRYPTO_BASES.has(base)) return null;
 
-  const entry = finiteNumber(raw?.price);
-  if (entry == null || entry <= 0) return null;
+  const providerTriggerPrice = finiteNumber(raw?.price);
+  if (providerTriggerPrice == null || providerTriggerPrice <= 0) return null;
 
   const tp1Pct = targetPct(raw?.targets, ["tp1"]);
   const tp2Pct = targetPct(raw?.targets, ["tp2"]);
@@ -216,33 +216,9 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
   if ([tp1Pct, slPct].some((x) => x == null)) return null;
 
   const isLong = action === "buy";
-  const sl = isLong ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100);
-  // Entry remains the provider's trigger price. The provider SL is preserved as
-  // the structural stop input. Only the production trade-plan layer may derive
-  // leverage and TP prices from the margin contract.
-  let plan;
-  try {
-    plan = calculateTradePlan({ action: isLong ? "LONG" : "SHORT", entry, sl });
-  } catch {
-    return null;
-  }
-  const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
-  const risk = Math.abs(entry - plan.sl);
-  const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
-  const entryCalibration = {
-    pass: true,
-    entry,
-    score: null,
-    mode: "PROVIDER_TRIGGER",
-    structuralLevel: null,
-    distanceAtr: null,
-    technicalDistanceAtr: null,
-    geometryCapacityAtr: null,
-    geometryUse: null,
-    maxRiskPricePct: 0.005,
-    reasons: ["provider trigger retained; no independent technical calibration payload was supplied"],
-  };
-  if (![sl, tp1, tp2, tp3, rr, leverage].every(Number.isFinite) || rr <= 0) return null;
+  const providerStructuralSl = isLong
+    ? providerTriggerPrice * (1 - slPct / 100)
+    : providerTriggerPrice * (1 + slPct / 100);
 
   const createdMs = Date.parse(String(raw?.createdAt || ""));
   const ts = Number.isFinite(createdMs) ? createdMs : now;
@@ -269,8 +245,11 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     base,
     instId: symbol,
     action: isLong ? "LONG" : "SHORT",
-    // Legacy field retained because the delivery/outcome layer expects it.
-    // It is a derived quality score, NOT a calibrated probability.
+    // Provider trigger is discovery/reference metadata only. Production Entry
+    // is assigned later by recalibratePublishedSignal() from fresh live data.
+    providerTriggerPrice,
+    providerStructuralSl,
+    providerTargetPct: { tp1: tp1Pct, tp2: tp2Pct, tp3: tp3Pct, sl: slPct },
     probability: qualityScore,
     qualityScore,
     signalStrength: String(raw?.signalStrength || "unknown"),
@@ -278,20 +257,20 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     strategyName: String(raw?.strategyName || "TraderSpy Signal"),
     timeframe: String(raw?.timeframe || "unknown"),
     setup: `TRADERSPY · ${String(raw?.strategyName || "Signal")}`,
-    mode: `TRADERSPY_${String(raw?.timeframe || "NA").toUpperCase()}`,
-    entry,
-    sl: plan.sl,
-    tp1,
-    tp2,
-    tp3,
-    rr: +rr.toFixed(2),
-    riskPct: +plan.slDistancePercent.toFixed(3),
-    marginRiskPct: plan.riskMarginPercent,
-    leverage,
-    entryCalibrationScore: entryCalibration.score,
-    entryCalibrationDistanceAtr: entryCalibration.distanceAtr,
-    entryCalibrationGeometryCapacityAtr: entryCalibration.geometryCapacityAtr,
-    rewardMarginPcts,
+    mode: "PENDING_TIMING_CALIBRATION",
+    entry: null,
+    sl: null,
+    tp1: null,
+    tp2: null,
+    tp3: null,
+    rr: null,
+    riskPct: null,
+    marginRiskPct: null,
+    leverage: null,
+    entryCalibrationScore: null,
+    entryCalibrationDistanceAtr: null,
+    entryCalibrationGeometryCapacityAtr: null,
+    rewardMarginPcts: null,
     regime: null,
     book: null,
     m5: { volume: { side: "—" }, rsi: null },
@@ -308,7 +287,8 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
       resolutionStatus: status,
       triggeredConditions: Array.isArray(raw?.triggeredConditions) ? raw.triggeredConditions : [],
       targetPct: { tp1: tp1Pct, tp2: tp2Pct, tp3: tp3Pct, sl: slPct },
-      geometry: "MARGIN_PERCENT",
+      providerTriggerPrice,
+      geometry: "PENDING_LIVE_TIMING",
     },
   };
 }
