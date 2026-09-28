@@ -183,6 +183,41 @@ Environment variables dapat mengubah:
 - `TRADERSPY_MAX_AGE_MIN`
 - `TRADERSPY_MIN_SCORE`
 
+## Timing Calibration vs Trade Geometry
+
+Kedua layer ini sengaja dipisahkan dan tidak boleh saling mengambil alih:
+
+### Timing Calibration — adaptif
+
+`timing_calibration.js` adalah layer timing. Ia menentukan apakah kondisi pasar saat ini layak untuk Entry dan structural-SL timing.
+
+Timing Calibration boleh menggunakan:
+- live price
+- ATR/volatility
+- support/resistance
+- technical anchor
+- proximity dan geometry utilisation
+- timing score dan timing mode
+
+Timing Calibration **tidak boleh** menentukan leverage, margin, executable SL, atau TP1/TP2/TP3.
+
+### Trade Geometry — deterministik
+
+`trade_plan.js` adalah satu-satunya source of truth untuk executable trade geometry:
+- Margin: **5 USDT**
+- Leverage: **20x fixed**
+- Notional: **100 USDT**
+- SL: **-10% margin = -0.50 USDT = -0.5% harga**
+- TP1: **+30% margin = +1.50 USDT = +1.5% harga**
+- TP2: **+60% margin = +3.00 USDT = +3.0% harga**
+- TP3: **+120% margin = +6.00 USDT = +6.0% harga**
+
+Alur produksi:
+
+`Market Data → MTF → Alpha/Candidate → Timing Calibration (Entry + structural SL) → Trade Geometry (fixed SL/TP) → Execution Validation → Signal`
+
+Jika structural SL dari Timing Calibration melebihi envelope 0.5% harga, trade ditolak. **Leverage tidak dinaikkan untuk memaksa trade lolos. Entry tidak diubah oleh Trade Geometry.**
+
 ## Independent entry calibration
 
 Entry Calibration is a separate adaptive layer from Entry Geometry.
