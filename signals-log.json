@@ -1,6 +1,37 @@
 {
   "open": [
     {
+      "id": "KORU_SHORT_1790575777867",
+      "ts": 1790575777867,
+      "base": "KORU",
+      "instId": "KORUUSDT",
+      "action": "SHORT",
+      "fingerprint": "KORU|SHORT|TRADERSPY_CANDIDATE|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 20.67,
+      "sl": 20.77335,
+      "tp1": 20.35995,
+      "tp2": 20.0499,
+      "tp3": 19.4298,
+      "rr": 3,
+      "entryCalibrationScore": 85,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.526,
+      "regime": "compressed",
+      "validUntil": "2026-09-28T07:09:22.305Z",
+      "horizons": {
+        "h15": {
+          "r": 1.118,
+          "price": 20.5545,
+          "at": 1790577000000
+        }
+      }
+    }
+  ],
+  "closed": [
+    {
       "id": "DATAIP_LONG_1790554234040",
       "ts": 1790554234040,
       "base": "DATAIP",
@@ -21,7 +52,10 @@
       "entryCalibrationGeometryCapacityAtr": 0.469,
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
-      "horizons": {}
+      "horizons": {},
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790578607547
     },
     {
       "id": "BZ_LONG_1790570497155",
@@ -55,33 +89,13 @@
           "price": 99.275,
           "at": 1790574300000
         }
-      }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 98.54480000000001,
+      "closedAt": 1790577900000,
+      "costR": 0.28
     },
-    {
-      "id": "KORU_SHORT_1790575777867",
-      "ts": 1790575777867,
-      "base": "KORU",
-      "instId": "KORUUSDT",
-      "action": "SHORT",
-      "fingerprint": "KORU|SHORT|TRADERSPY_CANDIDATE|0.50|-1.50|-3.00|-6.00",
-      "setup": "TRADERSPY_CANDIDATE",
-      "mode": "TRADERSPY_MTF",
-      "probability": 99,
-      "entry": 20.67,
-      "sl": 20.77335,
-      "tp1": 20.35995,
-      "tp2": 20.0499,
-      "tp3": 19.4298,
-      "rr": 3,
-      "entryCalibrationScore": 85,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.526,
-      "regime": "compressed",
-      "validUntil": "2026-09-28T07:09:22.305Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
     {
       "id": "KORU_SHORT_1790569008231",
       "ts": 1790569008231,
@@ -3793,19 +3807,19 @@
     }
   ],
   "stats": {
-    "total": 69,
+    "total": 71,
     "wins": 18,
-    "losses": 24,
-    "expired": 27,
-    "sumR": -1.9500000000000006,
+    "losses": 25,
+    "expired": 28,
+    "sumR": -3.230000000000001,
     "bySetup": {
       "TRADERSPY_CANDIDATE": {
-        "n": 20,
+        "n": 22,
         "wins": 4,
-        "losses": 11,
-        "sumR": -3.7600000000000007,
-        "winrate": 26.7,
-        "avgR": -0.25
+        "losses": 12,
+        "sumR": -5.040000000000001,
+        "winrate": 25,
+        "avgR": -0.32
       },
       "TRADERSPY_COMPATIBLE_MTF": {
         "n": 18,
@@ -3841,6 +3855,14 @@
       }
     },
     "byAction": {
+      "LONG": {
+        "n": 59,
+        "wins": 17,
+        "losses": 21,
+        "sumR": -1.1499999999999972,
+        "winrate": 44.7,
+        "avgR": -0.03
+      },
       "SHORT": {
         "n": 12,
         "wins": 1,
@@ -3848,19 +3870,11 @@
         "sumR": -2.08,
         "winrate": 20,
         "avgR": -0.42
-      },
-      "LONG": {
-        "n": 57,
-        "wins": 17,
-        "losses": 20,
-        "sumR": 0.12999999999999967,
-        "winrate": 45.9,
-        "avgR": 0
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 42.9,
-    "avgR": -0.05
+    "winrate": 41.9,
+    "avgR": -0.08
   }
 }
