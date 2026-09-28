@@ -1,21 +1,22 @@
 /**
- * Entry Calibration — geometry-aware, data-derived entry selection.
+ * Entry / Timing Calibration — ENTRY NOW execution semantics.
  *
- * This layer determines ONLY the executable Entry.
- * It does not calculate leverage, margin, SL, or TP.
+ * This layer owns timing only:
+ *   - Entry = current live market price (ENTRY NOW).
+ *   - structuralSl = nearby directional support/resistance used to validate timing.
+ *   - timing score/mode.
  *
- * The production geometry gives us one hard measurable constraint:
- *   maximum price-risk capacity = 0.5% of Entry.
+ * It NEVER calculates or changes leverage, margin, executable SL or TP.
+ * Trade Geometry remains the sole owner of the fixed 20x risk/reward contract.
  *
- * Therefore entry calibration derives its usable structural distance from
- * that capacity and the observed ATR, rather than using fixed "0.75 ATR"
- * / "1.5 ATR" thresholds.
+ * Directional structure:
+ *   LONG  -> support below live price.
+ *   SHORT -> resistance above live price.
+ *
+ * A structural level outside the fixed 0.5% price-risk envelope is unusable.
+ * No limit-style pullback entry is synthesized from that structure.
  */
 const MAX_PRICE_RISK_PCT = 0.005;
-// Execution viability is measured against observed volatility, not a legacy
-// absolute ATR threshold: the fixed price-risk envelope must cover at least
-// 10% of one ATR. Below that ratio, the geometry is too small to represent a
-// meaningful fraction of the current volatility regime.
 const MIN_GEOMETRY_CAPACITY_ATR = 0.10;
 const EPSILON = 1e-12;
 
@@ -55,15 +56,12 @@ function calibrateEntry(input = {}) {
   const geometryCapacityAtr = maxRiskPrice / atr;
   const technicalDistanceAtr = Math.abs(technicalPrice - livePrice) / atr;
 
-  // Do not publish a candidate when the fixed execution envelope represents
-  // less than the minimum measurable volatility coverage. This is an
-  // execution-capacity gate, not a tightening of the entry-quality score.
   if (geometryCapacityAtr < MIN_GEOMETRY_CAPACITY_ATR) {
     return {
       pass: false,
-      entry: technicalPrice,
+      entry: livePrice,
       score: 0,
-      distanceAtr: +technicalDistanceAtr.toFixed(3),
+      distanceAtr: 0,
       geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
       geometryUse: 0,
       mode: "REJECT_VOLATILITY_CAPACITY",
@@ -71,100 +69,76 @@ function calibrateEntry(input = {}) {
     };
   }
 
-  // A technical anchor farther away than the geometry can reasonably absorb
-  // is not "fixed" by widening risk. It must be rejected or replaced by a
-  // structure-calibrated entry.
   const supports = normalizeLevels(input.supports, "LONG", livePrice);
   const resistances = normalizeLevels(input.resistances, "SHORT", livePrice);
   const levels = action === "LONG" ? supports : resistances;
 
-  let entry = technicalPrice;
-  let mode = "TECHNICAL_ANCHOR";
-  let structuralLevel = null;
-  const reasons = [];
-
-  // Structure is considered usable when the final entry can place that
-  // structural level inside the fixed 0.5% price-risk envelope.
+  // ENTRY NOW: never move Entry to a support/resistance pullback level.
+  // Structure is used only as timing/structural-SL evidence.
   const usableLevels = levels.filter((level) => {
     const distance = Math.abs(livePrice - level);
     return distance <= maxRiskPrice + EPSILON;
   });
 
-  if (usableLevels.length) {
-    structuralLevel = usableLevels[0];
-    const levelDistance = Math.abs(livePrice - structuralLevel);
-
-    // Put the calibrated entry between live price and structure. The blend
-    // is based on actual geometry capacity: if structure is very close,
-    // stay close to market; if it consumes most capacity, move entry toward
-    // the structural level so the fixed SL remains executable.
-    const capacityUse = clamp(levelDistance / Math.max(maxRiskPrice, EPSILON), 0, 1);
-    const pullToStructure = 0.35 + 0.30 * capacityUse;
-    entry = action === "LONG"
-      ? structuralLevel + levelDistance * pullToStructure
-      : structuralLevel - levelDistance * pullToStructure;
-
-    entry = action === "LONG"
-      ? Math.min(livePrice, entry)
-      : Math.max(livePrice, entry);
-
-    mode = action === "LONG" ? "SUPPORT_CALIBRATED" : "RESISTANCE_CALIBRATED";
-    reasons.push("entry calibrated to executable nearby structure");
-  } else {
-    // No structure fits the fixed geometry. Keep the technical anchor only
-    // when it is itself executable relative to current price.
-    if (technicalDistanceAtr > Math.max(geometryCapacityAtr * 1.5, 0.25)) {
-      return {
-        pass: false,
-        entry: technicalPrice,
-        score: 0,
-        distanceAtr: +technicalDistanceAtr.toFixed(3),
-        geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
-        mode: "REJECT_UNEXECUTABLE_ANCHOR",
-        reasons: ["technical entry exceeds geometry-adjusted volatility capacity"],
-      };
-    }
-    reasons.push("no structure inside fixed geometry; technical anchor retained");
-  }
-
-  const finalDistancePrice = Math.abs(entry - livePrice);
-  const finalDistanceAtr = finalDistancePrice / atr;
-  const geometryUse = finalDistancePrice / Math.max(maxRiskPrice, EPSILON);
-
-  // Score is continuous rather than a ladder of arbitrary ATR buckets.
-  // 100 = entry at live price; 0 = outside the executable geometry envelope.
-  const proximityScore = clamp(100 * (1 - finalDistancePrice / Math.max(maxRiskPrice * 1.5, EPSILON)), 0, 100);
-  const structureScore = structuralLevel == null
-    ? 50
-    : clamp(100 * (1 - Math.abs(entry - structuralLevel) / Math.max(maxRiskPrice, EPSILON)), 0, 100);
-  const geometryScore = clamp(100 * (1 - Math.max(0, geometryUse - 0.75) / 0.25), 0, 100);
-  const score = Math.round(0.45 * proximityScore + 0.35 * structureScore + 0.20 * geometryScore);
-
-  if (geometryUse > 1 + 1e-9) {
+  if (!usableLevels.length) {
     return {
       pass: false,
-      entry: +entry,
+      entry: livePrice,
       score: 0,
-      distanceAtr: +finalDistanceAtr.toFixed(3),
+      distanceAtr: 0,
+      technicalDistanceAtr: +technicalDistanceAtr.toFixed(3),
       geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
-      geometryUse: +geometryUse.toFixed(3),
-      mode: "REJECT_GEOMETRY_CAPACITY",
-      reasons: ["calibrated entry cannot fit the fixed 0.5% geometry"],
+      geometryUse: 0,
+      mode: "REJECT_NO_EXECUTABLE_STRUCTURE",
+      reasons: [
+        action === "LONG"
+          ? "no support below live price inside fixed 0.5% timing envelope"
+          : "no resistance above live price inside fixed 0.5% timing envelope",
+      ],
     };
   }
 
+  const structuralLevel = usableLevels[0];
+  const structuralDistancePrice = Math.abs(livePrice - structuralLevel);
+  const structuralDistanceAtr = structuralDistancePrice / atr;
+  const structureUse = structuralDistancePrice / Math.max(maxRiskPrice, EPSILON);
+
+  // Entry is exactly the live market price. GeometryUse for Entry is therefore
+  // zero by construction; structural utilisation is tracked separately.
+  const entry = livePrice;
+  const entryDistanceAtr = 0;
+  const proximityScore = 100;
+  const structureScore = clamp(
+    100 * (1 - structuralDistancePrice / Math.max(maxRiskPrice, EPSILON)),
+    0,
+    100,
+  );
+  const geometryScore = 100;
+  const score = Math.round(
+    0.50 * proximityScore +
+    0.30 * structureScore +
+    0.20 * geometryScore,
+  );
+
   return {
     pass: score >= 55,
-    entry: +entry,
+    entry,
     score,
-    mode,
+    mode: action === "LONG" ? "ENTRY_NOW_SUPPORT" : "ENTRY_NOW_RESISTANCE",
     structuralLevel,
-    distanceAtr: +finalDistanceAtr.toFixed(3),
+    distanceAtr: +entryDistanceAtr.toFixed(3),
     technicalDistanceAtr: +technicalDistanceAtr.toFixed(3),
+    structuralDistanceAtr: +structuralDistanceAtr.toFixed(3),
     geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
-    geometryUse: +geometryUse.toFixed(3),
+    geometryUse: 0,
+    structuralGeometryUse: +structureUse.toFixed(3),
     maxRiskPricePct: MAX_PRICE_RISK_PCT,
-    reasons,
+    reasons: [
+      "ENTRY NOW uses current live price; structure is timing/structural-SL evidence only",
+      action === "LONG"
+        ? "support is below live price and inside the fixed geometry envelope"
+        : "resistance is above live price and inside the fixed geometry envelope",
+    ],
   };
 }
 
