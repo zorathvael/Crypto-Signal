@@ -36,7 +36,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
-const MIN_RR = 3.0; // Production TP1 geometry is 3R at fixed 25x; level-builder RR is not the source of truth
+const MIN_RR = 3.0; // Production TP1 geometry is 3R at fixed 20x; level-builder RR is not the source of truth
 const CANDIDATE_LIMIT = 60; // v3.12.3 speed: top liquidity only
 const SQUARE_POST_COUNT = 3;
 // Block A — execution cost (taker-ish round trip estimate Bitget USDT-M)
@@ -3057,7 +3057,7 @@ async function runTraderSpyPipeline() {
     outcomeLog || { open: [], closed: [] }
   );
 
-  // Hard execution gate: every published trade must satisfy the fixed 25x geometry.
+  // Hard execution gate: every published trade must satisfy the fixed 20x geometry.
   // Entry remains the provider-calibrated trigger; geometry is applied only after Entry.
   postSignals = postSignals.map((s) => {
     try {
