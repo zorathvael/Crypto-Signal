@@ -47,6 +47,31 @@
       "horizons": {}
     },
     {
+      "id": "BZ_LONG_1790570497155",
+      "ts": 1790570497155,
+      "base": "BZ",
+      "instId": "BZUSDT",
+      "action": "LONG",
+      "fingerprint": "BZ|LONG|TRADERSPY_CANDIDATE|-0.50|1.50|3.00|6.00",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 99.04,
+      "sl": 98.54480000000001,
+      "tp1": 100.5256,
+      "tp2": 102.0112,
+      "tp3": 104.98240000000001,
+      "rr": 3,
+      "entryCalibrationScore": 88,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 1.337,
+      "regime": "compressed",
+      "validUntil": "2026-09-28T05:41:17.599Z",
+      "horizons": {}
+    }
+  ],
+  "closed": [
+    {
       "id": "TRUMP_SHORT_1790569008231",
       "ts": 1790569008231,
       "base": "TRUMP",
@@ -67,10 +92,13 @@
       "entryCalibrationGeometryCapacityAtr": 0.264,
       "regime": "compressed",
       "validUntil": "2026-09-28T05:16:34.834Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {},
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.35,
+      "exit": 2.0501679999999998,
+      "closedAt": 1790569800000,
+      "costR": 0.35
+    },
     {
       "id": "LINK_LONG_1790564636785",
       "ts": 1790564636785,
@@ -3681,19 +3709,19 @@
     }
   ],
   "stats": {
-    "total": 66,
+    "total": 67,
     "wins": 17,
-    "losses": 22,
+    "losses": 23,
     "expired": 27,
-    "sumR": -1.9700000000000002,
+    "sumR": -3.3200000000000007,
     "bySetup": {
       "TRADERSPY_CANDIDATE": {
-        "n": 17,
+        "n": 18,
         "wins": 3,
-        "losses": 9,
-        "sumR": -3.7800000000000002,
-        "winrate": 25,
-        "avgR": -0.32
+        "losses": 10,
+        "sumR": -5.130000000000001,
+        "winrate": 23.1,
+        "avgR": -0.39
       },
       "TRADERSPY_COMPATIBLE_MTF": {
         "n": 18,
@@ -3729,6 +3757,14 @@
       }
     },
     "byAction": {
+      "SHORT": {
+        "n": 11,
+        "wins": 0,
+        "losses": 4,
+        "sumR": -4.7299999999999995,
+        "winrate": 0,
+        "avgR": -1.18
+      },
       "LONG": {
         "n": 56,
         "wins": 17,
@@ -3736,19 +3772,11 @@
         "sumR": 1.4100000000000001,
         "winrate": 47.2,
         "avgR": 0.04
-      },
-      "SHORT": {
-        "n": 10,
-        "wins": 0,
-        "losses": 3,
-        "sumR": -3.38,
-        "winrate": 0,
-        "avgR": -1.13
       }
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 43.6,
-    "avgR": -0.05
+    "winrate": 42.5,
+    "avgR": -0.08
   }
 }
