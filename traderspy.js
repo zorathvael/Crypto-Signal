@@ -486,9 +486,9 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   let plan;
   try { plan = calculateTradePlan({ action, entry, sl: structuralSl }); } catch { return null; }
   const { tp1, tp2, tp3, leverage, rewardMarginPcts } = plan;
-  const risk = Math.abs(entry - sl);
+  const risk = Math.abs(entry - plan.sl);
   const priceRiskPct = entry ? risk / entry * 100 : 0;
-  if (![entry, sl, tp1, tp2, tp3, leverage].every(Number.isFinite)) return null;
+  if (![entry, plan.sl, tp1, tp2, tp3, leverage].every(Number.isFinite)) return null;
   const rr = risk > 0 ? Math.abs(tp1 - entry) / risk : 0;
 
   const ageValidUntil = now + 60 * 60 * 1000;
