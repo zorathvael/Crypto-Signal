@@ -1,94 +1,6 @@
 {
   "open": [
     {
-      "id": "WLD_SHORT_1790591753466",
-      "ts": 1790591753466,
-      "base": "WLD",
-      "instId": "WLDUSDT",
-      "action": "SHORT",
-      "fingerprint": "WLD|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "ENTRY_NOW_RESISTANCE",
-      "probability": 99,
-      "entry": 0.5113,
-      "sl": 0.5138564999999999,
-      "tp1": 0.5036305,
-      "tp2": 0.495961,
-      "tp3": 0.48062199999999994,
-      "rr": 3,
-      "entryCalibrationScore": 98,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.205,
-      "validUntil": "2026-09-28T11:35:25.458Z",
-      "horizons": {}
-    },
-    {
-      "id": "ONDO_SHORT_1790591753466",
-      "ts": 1790591753466,
-      "base": "ONDO",
-      "instId": "ONDOUSDT",
-      "action": "SHORT",
-      "fingerprint": "ONDO|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "ENTRY_NOW_RESISTANCE",
-      "probability": 99,
-      "entry": 0.5158,
-      "sl": 0.518379,
-      "tp1": 0.508063,
-      "tp2": 0.500326,
-      "tp3": 0.484852,
-      "rr": 3,
-      "entryCalibrationScore": 99,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.104,
-      "validUntil": "2026-09-28T11:35:25.322Z",
-      "horizons": {}
-    },
-    {
-      "id": "NEAR_SHORT_1790591753466",
-      "ts": 1790591753466,
-      "base": "NEAR",
-      "instId": "NEARUSDT",
-      "action": "SHORT",
-      "fingerprint": "NEAR|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "ENTRY_NOW_RESISTANCE",
-      "probability": 99,
-      "entry": 5.0199,
-      "sl": 5.044999499999999,
-      "tp1": 4.9446015,
-      "tp2": 4.8693029999999995,
-      "tp3": 4.718705999999999,
-      "rr": 3,
-      "entryCalibrationScore": 81,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.197,
-      "validUntil": "2026-09-28T11:35:25.163Z",
-      "horizons": {}
-    },
-    {
-      "id": "SUI_SHORT_1790591753466",
-      "ts": 1790591753466,
-      "base": "SUI",
-      "instId": "SUIUSDT",
-      "action": "SHORT",
-      "fingerprint": "SUI|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
-      "setup": "TRADERSPY_COMPATIBLE_MTF",
-      "mode": "ENTRY_NOW_RESISTANCE",
-      "probability": 99,
-      "entry": 1.1722,
-      "sl": 1.1780609999999998,
-      "tp1": 1.154617,
-      "tp2": 1.1370339999999999,
-      "tp3": 1.1018679999999998,
-      "rr": 3,
-      "entryCalibrationScore": 96,
-      "entryCalibrationDistanceAtr": 0,
-      "entryCalibrationGeometryCapacityAtr": 0.205,
-      "validUntil": "2026-09-28T11:35:24.993Z",
-      "horizons": {}
-    },
-    {
       "id": "ZEC_LONG_1790591753466",
       "ts": 1790591753466,
       "base": "ZEC",
@@ -108,7 +20,13 @@
       "entryCalibrationDistanceAtr": 0,
       "entryCalibrationGeometryCapacityAtr": 0.39,
       "validUntil": "2026-09-28T11:35:24.848Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 0.416,
+          "price": 1559.855,
+          "at": 1790593200000
+        }
+      }
     },
     {
       "id": "SOL_SHORT_1790591753466",
@@ -130,7 +48,13 @@
       "entryCalibrationDistanceAtr": 0,
       "entryCalibrationGeometryCapacityAtr": 0.453,
       "validUntil": "2026-09-28T11:35:24.568Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.188,
+          "price": 118.5405,
+          "at": 1790593200000
+        }
+      }
     },
     {
       "id": "ETH_SHORT_1790591753466",
@@ -152,7 +76,13 @@
       "entryCalibrationDistanceAtr": 0,
       "entryCalibrationGeometryCapacityAtr": 0.723,
       "validUntil": "2026-09-28T11:35:24.270Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.48,
+          "price": 2658.5699999999997,
+          "at": 1790593200000
+        }
+      }
     },
     {
       "id": "BTC_SHORT_1790591753466",
@@ -174,10 +104,148 @@
       "entryCalibrationDistanceAtr": 0,
       "entryCalibrationGeometryCapacityAtr": 0.907,
       "validUntil": "2026-09-28T11:35:24.131Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": -0.241,
+          "price": 83027.45,
+          "at": 1790593200000
+        }
+      }
     }
   ],
   "closed": [
+    {
+      "id": "WLD_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "WLD",
+      "instId": "WLDUSDT",
+      "action": "SHORT",
+      "fingerprint": "WLD|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 0.5113,
+      "sl": 0.5138564999999999,
+      "tp1": 0.5036305,
+      "tp2": 0.495961,
+      "tp3": 0.48062199999999994,
+      "rr": 3,
+      "entryCalibrationScore": 98,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.205,
+      "validUntil": "2026-09-28T11:35:25.458Z",
+      "horizons": {
+        "h15": {
+          "r": -0.196,
+          "price": 0.5118,
+          "at": 1790593200000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 0.5138564999999999,
+      "closedAt": 1790593200000,
+      "costR": 0.28
+    },
+    {
+      "id": "ONDO_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "ONDO",
+      "instId": "ONDOUSDT",
+      "action": "SHORT",
+      "fingerprint": "ONDO|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 0.5158,
+      "sl": 0.518379,
+      "tp1": 0.508063,
+      "tp2": 0.500326,
+      "tp3": 0.484852,
+      "rr": 3,
+      "entryCalibrationScore": 99,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.104,
+      "validUntil": "2026-09-28T11:35:25.322Z",
+      "horizons": {
+        "h15": {
+          "r": -1.939,
+          "price": 0.5208,
+          "at": 1790593200000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 0.518379,
+      "closedAt": 1790592300000,
+      "costR": 0.28
+    },
+    {
+      "id": "NEAR_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "SHORT",
+      "fingerprint": "NEAR|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 5.0199,
+      "sl": 5.044999499999999,
+      "tp1": 4.9446015,
+      "tp2": 4.8693029999999995,
+      "tp3": 4.718705999999999,
+      "rr": 3,
+      "entryCalibrationScore": 81,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.197,
+      "validUntil": "2026-09-28T11:35:25.163Z",
+      "horizons": {
+        "h15": {
+          "r": -1.574,
+          "price": 5.0594,
+          "at": 1790593200000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 5.044999499999999,
+      "closedAt": 1790592300000,
+      "costR": 0.28
+    },
+    {
+      "id": "SUI_SHORT_1790591753466",
+      "ts": 1790591753466,
+      "base": "SUI",
+      "instId": "SUIUSDT",
+      "action": "SHORT",
+      "fingerprint": "SUI|SHORT|TRADERSPY_COMPATIBLE_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "TRADERSPY_COMPATIBLE_MTF",
+      "mode": "ENTRY_NOW_RESISTANCE",
+      "probability": 99,
+      "entry": 1.1722,
+      "sl": 1.1780609999999998,
+      "tp1": 1.154617,
+      "tp2": 1.1370339999999999,
+      "tp3": 1.1018679999999998,
+      "rr": 3,
+      "entryCalibrationScore": 96,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.205,
+      "validUntil": "2026-09-28T11:35:24.993Z",
+      "horizons": {
+        "h15": {
+          "r": -0.026,
+          "price": 1.1723499999999998,
+          "at": 1790593200000
+        }
+      },
+      "outcome": "LOSS_SL",
+      "rMultiple": -1.28,
+      "exit": 1.1780609999999998,
+      "closedAt": 1790593200000,
+      "costR": 0.28
+    },
     {
       "id": "KORU_SHORT_1790575777867",
       "ts": 1790575777867,
@@ -3993,12 +4061,20 @@
     }
   ],
   "stats": {
-    "total": 72,
+    "total": 76,
     "wins": 19,
-    "losses": 25,
+    "losses": 29,
     "expired": 28,
-    "sumR": -0.5100000000000011,
+    "sumR": -5.629999999999998,
     "bySetup": {
+      "TRADERSPY_COMPATIBLE_MTF": {
+        "n": 22,
+        "wins": 1,
+        "losses": 4,
+        "sumR": -3.71,
+        "winrate": 20,
+        "avgR": -0.74
+      },
       "TRADERSPY_CANDIDATE": {
         "n": 23,
         "wins": 5,
@@ -4006,14 +4082,6 @@
         "sumR": -2.320000000000001,
         "winrate": 29.4,
         "avgR": -0.14
-      },
-      "TRADERSPY_COMPATIBLE_MTF": {
-        "n": 18,
-        "wins": 1,
-        "losses": 0,
-        "sumR": 1.41,
-        "winrate": 100,
-        "avgR": 1.41
       },
       "TRADERSPY · Pullback Trend Continuation Buy (1H)": {
         "n": 1,
@@ -4042,12 +4110,12 @@
     },
     "byAction": {
       "SHORT": {
-        "n": 13,
+        "n": 17,
         "wins": 2,
-        "losses": 4,
-        "sumR": 0.6399999999999995,
-        "winrate": 33.3,
-        "avgR": 0.11
+        "losses": 8,
+        "sumR": -4.4799999999999995,
+        "winrate": 20,
+        "avgR": -0.45
       },
       "LONG": {
         "n": 59,
@@ -4060,7 +4128,7 @@
     },
     "afterTs": 1789689600000,
     "feeAware": true,
-    "winrate": 43.2,
-    "avgR": -0.01
+    "winrate": 39.6,
+    "avgR": -0.12
   }
 }
