@@ -76,7 +76,7 @@ Default fallback budget:
 
 Fallback tidak mengklaim mereplikasi proprietary internals TraderSpy. Ia mereplikasi **observable validation contract dan decision structure** yang digunakan repository ini untuk menjaga bentuk/aturan signal tetap kompatibel.
 
-Fallback geometry is now wired directly to `trade_plan.js`: structural stops are checked against the immutable 0.4% maximum, while the production engine remains the sole owner of the fixed 25x SL/TP geometry. This prevents a missing-module runtime failure and prevents the fallback from inventing a separate TP/SL contract.
+Fallback geometry is now wired directly to `trade_plan.js`: structural stops are checked against the immutable 0.4% maximum, while the production engine remains the sole owner of the fixed 20x SL/TP geometry. This prevents a missing-module runtime failure and prevents the fallback from inventing a separate TP/SL contract.
 
 ## TraderSpy adapter
 
@@ -119,7 +119,7 @@ The pipeline deliberately uses TraderSpy's screener and tracked-symbol universe 
 
 ### Candidate funnel optimization
 
-The discovery stage can screen up to 100 tracked futures symbols and return up to 50 liquid candidates, but validating only 10 of those candidates created an unnecessary bottleneck: many potentially valid setups never reached the technical/derivatives gate. The active default is now **20 validation targets**. This widens opportunity coverage without weakening the final validation criteria, fixed 25x geometry, freshness rules, Alpha Hunter gate, or delivery deduplication. The validation target count remains hard-bounded at 20 to keep MCP usage predictable.
+The discovery stage can screen up to 100 tracked futures symbols and return up to 50 liquid candidates, but validating only 10 of those candidates created an unnecessary bottleneck: many potentially valid setups never reached the technical/derivatives gate. The active default is now **20 validation targets**. This widens opportunity coverage without weakening the final validation criteria, fixed 20x geometry, freshness rules, Alpha Hunter gate, or delivery deduplication. The validation target count remains hard-bounded at 20 to keep MCP usage predictable.
 
 ## Signal normalization
 
@@ -142,7 +142,7 @@ Crypto-Signal mempertahankan Entry sebagai trigger price dari sumber signal. SL 
 - SHORT: SL di atas entry, TP di bawah entry
 - Margin: 5 USDT
 - Maximum risk: 10% margin = 0.50 USDT
-- Leverage: **25x fixed**
+- Leverage: **20x fixed**
 - Maximum SL loss: **10% margin = 0.50 USDT**
 - TP1/TP2/TP3: **30% / 60% / 120% of margin**
 
@@ -187,7 +187,7 @@ Environment variables dapat mengubah:
 
 Entry Calibration is a separate adaptive layer from Entry Geometry.
 
-- **Entry Geometry remains immutable:** 5 USDT margin, fixed 25x leverage, 0.4% maximum price-risk envelope, TP1/TP2/TP3 = 30/60/120% of margin.
+- **Entry Geometry remains immutable:** 5 USDT margin, fixed 20x leverage, 0.4% maximum price-risk envelope, TP1/TP2/TP3 = 30/60/120% of margin.
 - Entry calibration derives its usable structural distance from the **actual geometry capacity in ATR units**:
   `geometryCapacityAtr = (Entry × 0.4%) / ATR`.
 - Nearby support/resistance is usable only when it can fit inside that executable envelope.
@@ -314,7 +314,7 @@ Test adapter mencakup:
 - LONG normalization
 - SHORT normalization
 - TP/SL conversion
-- fixed margin geometry validation (10% risk, 30/60/120% reward, fixed 25x)
+- fixed margin geometry validation (10% risk, 30/60/120% reward, fixed 20x)
 - quality score
 - stale signal rejection
 - resolved signal rejection
