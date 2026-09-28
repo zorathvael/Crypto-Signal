@@ -14,8 +14,8 @@
  *   TP2 = 60% margin = 3.00 USDT
  *   TP3 = 120% margin = 6.00 USDT
  *
- * At 125 USDT notional: SL max = 0.4%, TP1 = 1.2%, TP2 = 2.4%, TP3 = 4.8%.
- * A structural SL wider than 0.4% is rejected. Leverage is never changed.
+ * At 100 USDT notional: SL max = 0.5%, TP1 = 1.5%, TP2 = 3.0%, TP3 = 6.0%.
+ * A structural SL wider than 0.5% is rejected. Leverage is never changed.
  */
 const MARGIN_USDT = 5;
 const LEVERAGE = 20;
@@ -25,7 +25,7 @@ const RISK_FRACTION = 0.10;
 const NOTIONAL_USDT = MARGIN_USDT * LEVERAGE;
 const MAX_SL_PRICE_PCT = RISK_BUDGET_USDT / NOTIONAL_USDT;
 const REWARD_MARGIN_PCTS = [30, 60, 120];
-const REWARD_PRICE_MOVE_PCTS = [1.2, 2.4, 4.8];
+const REWARD_PRICE_MOVE_PCTS = [1.5, 3.0, 6.0];
 const EPSILON = 1e-9;
 
 function finitePositive(value) {
