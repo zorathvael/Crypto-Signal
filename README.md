@@ -66,7 +66,7 @@ Fallback **tidak** menjadi sumber kedua yang selalu aktif dan tidak mengubah Tra
 
 Default fallback budget:
 - discovery: top 20 liquid perpetual USDT symbols
-- validation targets: 6
+- validation targets: 10
 - hard maximum validation targets: 10
 - per target: 3 kline requests + OI + funding + depth
 - no order execution
@@ -75,6 +75,8 @@ Default fallback budget:
 - failover is bounded to 403/429/451/5xx responses and network failures; unexpected 4xx errors are not masked
 
 Fallback tidak mengklaim mereplikasi proprietary internals TraderSpy. Ia mereplikasi **observable validation contract dan decision structure** yang digunakan repository ini untuk menjaga bentuk/aturan signal tetap kompatibel.
+
+Fallback geometry is now wired directly to `trade_plan.js`: structural stops are checked against the immutable 0.4% maximum, while the production engine remains the sole owner of the fixed 25x SL/TP geometry. This prevents a missing-module runtime failure and prevents the fallback from inventing a separate TP/SL contract.
 
 ## TraderSpy adapter
 

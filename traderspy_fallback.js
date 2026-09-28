@@ -19,8 +19,10 @@
 
 const DEFAULT_BITGET_BASE = "https://api.bitget.com";
 const DEFAULT_BINANCE_FUTURES_BASES = ["https://fapi.binance.com","https://fapi1.binance.com","https://fapi2.binance.com","https://fapi3.binance.com","https://fapi4.binance.com"];
-const DEFAULT_TARGETS = 6;
+const DEFAULT_TARGETS = 10;
 const DEFAULT_MIN_SCORE = 88;
+const { calculateTradePlan } = require("./trade_plan");
+
 const NON_CRYPTO = new Set(["AAPL","AMZN","AMD","COIN","GOOG","GOOGL","META","MSFT","MSTR","NFLX","NVDA","PLTR","TSLA","SOXL","CRCL","XAU","XAG"]);
 
 function n(v) { const x=Number(v); return Number.isFinite(x)?x:null; }
@@ -160,22 +162,15 @@ function tfAnalysis(c) {
   return {direction,score,rsi:r,atr:a,adx:d,pressure,slope,last,e9,e21,prevE9,prevE21};
 }
 
-function levels(c, side, a) {
+function levels(c, side) {
   const entry=c.at(-1).close;
   const look=c.slice(-40);
   const low=Math.min(...look.map(x=>x.low));
   const high=Math.max(...look.map(x=>x.high));
-  const minRisk=Math.max(a*1.5,entry*0.004);
-  if(side==="LONG"){
-    const structural=Math.min(low,entry-minRisk*0.75);
-    const sl=Math.min(entry-minRisk,structural);
-    const risk=Math.max(entry-sl,minRisk);
-    return {entry,sl:entry-risk,tp1:entry+risk*2,tp2:entry+risk*4,tp3:entry+risk*6};
-  }
-  const structural=Math.max(high,entry+minRisk*0.75);
-  const sl=Math.max(entry+minRisk,structural);
-  const risk=Math.max(sl-entry,minRisk);
-  return {entry,sl:entry+risk,tp1:entry-risk*2,tp2:entry-risk*4,tp3:entry-risk*6};
+  // Preserve the production rule: structure is only an executable candidate
+  // when its stop fits inside the immutable 0.4% price-risk envelope.
+  // calculateTradePlan() is the single source of truth for the actual SL/TP.
+  return {entry,sl:side==="LONG"?low:high};
 }
 
 function derivativeScore(side, oi, funding, depth) {
@@ -219,7 +214,7 @@ async function buildSignals(snapshot,provider,marketLoader) {
     if(tfs.some(x=>!x)) continue;
     const dirs=tfs.map(x=>x.direction),longN=dirs.filter(x=>x==="LONG").length,shortN=dirs.filter(x=>x==="SHORT").length,side=longN>=2?"LONG":shortN>=2?"SHORT":null;
     if(!side) continue;
-    const lv=levels(market.k1h,side,tfs[1].atr);
+    const lv=levels(market.k1h,side);
     let plan;
     try { plan=calculateTradePlan({action:side,entry:lv.entry,sl:lv.sl}); } catch(e) { console.warn("Fixed 25x geometry reject "+d.symbol+": "+e.message); continue; }
     const risk=Math.abs(lv.entry-plan.sl), rr=plan.rr;

@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { tfAnalysis, derivativeScore, levels, binance } = require("./traderspy_fallback");
+const { calculateTradePlan } = require("./trade_plan");
 const http = require("node:http");
 
 function candles(n=100, drift=0.2){
@@ -27,17 +28,18 @@ test("fallback derivatives gate rejects adverse funding",()=>{
   assert.equal(out.adverse,true);
 });
 
-test("fallback levels preserve directional geometry and R:R",()=>{
+test("fallback levels provide a structural stop and production geometry owns TP/SL",()=>{
   const c=candles(100,0.2);
-  const a=tfAnalysis(c).atr;
-  const lv=levels(c,"LONG",a);
+  const lv=levels(c,"LONG");
   assert.ok(lv.sl<lv.entry);
-  assert.ok(lv.tp1>lv.entry);
-  assert.ok(lv.tp2>lv.tp1);
-  assert.ok(lv.tp3>lv.tp2);
-  assert.equal(Number(((lv.tp1-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),2);
-  assert.equal(Number(((lv.tp2-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),4);
-  assert.equal(Number(((lv.tp3-lv.entry)/(lv.entry-lv.sl)).toFixed(6)),6);
+  assert.ok(Number.isFinite(lv.entry));
+  const plan=calculateTradePlan({action:"LONG",entry:100,sl:99.6});
+  assert.equal(plan.leverage,25);
+  assert.equal(plan.marginUsdt,5);
+  assert.equal(plan.sl,99.6);
+  assert.equal(Number(((plan.tp1-100)/100*100).toFixed(6)),1.2);
+  assert.equal(Number(((plan.tp2-100)/100*100).toFixed(6)),2.4);
+  assert.equal(Number(((plan.tp3-100)/100*100).toFixed(6)),4.8);
 });
 
 
