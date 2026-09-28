@@ -239,7 +239,7 @@ function normalizeSignal(raw, now = Date.now(), options = {}) {
     technicalDistanceAtr: null,
     geometryCapacityAtr: null,
     geometryUse: null,
-    maxRiskPricePct: 0.004,
+    maxRiskPricePct: 0.005,
     reasons: ["provider trigger retained; no independent technical calibration payload was supplied"],
   };
   if (![sl, tp1, tp2, tp3, rr, leverage].every(Number.isFinite) || rr <= 0) return null;
@@ -478,9 +478,9 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
   const entry = entryCalibration.entry;
 
   // Layer 2: geometry is deterministic and downstream of Entry Calibration.
-  // No ATR-based SL threshold is used here. The fixed 25x geometry owns the
+  // No ATR-based SL threshold is used here. The fixed 20x geometry owns the
   // executable SL envelope; structure was already used to calibrate Entry.
-  const maxRisk = entry * 0.004;
+  const maxRisk = entry * 0.005;
 
   const sl = action === "LONG" ? entry - maxRisk : entry + maxRisk;
 
