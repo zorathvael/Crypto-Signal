@@ -403,6 +403,77 @@ function applyValidation(signal,discovery,technical,derivatives,detail,alpha){
   return {...signal,qualityScore:finalScore,probability:finalScore,validation:{passed:technical?.pass===true&&derivatives?.pass===true&&alpha?.pass===true&&finalScore>=threshold,stale,ageMin:+ageMin.toFixed(1),threshold,discoveryScore:Number(discovery?.score||0),technicalScore:Number(technical?.score||0),derivativesScore:Number(derivatives?.score||0),detailScore:Number.isFinite(ds)?ds:null,alphaScore:Number(alpha?.alphaScore||0),alphaReasons:alpha?.reasons||[],reasons:[...(technical?.reasons||[]),...(derivatives?.reasons||[]),...(detail?.aiReview?.decision?[`aiReview=${detail.aiReview.decision}`]:[])]}};
 }
 
+
+function recalibratePublishedSignal(signal, technicalPayload) {
+  const tfs = timeframeMap(technicalPayload);
+  const h1 = tfs.get("1h") || tfs.get("15m");
+  const livePrice = finiteNumber(technicalPayload?.price);
+  const atr = finiteNumber(h1?.indicators?.atr?.value);
+  if (!h1 || !livePrice || !atr || atr <= 0) return null;
+
+  const levels = h1?.indicators?.levels || {};
+  const supports = Array.isArray(levels.support)
+    ? levels.support.map(x => Number(x?.price)).filter(Number.isFinite)
+    : [];
+  const resistances = Array.isArray(levels.resistance)
+    ? levels.resistance.map(x => Number(x?.price)).filter(Number.isFinite)
+    : [];
+
+  // Published-provider signals are not exempt from timing calibration.
+  // The provider price is treated as a discovery/trigger hint only.
+  const timing = calibrateTiming({
+    action: signal.action,
+    livePrice,
+    technicalPrice: livePrice,
+    atr,
+    supports,
+    resistances,
+  });
+  if (!timing.pass || !Number.isFinite(timing.entry)) return null;
+
+  const structuralSl = timing.structuralSl;
+  if (!Number.isFinite(structuralSl) || structuralSl <= 0) return null;
+
+  let plan;
+  try {
+    plan = calculateTradePlan({
+      action: signal.action,
+      entry: timing.entry,
+      sl: structuralSl,
+    });
+  } catch {
+    return null;
+  }
+
+  const risk = Math.abs(timing.entry - plan.sl);
+  const rr = risk > 0 ? Math.abs(plan.tp1 - timing.entry) / risk : 0;
+  if (![timing.entry, plan.sl, plan.tp1, plan.tp2, plan.tp3, plan.leverage, rr].every(Number.isFinite)) return null;
+
+  return {
+    ...signal,
+    entry: timing.entry,
+    sl: plan.sl,
+    tp1: plan.tp1,
+    tp2: plan.tp2,
+    tp3: plan.tp3,
+    rr: +rr.toFixed(2),
+    riskPct: +plan.slDistancePercent.toFixed(3),
+    marginRiskPct: plan.riskMarginPercent,
+    leverage: plan.leverage,
+    rewardMarginPcts: plan.rewardMarginPcts,
+    mode: timing.timingMode || timing.mode || "ENTRY_NOW",
+    entryCalibrationScore: timing.timingScore,
+    entryCalibrationDistanceAtr: timing.distanceAtr,
+    entryCalibrationGeometryCapacityAtr: timing.geometryCapacityAtr,
+    timingCalibration: timing,
+    traderSpy: {
+      ...(signal.traderSpy || {}),
+      providerTriggerPrice: signal.entry,
+      geometry: "MARGIN_PERCENT",
+    },
+  };
+}
+
 function buildScreenCandidate(discovery, technicalPayload, now, actionHint = null) {
   const tfs = timeframeMap(technicalPayload);
   const h1 = tfs.get("1h") || tfs.get("15m");
@@ -660,6 +731,15 @@ async function getTraderSpyIntelligence(options = {}){
     }
 
     let signal=target.published;
+    if(signal){
+      // Every publication path must use the same live ENTRY NOW timing contract.
+      // raw provider price is retained only as an audit/reference field.
+      signal=recalibratePublishedSignal(signal,technicalPayload);
+      if(!signal){
+        console.log("TraderSpy timing calibration rejected published signal "+(target.published?.base||target.discovery.symbol));
+        continue;
+      }
+    }
     if(!signal){
       signal=buildScreenCandidate(target.discovery,technicalPayload,now,target.discovery.bias==="bullish"?"LONG":target.discovery.bias==="bearish"?"SHORT":target.discovery.trend==="up"?"LONG":target.discovery.trend==="down"?"SHORT":null);
       if(!signal){
