@@ -2948,6 +2948,11 @@ function registerNewSignals(log, signals) {
       tp2: s.tp2,
       tp3: s.tp3,
       rr: s.rr,
+      qualityScore: Number.isFinite(Number(s.qualityScore)) ? Number(s.qualityScore) : null,
+      rawQualityScore: Number.isFinite(Number(s.rawQualityScore)) ? Number(s.rawQualityScore) : null,
+      expectedR: Number.isFinite(Number(s.calibration?.expectedR)) ? Number(s.calibration.expectedR) : null,
+      calibration: s.calibration || null,
+      calibrationFeatures: s.calibrationFeatures || null,
       entryCalibrationScore: Number.isFinite(Number(s.entryCalibrationScore ?? s.entryCalibration?.score))
         ? Number(s.entryCalibrationScore ?? s.entryCalibration.score) : null,
       entryCalibrationDistanceAtr: Number.isFinite(Number(s.entryCalibrationDistanceAtr ?? s.entryCalibration?.distanceAtr))
@@ -3032,12 +3037,12 @@ async function runTraderSpyPipeline() {
   let signals;
   let intelligenceSource = "TraderSpy";
   try {
-    signals = await runTraderSpyScan({ history: loadOutcomeLog() });
+    signals = await runTraderSpyScan({ history: outcomeLog });
   } catch (e) {
     if (e?.quota || e?.code === "HTTP_429") {
       console.warn("TraderSpy daily quota exhausted — activating TraderSpy-compatible Binance fallback.");
       try {
-        const fallback = await getFallbackIntelligence();
+        const fallback = await getFallbackIntelligence({ history: outcomeLog });
         signals = fallback.signals;
         intelligenceSource = "TraderSpy-compatible fallback";
         console.log(

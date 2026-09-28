@@ -33,6 +33,7 @@ jobs:
           node --check traderspy.js
           node --check alpha_hunter.js
           node --check scanner.js
+          node --check calibration.js
           npm test
 
       - name: Install SVG renderer (Square card)
@@ -61,6 +62,8 @@ jobs:
           TRADERSPY_STALE_MIN_SCORE: "90"
           TRADERSPY_MIN_SCORE: "80"
           ALPHA_MIN_SCORE: "72"
+          CALIBRATED_MIN_PROB: "45"
+          CALIBRATED_MAX_NEGATIVE_R: "-0.25"
           ALPHA_HISTORY_AFTER_TS: "2026-09-18T00:00:00Z"
         run: node scanner.js
 

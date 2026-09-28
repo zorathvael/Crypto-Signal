@@ -446,3 +446,29 @@ The TraderSpy normalization path now separates provider discovery price from pro
 ## Operational reliability rule
 
 Perubahan produksi wajib diperlakukan sebagai perubahan runtime, bukan hanya perubahan kode. Sebelum merge: cek syntax, unit test, workflow dry-run, konsumsi quota/tool call, error-path provider, delivery fan-out, dedup, batching Square, dan sinkronisasi README. Jangan menaikkan validation target tanpa menghitung dampaknya terhadap quota harian. Jika provider quota habis, runtime harus berhenti aman tanpa duplicate post, tanpa outcome mutation, dan tanpa crash yang tidak terkontrol.
+
+## Empirical calibration v4.1
+
+The scanner no longer treats the provider quality score as a probability. Before a signal can publish, the engine snapshots the live state and calibrates the result against resolved outcomes in `signals-log.json`.
+
+Calibration dimensions:
+- historical outcome rate with Bayesian/Laplace smoothing;
+- direction and setup;
+- 15m/1h/4h trend alignment;
+- order-flow pressure from taker buy/sell ratio;
+- funding/crowding;
+- open-interest regime;
+- volatility regime from ATR/price;
+- live entry timing / distance-to-ATR;
+- raw quality-score band.
+
+Legacy outcomes remain usable for cold-start calibration through action/setup/quality history. New signals persist the complete live feature snapshot so later outcomes can calibrate the feature interactions without inventing historical values.
+
+The published `probability` field is now the empirical calibrated posterior, not a fixed 99-style heuristic score. The raw ranking score is retained separately for diagnostics. Calibration is hierarchical: sparse cohorts are shrunk toward the global outcome rate instead of being allowed to produce unstable 0%/100% estimates.
+
+Runtime thresholds:
+- `CALIBRATED_MIN_PROB=45`
+- `CALIBRATED_MAX_NEGATIVE_R=-0.25`
+- existing MTF, derivatives, Alpha Hunter and fixed trade-geometry gates remain mandatory.
+
+This is intentionally an online/rolling calibration system. It does not claim that a calibrated historical probability is a guarantee of future returns.
