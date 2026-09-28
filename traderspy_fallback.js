@@ -22,6 +22,7 @@ const DEFAULT_BINANCE_FUTURES_BASES = ["https://fapi.binance.com","https://fapi1
 const DEFAULT_TARGETS = 10;
 const DEFAULT_MIN_SCORE = 88;
 const { calculateTradePlan } = require("./trade_plan");
+const { calibrateTiming } = require("./timing_calibration");
 
 const NON_CRYPTO = new Set(["AAPL","AMZN","AMD","COIN","GOOG","GOOGL","META","MSFT","MSTR","NFLX","NVDA","PLTR","TSLA","SOXL","CRCL","XAU","XAG"]);
 
@@ -162,68 +163,138 @@ function tfAnalysis(c) {
   return {direction,score,rsi:r,atr:a,adx:d,pressure,slope,last,e9,e21,prevE9,prevE21};
 }
 
+function nearestExecutableStructure(c, side, livePrice) {
+  if (!Array.isArray(c) || c.length < 20 || !Number.isFinite(livePrice) || livePrice <= 0) return null;
+  const maxDistance = livePrice * 0.005;
+  const recent = c.slice(-48);
+  const candidates = [];
+  for (let i = 2; i < recent.length - 2; i++) {
+    const x = recent[i];
+    if (side === "LONG" && x.low < livePrice && livePrice - x.low <= maxDistance &&
+        x.low <= recent[i - 1].low && x.low <= recent[i + 1].low) candidates.push(x.low);
+    if (side === "SHORT" && x.high > livePrice && x.high - livePrice <= maxDistance &&
+        x.high >= recent[i - 1].high && x.high >= recent[i + 1].high) candidates.push(x.high);
+  }
+  const extrema = side === "LONG"
+    ? recent.map(x => x.low).filter(x => Number.isFinite(x) && x < livePrice && livePrice - x <= maxDistance)
+    : recent.map(x => x.high).filter(x => Number.isFinite(x) && x > livePrice && x - livePrice <= maxDistance);
+  const levels = [...new Set([...candidates, ...extrema].map(x => +x.toFixed(12)))];
+  if (!levels.length) return null;
+  levels.sort((a,b) => Math.abs(livePrice-a)-Math.abs(livePrice-b));
+  return levels[0];
+}
+
 function levels(c, side) {
-  const entry=c.at(-1).close;
-  const look=c.slice(-40);
-  const low=Math.min(...look.map(x=>x.low));
-  const high=Math.max(...look.map(x=>x.high));
-  // Preserve the production rule: structure is only an executable candidate
-  // when its stop fits inside the immutable 0.4% price-risk envelope.
-  // calculateTradePlan() is the single source of truth for the actual SL/TP.
-  return {entry,sl:side==="LONG"?low:high};
+  const entry = c?.at?.(-1)?.close;
+  const structuralSl = nearestExecutableStructure(c, side, entry);
+  return { entry, sl: structuralSl };
 }
 
-function derivativeScore(side, oi, funding, depth) {
-  const o=n(oi?.openInterest);
-  const f=n(funding?.lastFundingRate);
-  const bid=n(depth?.bids?.[0]?.[1]), ask=n(depth?.asks?.[0]?.[1]);
-  let score=0, adverse=false;
-  if(Number.isFinite(f)){
-    if(side==="LONG" && f>0.0005){score-=4;adverse=true;}
-    else if(side==="SHORT" && f<-0.0005){score-=4;adverse=true;}
-    else score+=2;
-  }
-  if(Number.isFinite(o)&&o>0)score+=2;
-  if(Number.isFinite(bid)&&Number.isFinite(ask)&&bid>0&&ask>0){
-    const imbalance=(bid-ask)/(bid+ask);
-    if(side==="LONG"&&imbalance>0.03)score+=4;
-    else if(side==="SHORT"&&imbalance<-0.03)score+=4;
-    else score+=1;
-  }
-  return {score:Math.max(0,Math.min(10,score)),adverse};
-}
-
-function candidateScore(discovery, tfs, deriv, rr) {
-  const dirs=tfs.map(x=>x.direction).filter(x=>x!=="NEUTRAL");
-  const side=dirs.length>=2 && dirs.filter(x=>x===dirs[0]).length>=2 ? dirs[0] : null;
-  if(!side)return {side:null,score:0};
-  const aligned=tfs.filter(x=>x.direction===side).length;
-  let score=72;
-  score+=Math.min(8,discovery);
-  score+=aligned>=3?8:aligned===2?5:0;
-  score+=tfs.reduce((s,x)=>s+(x.adx>=20?2:0),0);
-  score+=Math.max(0,deriv);
-  if(rr>=2.5)score+=4; else if(rr>=2)score+=2;
-  return {side,score:Math.min(99,Math.round(score))};
+function fallbackTiming(candles15, candles1h, side, livePrice) {
+  const atrValue = atr(candles1h) || atr(candles15);
+  const structural = nearestExecutableStructure(candles1h, side, livePrice);
+  if (!Number.isFinite(atrValue) || !structural) return null;
+  const timing = calibrateTiming({
+    action: side,
+    livePrice,
+    technicalPrice: livePrice,
+    atr: atrValue,
+    supports: side === "LONG" ? [structural] : [],
+    resistances: side === "SHORT" ? [structural] : [],
+  });
+  return timing.pass ? timing : null;
 }
 
 async function buildSignals(snapshot,provider,marketLoader) {
   const ranked=snapshot.ranked,targetLimit=clamp(Number(process.env.FALLBACK_TARGETS||DEFAULT_TARGETS),1,10),targets=ranked.slice(0,targetLimit),out=[];
   for(const d of targets) try {
-    const market=await marketLoader(d.symbol), tfs=[tfAnalysis(market.k15),tfAnalysis(market.k1h),tfAnalysis(market.k4h)];
+    const market=await marketLoader(d.symbol);
+    const tfs=[tfAnalysis(market.k15),tfAnalysis(market.k1h),tfAnalysis(market.k4h)];
     if(tfs.some(x=>!x)) continue;
     const dirs=tfs.map(x=>x.direction),longN=dirs.filter(x=>x==="LONG").length,shortN=dirs.filter(x=>x==="SHORT").length,side=longN>=2?"LONG":shortN>=2?"SHORT":null;
     if(!side) continue;
-    const lv=levels(market.k1h,side);
+
+    const livePrice=Number(market.k15?.at?.(-1)?.close ?? d.price);
+    const timing=fallbackTiming(market.k15,market.k1h,side,livePrice);
+    if(!timing || !Number.isFinite(timing.entry) || !Number.isFinite(timing.structuralSl)) {
+      console.warn("Timing reject "+d.symbol+": no executable structure inside fixed 0.5% envelope");
+      continue;
+    }
+
     let plan;
-    try { plan=calculateTradePlan({action:side,entry:lv.entry,sl:lv.sl}); } catch(e) { console.warn("Fixed 20x geometry reject "+d.symbol+": "+e.message); continue; }
-    const risk=Math.abs(lv.entry-plan.sl), rr=plan.rr;
-    if(!Number.isFinite(rr)||rr<3) continue;
-    const ds=derivativeScore(side,market.oi,market.funding,market.depth); if(ds.adverse) continue;
-    const disc=Math.min(10,Math.round(Math.log10(Math.max(d.quoteVolume,1))-6)),cs=candidateScore(disc,tfs,ds.score,rr);
+    try { plan=calculateTradePlan({action:side,entry:timing.entry,sl:timing.structuralSl}); }
+    catch(e) { console.warn("Fixed 20x geometry reject "+d.symbol+": "+e.message); continue; }
+
+    const ds=derivativeScore(side,market.oi,market.funding,market.depth);
+    if(ds.adverse) continue;
+    const disc=Math.min(10,Math.round(Math.log10(Math.max(d.quoteVolume,1))-6));
+    const cs=candidateScore(disc,tfs,ds.score,plan.rr);
     if(cs.side!==side) continue;
-    const threshold=Number(process.env.FALLBACK_MIN_SCORE||DEFAULT_MIN_SCORE); if(cs.score<threshold) continue;
-    out.push({id:`fallback-${provider.toLowerCase()}-${d.symbol}-${Date.now()}`,source:"Public-Market-Compatible",origin:provider+" public futures data · compatible fallback",base:d.symbol.replace(/USDT$/,""),instId:d.symbol,action:side,probability:cs.score,qualityScore:cs.score,signalStrength:cs.score>=96?"very_strong":cs.score>=90?"strong":"moderate",importance:d.quoteVolume>=50000000?"high":"medium",strategyName:"TraderSpy-Compatible MTF",timeframe:"1h",setup:"TRADERSPY_COMPATIBLE_MTF",mode:"TRADERSPY_COMPATIBLE",entry:lv.entry,sl:plan.sl,tp1:plan.tp1,tp2:plan.tp2,tp3:plan.tp3,rr:+rr.toFixed(2),riskPct:+(plan.slDistancePercent).toFixed(3),leverage:plan.leverage,marginUsdt:plan.marginUsdt,riskMarginPercent:plan.riskMarginPercent,rewardMarginPcts:plan.rewardMarginPcts,rewardPriceMovePcts:plan.rewardPriceMovePcts,geometry:plan.geometry,entryCalibration:{pass:true,entry:lv.entry,mode:"FALLBACK_MARKET_ANCHOR"},regime:{atrPct:+(tfs[1].atr/lv.entry*100).toFixed(3)},book:{source:provider+" public futures depth"},m5:{volume:{side:"—"},rsi:null},trends:{m15:dirs[0],h1:dirs[1],h4:dirs[2]},confluence:dirs.filter(x=>x===side).length,persistent:false,volConfirm:Math.abs(tfs[0].pressure)>0.08,ev:null,ts:Date.now(),validUntil:new Date(Date.now()+3600000).toISOString(),horizons:{},validation:{passed:true,stale:false,ageMin:0,threshold,discoveryScore:disc,technicalScore:tfs.reduce((s,x)=>s+Math.max(0,x.score),0),derivativesScore:ds.score,detailScore:null,reasons:["2/3+ MTF agreement","ATR/structure levels","derivatives sanity","public futures market data"]},traderSpy:{id:"",resolutionStatus:"pending",triggeredConditions:[],targetPct:null,fallback:true}});
+    const threshold=Number(process.env.FALLBACK_MIN_SCORE||DEFAULT_MIN_SCORE);
+    const technicalScore=tfs.reduce((s,x)=>s+Math.max(0,x.score),0);
+    const timingBonus=Math.round(Math.max(0,Math.min(10,(timing.timingScore||timing.score||0)/10)));
+    const finalScore=Math.min(99,Math.round(cs.score + timingBonus));
+    if(finalScore<threshold) continue;
+
+    out.push({
+      id:`fallback-${provider.toLowerCase()}-${d.symbol}-${Date.now()}`,
+      source:"Public-Market-Compatible",
+      origin:provider+" public futures data · compatible fallback",
+      base:d.symbol.replace(/USDT$/,""),
+      instId:d.symbol,
+      action:side,
+      probability:finalScore,
+      qualityScore:finalScore,
+      signalStrength:finalScore>=96?"very_strong":finalScore>=90?"strong":"moderate",
+      importance:d.quoteVolume>=50000000?"high":"medium",
+      strategyName:"TraderSpy-Compatible MTF",
+      timeframe:"1h",
+      setup:"TRADERSPY_COMPATIBLE_MTF",
+      mode:timing.timingMode||timing.mode||"ENTRY_NOW",
+      entry:timing.entry,
+      sl:plan.sl,
+      tp1:plan.tp1,
+      tp2:plan.tp2,
+      tp3:plan.tp3,
+      rr:+plan.rr.toFixed(2),
+      riskPct:+plan.slDistancePercent.toFixed(3),
+      leverage:plan.leverage,
+      marginUsdt:plan.marginUsdt,
+      riskMarginPercent:plan.riskMarginPercent,
+      rewardMarginPcts:plan.rewardMarginPcts,
+      rewardPriceMovePcts:plan.rewardPriceMovePcts,
+      geometry:plan.geometry,
+      structuralSl:timing.structuralSl,
+      entryCalibration:{
+        ...timing,
+        source:"fallback_live_market",
+        providerTriggerPrice:null,
+      },
+      regime:{atrPct:+(tfs[1].atr/timing.entry*100).toFixed(3)},
+      book:{source:provider+" public futures depth"},
+      m5:{volume:{side:"—"},rsi:null},
+      trends:{m15:dirs[0],h1:dirs[1],h4:dirs[2]},
+      confluence:dirs.filter(x=>x===side).length,
+      persistent:false,
+      volConfirm:Math.abs(tfs[0].pressure)>0.08,
+      ev:null,
+      ts:Date.now(),
+      validUntil:new Date(Date.now()+3600000).toISOString(),
+      horizons:{},
+      validation:{
+        passed:true,
+        stale:false,
+        ageMin:0,
+        threshold,
+        discoveryScore:disc,
+        technicalScore,
+        derivativesScore:ds.score,
+        detailScore:null,
+        timingScore:timing.timingScore||timing.score||0,
+        reasons:["2/3+ MTF agreement","live Entry NOW timing calibration","executable structure within 0.5% envelope","derivatives sanity","public futures market data"]
+      },
+      traderSpy:{id:"",resolutionStatus:"pending",triggeredConditions:[],targetPct:null,fallback:true,geometry:"MARGIN_PERCENT"}
+    });
   } catch(e) { console.warn("Fallback skipped "+provider+" "+d.symbol+": "+e.message); }
   out.sort((a,b)=>b.qualityScore-a.qualityScore||b.ts-a.ts);
   return {signals:out,discovered:ranked.length,fetched:ranked.length,validated:out.length,validationCalls:targets.length,source:provider.toLowerCase()};
