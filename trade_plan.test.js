@@ -44,7 +44,7 @@ test("SHORT geometry is mirrored exactly", () => {
 
 test("entry calibration remains independent from margin geometry", () => {
   const { calibrateEntry } = require("./entry_calibration");
-  const result = calibrateEntry({ action: "LONG", livePrice: 100, technicalPrice: 100, atr: 2, supports: [99], resistances: [103] });
+  const result = calibrateEntry({ action: "LONG", livePrice: 100, technicalPrice: 100, atr: 2, supports: [99.5], resistances: [103] });
   assert.equal(result.pass, true);
   assert.equal(result.entry, 100);
   const plan = calculateTradePlan({ entry: result.entry, sl: result.entry * 0.995, action: "LONG" });
