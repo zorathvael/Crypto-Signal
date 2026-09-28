@@ -37,9 +37,9 @@ test("fallback levels provide a structural stop and production geometry owns TP/
   assert.equal(plan.leverage,25);
   assert.equal(plan.marginUsdt,5);
   assert.equal(plan.sl,99.6);
-  assert.equal(Number(((plan.tp1-plan.entry)/plan.entry*100).toFixed(6)),1.2);
-  assert.equal(Number(((plan.tp2-plan.entry)/plan.entry*100).toFixed(6)),2.4);
-  assert.equal(Number(((plan.tp3-plan.entry)/plan.entry*100).toFixed(6)),4.8);
+  assert.equal(Number(((plan.tp1-100)/100*100).toFixed(6)),1.2);
+  assert.equal(Number(((plan.tp2-100)/100*100).toFixed(6)),2.4);
+  assert.equal(Number(((plan.tp3-100)/100*100).toFixed(6)),4.8);
 });
 
 
