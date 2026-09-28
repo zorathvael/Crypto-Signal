@@ -22,6 +22,29 @@
       "regime": "normal",
       "validUntil": "2026-09-28T01:09:50.714Z",
       "horizons": {}
+    },
+    {
+      "id": "LINK_LONG_1790564636785",
+      "ts": 1790564636785,
+      "base": "LINK",
+      "instId": "LINKUSDT",
+      "action": "LONG",
+      "fingerprint": "LINK|LONG|TRADERSPY_CANDIDATE|-0.40|1.20|2.40|4.80",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 14.107,
+      "sl": 14.050571999999999,
+      "tp1": 14.276283999999999,
+      "tp2": 14.445568,
+      "tp3": 14.784136,
+      "rr": 3,
+      "entryCalibrationScore": 83,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.425,
+      "regime": "normal",
+      "validUntil": "2026-09-28T04:03:39.272Z",
+      "horizons": {}
     }
   ],
   "closed": [
