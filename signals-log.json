@@ -44,7 +44,13 @@
       "entryCalibrationGeometryCapacityAtr": 0.522,
       "regime": "compressed",
       "validUntil": "2026-09-28T05:16:34.834Z",
-      "horizons": {}
+      "horizons": {
+        "h15": {
+          "r": 0.345,
+          "price": 21.011,
+          "at": 1790570700000
+        }
+      }
     },
     {
       "id": "BZ_LONG_1790570497155",
@@ -67,6 +73,35 @@
       "entryCalibrationGeometryCapacityAtr": 1.337,
       "regime": "compressed",
       "validUntil": "2026-09-28T05:41:17.599Z",
+      "horizons": {
+        "h15": {
+          "r": 0.162,
+          "price": 99.12,
+          "at": 1790571600000
+        }
+      }
+    },
+    {
+      "id": "ONDO_LONG_1790572799516",
+      "ts": 1790572799516,
+      "base": "ONDO",
+      "instId": "ONDOUSDT",
+      "action": "LONG",
+      "fingerprint": "ONDO|LONG|TRADERSPY_CANDIDATE|-0.50|1.50|3.00|6.00",
+      "setup": "TRADERSPY_CANDIDATE",
+      "mode": "TRADERSPY_MTF",
+      "probability": 99,
+      "entry": 0.5797,
+      "sl": 0.5768015,
+      "tp1": 0.5883955,
+      "tp2": 0.597091,
+      "tp3": 0.614482,
+      "rr": 3,
+      "entryCalibrationScore": 96,
+      "entryCalibrationDistanceAtr": 0,
+      "entryCalibrationGeometryCapacityAtr": 0.199,
+      "regime": "normal",
+      "validUntil": "2026-09-28T06:19:44.928Z",
       "horizons": {}
     }
   ],
