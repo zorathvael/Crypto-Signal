@@ -1,6 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { tfAnalysis, derivativeScore, levels, binance } = require("./traderspy_fallback");
+
+// Regression guard: every exported fallback helper must remain callable after refactors.
+assert.equal(typeof tfAnalysis, "function");
+assert.equal(typeof derivativeScore, "function");
+assert.equal(typeof levels, "function");
+assert.equal(typeof binance, "function");
 const { calculateTradePlan } = require("./trade_plan");
 const http = require("node:http");
 
