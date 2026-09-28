@@ -2,11 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { calculateTradePlan } = require("./trade_plan");
 
-test("fixed production geometry is 5 USDT at 25x", () => {
+test("fixed production geometry is 5 USDT at 20x", () => {
   const plan = calculateTradePlan({ entry: 100, sl: 99.6, action: "LONG" });
   assert.equal(plan.marginUsdt, 5);
   assert.equal(plan.leverage, 25);
-  assert.equal(plan.notionalUsdt, 125);
+  assert.equal(plan.notionalUsdt, 100);
   assert.equal(plan.riskMarginPercent, 10);
   assert.equal(plan.riskBudgetUsdt, 0.5);
   assert.equal(plan.sl, 99.6);
@@ -14,7 +14,7 @@ test("fixed production geometry is 5 USDT at 25x", () => {
 });
 
 test("fixed geometry rejects a structural SL wider than 0.4%", () => {
-  assert.throws(() => calculateTradePlan({ entry: 100, sl: 99, action: "LONG" }), /fixed 25x geometry/);
+  assert.throws(() => calculateTradePlan({ entry: 100, sl: 99, action: "LONG" }), /fixed 20x geometry/);
 });
 
 test("narrower structural SL does not change fixed geometry", () => {
