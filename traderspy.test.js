@@ -192,7 +192,8 @@ test("discovery candidates are rejected when multi-timeframe data has no directi
 test("published signals are recalibrated from live market price before validation", () => {
   const signal = normalizeSignal(sample({ price: 99 }), NOW);
   assert.ok(signal);
-  assert.equal(signal.entry, 99);
+  assert.equal(signal.entry, null);
+  assert.equal(signal.providerTriggerPrice, 99);
 
   const payload = {
     price: 100,
