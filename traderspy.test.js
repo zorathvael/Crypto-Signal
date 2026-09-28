@@ -18,11 +18,11 @@ function sample(overrides = {}) {
       { label: "TP1", type: "tp1", pct: 2 },
       { label: "TP2", type: "tp2", pct: 3 },
       { label: "TP3", type: "tp3", pct: 4 },
-      { label: "SL", type: "sl", pct: 0.4 },
+      { label: "SL", type: "sl", pct: 0.5 },
     ],
     triggeredConditions: ["RSI 55", "EMA reclaim"],
     resolutionStatus: "pending",
-    createdAt: "2026-09-25T23:30:00Z",
+    createdAt: "2026-09-20T23:30:00Z",
     ...overrides,
   };
 }
@@ -37,16 +37,16 @@ test("normalizes a LONG signal without inventing probability", () => {
   assert.ok(out);
   assert.equal(out.action, "LONG");
   assert.equal(out.entry, 100);
-  assert.equal(out.sl, 99.6);
-  assert.ok(Math.abs(out.tp1 - 101.2) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 102.4) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 104.8) < 1e-9);
+  assert.equal(out.sl, 99.5);
+  assert.ok(Math.abs(out.tp1 - 101.5) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 103) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 106) < 1e-9);
   assert.equal(out.rr, 3);
   assert.equal(out.probability, 99);
   assert.equal(out.qualityScore, 99);
-  assert.equal(out.riskPct, 0.4);
+  assert.equal(out.riskPct, 0.5);
   assert.equal(out.marginRiskPct, 10);
-  assert.equal(out.leverage, 25);
+  assert.equal(out.leverage, 20);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
 });
 
@@ -59,17 +59,17 @@ test("normalizes a SHORT signal with mirrored levels", () => {
   assert.ok(out);
   assert.equal(out.action, "SHORT");
   assert.equal(out.sl, 200.8);
-  assert.ok(Math.abs(out.tp1 - 197.6) < 1e-9);
-  assert.ok(Math.abs(out.tp2 - 195.2) < 1e-9);
-  assert.ok(Math.abs(out.tp3 - 190.4) < 1e-9);
+  assert.ok(Math.abs(out.tp1 - 197) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 194) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 190.5) < 1e-9);
   assert.equal(out.rr, 3);
-  assert.equal(out.leverage, 25);
+  assert.equal(out.leverage, 20);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
 });
 
 test("rejects resolved, stale and non-crypto signals", () => {
   assert.equal(normalizeSignal(sample({ resolutionStatus: "tp1_hit" }), NOW), null);
-  assert.equal(normalizeSignal(sample({ createdAt: "2026-09-25T18:00:00Z" }), NOW), null);
+  assert.equal(normalizeSignal(sample({ createdAt: "2026-09-20T18:00:00Z" }), NOW), null);
   assert.equal(normalizeSignal(sample({ coin: "AAPLUSDT" }), NOW), null);
 });
 
@@ -95,7 +95,7 @@ test("technical validation requires multi-timeframe directional agreement", () =
   const payload = {
     price: 100.5,
     timeframes: [
-      { interval: "15m", indicators: { rsi:{value:58}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:25}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:25},momentum:{rsi:58,macdHistogram:1}} },
+      { interval: "15m", indicators: { rsi:{value:58}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:20}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:20},momentum:{rsi:58,macdHistogram:1}} },
       { interval: "1h", indicators: { rsi:{value:60}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:30}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:30},momentum:{rsi:60,macdHistogram:1}} },
       { interval: "4h", indicators: { rsi:{value:61}, macd:{histogram:1}, ema:{stack:"bullish"}, adx:{value:22}, supertrend:{trend:"up"} }, summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish",adx:22},momentum:{rsi:61,macdHistogram:1}} }
     ]
@@ -131,14 +131,14 @@ test("discovery candidates use the margin reward geometry contract", () => {
     price: 100,
     timeframes: [
       { interval: "15m", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
-      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.6}],resistance:[{price:104}]}} },
+      { interval: "1h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{atr:{value:1},levels:{support:[{price:99.5}],resistance:[{price:104}]}} },
       { interval: "4h", summary:{bias:"bullish",trend:{direction:"up",emaStack:"bullish"}}, indicators:{} },
     ],
   };
   const out = buildScreenCandidate(discovery, payload, NOW, "LONG");
   assert.ok(out);
   const risk = Math.abs(out.entry - out.sl);
-  assert.equal(out.leverage, 25);
+  assert.equal(out.leverage, 20);
   assert.ok(out.marginRiskPct <= 10);
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
   assert.equal(out.rr, 3);
