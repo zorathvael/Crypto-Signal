@@ -187,16 +187,23 @@ Environment variables dapat mengubah:
 
 Kedua layer ini sengaja dipisahkan dan tidak boleh saling mengambil alih:
 
-### Timing Calibration — adaptif
+### Timing Calibration — adaptif, ENTRY NOW
 
-`timing_calibration.js` adalah layer timing. Ia menentukan apakah kondisi pasar saat ini layak untuk Entry dan structural-SL timing.
+`timing_calibration.js` adalah layer timing. Untuk signal yang berlabel ENTRY NOW, **Entry selalu menggunakan live market price**. Support/resistance tidak dipakai untuk memindahkan Entry menjadi limit/pullback entry; level tersebut hanya menjadi bukti timing dan structural-SL.
+
+Aturan arah:
+- LONG → support di bawah live price.
+- SHORT → resistance di atas live price.
+- Struktur harus berada di dalam envelope risiko maksimum 0.5% harga.
+- Jika tidak ada struktur directional yang executable, candidate ditolak fail-closed.
+- Timing score mengukur kualitas/proximity struktur, bukan mengubah Entry.
 
 Timing Calibration boleh menggunakan:
 - live price
 - ATR/volatility
 - support/resistance
-- technical anchor
-- proximity dan geometry utilisation
+- technical anchor sebagai konteks
+- geometry utilisation
 - timing score dan timing mode
 
 Timing Calibration **tidak boleh** menentukan leverage, margin, executable SL, atau TP1/TP2/TP3.
