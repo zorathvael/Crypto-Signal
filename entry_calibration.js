@@ -5,7 +5,7 @@
  * It does not calculate leverage, margin, SL, or TP.
  *
  * The production geometry gives us one hard measurable constraint:
- *   maximum price-risk capacity = 0.4% of Entry.
+ *   maximum price-risk capacity = 0.5% of Entry.
  *
  * Therefore entry calibration derives its usable structural distance from
  * that capacity and the observed ATR, rather than using fixed "0.75 ATR"
@@ -84,7 +84,7 @@ function calibrateEntry(input = {}) {
   const reasons = [];
 
   // Structure is considered usable when the final entry can place that
-  // structural level inside the fixed 0.4% price-risk envelope.
+  // structural level inside the fixed 0.5% price-risk envelope.
   const usableLevels = levels.filter((level) => {
     const distance = Math.abs(livePrice - level);
     return distance <= maxRiskPrice + EPSILON;
@@ -149,7 +149,7 @@ function calibrateEntry(input = {}) {
       geometryCapacityAtr: +geometryCapacityAtr.toFixed(3),
       geometryUse: +geometryUse.toFixed(3),
       mode: "REJECT_GEOMETRY_CAPACITY",
-      reasons: ["calibrated entry cannot fit the fixed 0.4% geometry"],
+      reasons: ["calibrated entry cannot fit the fixed 0.5% geometry"],
     };
   }
 
