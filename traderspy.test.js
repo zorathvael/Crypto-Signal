@@ -215,7 +215,7 @@ test("published signals are recalibrated from live market price before validatio
   assert.equal(out.traderSpy.providerTriggerPrice, 99);
   assert.equal(out.leverage, 20);
   assert.equal(out.sl, 99.5);
-  assert.equal(out.tp1, 101.5);
-  assert.equal(out.tp2, 103);
-  assert.equal(out.tp3, 106);
+  assert.ok(Math.abs(out.tp1 - 101.5) < 1e-9);
+  assert.ok(Math.abs(out.tp2 - 103) < 1e-9);
+  assert.ok(Math.abs(out.tp3 - 106) < 1e-9);
 });
