@@ -143,7 +143,7 @@ test("discovery candidates use the margin reward geometry contract", () => {
   assert.deepEqual(out.rewardMarginPcts, [30, 60, 120]);
   assert.equal(out.rr, 3);
 });
-test("discovery candidates respect the fixed 25x risk-plan SL ceiling", () => {
+test("discovery candidates respect the fixed 20x risk-plan SL ceiling", () => {
   const discovery = { symbol:"ETHUSDT", base:"ETH", bias:"bullish", trend:"up", score:10 };
   const payload = {
     price:100,
