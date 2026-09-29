@@ -1,5 +1,6 @@
 {
-  "open": [
+  "open": [],
+  "closed": [
     {
       "id": "NEAR_LONG_1790597654993",
       "ts": 1790597654993,
@@ -20,10 +21,11 @@
       "entryCalibrationDistanceAtr": 0,
       "entryCalibrationGeometryCapacityAtr": 0.209,
       "validUntil": "2026-09-28T13:14:08.825Z",
-      "horizons": {}
-    }
-  ],
-  "closed": [
+      "horizons": {},
+      "outcome": "EXPIRED",
+      "rMultiple": 0,
+      "closedAt": 1790641814593
+    },
     {
       "id": "ZEC_LONG_1790591753466",
       "ts": 1790591753466,
@@ -4123,14 +4125,14 @@
     }
   ],
   "stats": {
-    "total": 80,
+    "total": 81,
     "wins": 20,
     "losses": 32,
-    "expired": 28,
+    "expired": 29,
     "sumR": -6.749999999999994,
     "bySetup": {
       "TRADERSPY_COMPATIBLE_MTF": {
-        "n": 26,
+        "n": 27,
         "wins": 2,
         "losses": 7,
         "sumR": -4.83,
@@ -4172,7 +4174,7 @@
     },
     "byAction": {
       "LONG": {
-        "n": 60,
+        "n": 61,
         "wins": 18,
         "losses": 21,
         "sumR": 1.5700000000000003,
