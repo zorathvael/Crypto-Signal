@@ -1,84 +1,9 @@
-/**
- * Production trade-plan geometry for Crypto-Signal v4.0.
- *
- * Entry calibration and trade geometry are independent layers.
- * This module NEVER calibrates or moves Entry. It receives the already-calibrated
- * Entry and applies the fixed production margin geometry.
- *
- * Fixed production contract:
- *   Margin = 5 USDT
- *   Leverage = 20x
- *   Notional = 100 USDT
- *   Max SL loss = 10% of margin = 0.50 USDT
- *   TP1 = 30% margin = 1.50 USDT
- *   TP2 = 60% margin = 3.00 USDT
- *   TP3 = 120% margin = 6.00 USDT
- *
- * At 100 USDT notional: SL max = 0.5%, TP1 = 1.5%, TP2 = 3.0%, TP3 = 6.0%.
- * A structural SL wider than 0.5% is rejected. Leverage is never changed.
- */
-const MARGIN_USDT = 5;
-const LEVERAGE = 20;
-const RISK_MARGIN_PERCENT = 10;
-const RISK_BUDGET_USDT = 0.5;
-const RISK_FRACTION = 0.10;
-const NOTIONAL_USDT = MARGIN_USDT * LEVERAGE;
-const MAX_SL_PRICE_PCT = RISK_BUDGET_USDT / NOTIONAL_USDT;
-const REWARD_MARGIN_PCTS = [30, 60, 120];
-const REWARD_PRICE_MOVE_PCTS = [1.5, 3.0, 6.0];
-const EPSILON = 1e-9;
-
-function finitePositive(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-function calculateTradePlan(signal = {}) {
-  const entry = finitePositive(signal.entry);
-  const structuralSl = finitePositive(signal.sl);
-  if (!entry || !structuralSl) throw new Error("Trade plan requires valid calibrated entry and structural SL");
-
-  const action = String(signal.action || "LONG").toUpperCase();
-  if (action !== "LONG" && action !== "SHORT") throw new Error("Trade plan requires LONG or SHORT action");
-
-  const distancePct = Math.abs(entry - structuralSl) / entry;
-  if (!(distancePct > 0)) throw new Error("Trade plan requires non-zero entry-to-SL distance");
-  if (distancePct > MAX_SL_PRICE_PCT + EPSILON) {
-    throw new Error(`Structural SL distance ${(distancePct * 100).toFixed(3)}% exceeds fixed 20x geometry max ${(MAX_SL_PRICE_PCT * 100).toFixed(3)}%`);
-  }
-
-  const sl = action === "SHORT" ? entry * (1 + MAX_SL_PRICE_PCT) : entry * (1 - MAX_SL_PRICE_PCT);
-  const targets = REWARD_PRICE_MOVE_PCTS.map((pct) => {
-    const move = pct / 100;
-    return action === "SHORT" ? entry * (1 - move) : entry * (1 + move);
-  });
-  const [tp1, tp2, tp3] = targets;
-  const quantity = NOTIONAL_USDT / entry;
-
-  return {
-    marginUsdt: MARGIN_USDT,
-    leverage: LEVERAGE,
-    notionalUsdt: NOTIONAL_USDT,
-    quantity,
-    riskFraction: RISK_FRACTION,
-    riskMarginPercent: RISK_MARGIN_PERCENT,
-    riskBudgetUsdt: RISK_BUDGET_USDT,
-    structuralSl,
-    sl,
-    slDistancePct: MAX_SL_PRICE_PCT,
-    slDistancePercent: MAX_SL_PRICE_PCT * 100,
-    slLossUsdt: RISK_BUDGET_USDT,
-    maxSlDistancePct: MAX_SL_PRICE_PCT,
-    maxSlDistancePercent: MAX_SL_PRICE_PCT * 100,
-    rewardMarginPcts: REWARD_MARGIN_PCTS.slice(),
-    rewardPriceMovePcts: REWARD_PRICE_MOVE_PCTS.slice(),
-    rewardRMultiples: [3, 6, 12],
-    tp1, tp2, tp3,
-    rr: 3,
-    geometry: "FIXED_MARGIN_5USDT_20X_10_30_60_120",
-    entryGeometryIndependent: true,
-    entryUnchanged: true,
-  };
-}
-
-module.exports = { calculateTradePlan, MARGIN_USDT, LEVERAGE, RISK_MARGIN_PERCENT, RISK_BUDGET_USDT, REWARD_MARGIN_PCTS };
+/** Fibonacci-calibrated executable geometry for Crypto-Signal v4.1.
+ * Source: 20-candle swing Fibonacci pullback.
+ * Entry 50%; structural SL beyond swing + 0.8 ATR; margin 5 USDT;
+ * adaptive leverage 5x..20x; risk target 0.50 USDT; TP 2R/4R/6R. */
+const MARGIN_USDT=5,MIN_LEVERAGE=5,MAX_LEVERAGE=20,RISK_BUDGET_USDT=.5,RISK_FRACTION=.10,FIB_ENTRY=.5,REWARD_R=[2,4,6],EPS=1e-12;
+function finitePositive(v){const n=Number(v);return Number.isFinite(n)&&n>0?n:null;}
+function fibEntry(s){const hi=finitePositive(s?.pullback?.fibHigh),lo=finitePositive(s?.pullback?.fibLow);return hi&&lo&&hi>lo?hi-(hi-lo)*FIB_ENTRY:null;}
+function calculateTradePlan(s={}){const action=String(s.action||s.direction||'').toUpperCase();if(!['LONG','SHORT'].includes(action))throw new Error('Trade plan requires LONG or SHORT action');const entry=fibEntry(s)||finitePositive(s.entry),atr=finitePositive(s.atr);if(!entry)throw new Error('Trade plan requires Fibonacci swing data');if(!atr)throw new Error('Trade plan requires ATR');const hi=finitePositive(s.pullback?.fibHigh),lo=finitePositive(s.pullback?.fibLow);const structuralSl=action==='LONG'?(lo??entry)-atr*.8:(hi??entry)+atr*.8;if(!(structuralSl>0))throw new Error('Invalid structural Fibonacci stop');const distance=Math.abs(entry-structuralSl),distancePct=distance/entry;if(!(distancePct>EPS))throw new Error('Trade plan requires non-zero entry-to-SL distance');const maxLeverage=Math.floor(RISK_BUDGET_USDT/(MARGIN_USDT*distancePct)+EPS);if(maxLeverage<MIN_LEVERAGE)throw new Error('Fibonacci SL distance '+(distancePct*100).toFixed(3)+'% needs leverage below '+MIN_LEVERAGE+'x to keep risk at 0.50 USDT');const leverage=Math.min(MAX_LEVERAGE,maxLeverage),notional=MARGIN_USDT*leverage,slLoss=notional*distancePct;if(slLoss>RISK_BUDGET_USDT+1e-9)throw new Error('Risk budget exceeded after leverage calibration');const targets=REWARD_R.map(r=>action==='LONG'?entry+distance*r:entry-distance*r);return{marginUsdt:MARGIN_USDT,leverage,notionalUsdt:notional,quantity:notional/entry,riskFraction:RISK_FRACTION,riskBudgetUsdt:RISK_BUDGET_USDT,structuralSl,sl:structuralSl,slDistancePct:distancePct,slDistancePercent:distancePct*100,slLossUsdt:slLoss,rewardRMultiples:REWARD_R.slice(),rewardMarginPcts:[20,40,60],rewardPriceMovePcts:REWARD_R.map(r=>distance*r/entry*100),tp1:targets[0],tp2:targets[1],tp3:targets[2],rr:2,fibEntryLevel:FIB_ENTRY,fibEntry:entry,geometry:'FIBONACCI_SWING20_50PCT_ENTRY_ADAPTIVE_5X_20X_2R_4R_6R',entryGeometryIndependent:false,entryUnchanged:false};}
+module.exports={calculateTradePlan,MARGIN_USDT,MIN_LEVERAGE,MAX_LEVERAGE,RISK_BUDGET_USDT,FIB_ENTRY,REWARD_R};
