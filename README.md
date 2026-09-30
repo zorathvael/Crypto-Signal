@@ -102,7 +102,7 @@ The scanner engine determines the market direction and live Entry candidate. Pro
 The existing contract is retained:
 
 - Margin: **5 USDT**
-- Leverage: **20x**
+- Leverage: **5x–20x** (selected by the existing production geometry; never below 5x)
 - Maximum price-risk envelope: **0.5%**
 - TP1 / TP2 / TP3: existing production geometry
 - Entry / SL / TP are emitted as actual prices
@@ -174,7 +174,7 @@ GitHub Actions:
 
 The active engine is fail-closed:
 
-- Binance market discovery failure → scanner run fails rather than inventing data
+- Bitget market-data failure → scanner run fails rather than inventing data
 - malformed market data → candidate skipped
 - insufficient timeframe data → candidate skipped
 - weak Council consensus → candidate rejected
