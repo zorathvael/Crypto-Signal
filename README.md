@@ -472,3 +472,31 @@ Runtime thresholds:
 - existing MTF, derivatives, Alpha Hunter and fixed trade-geometry gates remain mandatory.
 
 This is intentionally an online/rolling calibration system. It does not claim that a calibrated historical probability is a guarantee of future returns.
+
+
+## Council candidate engine
+
+The active scanner now uses a candidate-first funnel modeled on the supplied **Scanner Council - 8 Agent Discussion** design.
+
+Pipeline:
+
+1. Binance Futures public data builds a bounded liquid universe.
+2. Eight deterministic agents evaluate each candidate: **Wyckoff, OrderFlow, Exhaustion, SmartMoney, Structure, Whale, MTF, Pullback**.
+3. Agent weights change with the detected market regime (**trending / ranging / volatile**).
+4. Weighted LONG/SHORT consensus produces the candidate set.
+5. Only the bounded council candidates are handed to TraderSpy for technical, derivatives, alpha, calibration, timing, and execution validation.
+6. Existing production trade geometry, delivery fan-out, deduplication, and outcome tracking remain authoritative.
+
+The council is a **discovery and prioritization layer**, not a replacement for TraderSpy validation. If Binance public discovery is temporarily unavailable, the scanner safely falls back to TraderSpy's native discovery path rather than crashing the workflow.
+
+### Council configuration
+
+Optional environment variables:
+
+- `COUNCIL_MIN_VOLUME_USDT` — minimum 24h quote volume for the discovery universe.
+- `COUNCIL_TOP_SYMBOLS` — maximum liquid symbols screened (10–50).
+- `COUNCIL_CANDIDATES` — maximum council candidates passed to validation (5–20).
+- `COUNCIL_MIN_CONSENSUS` — minimum weighted consensus (25–90).
+- `COUNCIL_BATCH` — concurrent Binance screening batch size (2–8).
+
+The public presentation should not be interpreted as a guarantee of trade outcome; council consensus is a deterministic screening score, not a calibrated win probability.
