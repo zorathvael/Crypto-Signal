@@ -1,7 +1,7 @@
 {
   "name": "crypto-strict-scanner",
-  "version": "4.0.0",
-  "description": "Crypto-Signal — 8-agent Council engine + Discord/Telegram/Binance Square delivery",
+  "version": "4.1.0",
+  "description": "Crypto-Signal — source-calibrated 8-agent Council + AI moderator + Fibonacci risk geometry",
   "main": "scanner.js",
   "scripts": {
     "scan": "node scanner.js",
