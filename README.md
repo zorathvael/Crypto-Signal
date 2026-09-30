@@ -7,7 +7,7 @@ Eight-agent market scanner for crypto futures with the existing Telegram, Discor
 The active scanner is now a **single engine**. The legacy scanner tree, TraderSpy discovery/validation path, Council add-on path, and fallback decision tree are not executed.
 
 ```
-Binance Futures public market data
+Bitget USDT Futures public market data
         ↓
 Liquid USDT perpetual universe
         ↓
@@ -75,7 +75,7 @@ The default production funnel is bounded:
 - Council shortlist: strongest **10**
 - deep validation: strongest **10**
 - minimum weighted consensus: **52**
-- Binance request concurrency: **6** initial / bounded deep pass
+- Bitget request concurrency: **6** initial / bounded deep pass
 
 The limits are intentionally configurable so the scanner does not create uncontrolled public-API load.
 
