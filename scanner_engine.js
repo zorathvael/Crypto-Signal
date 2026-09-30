@@ -1,307 +1,41 @@
 /**
- * Crypto-Signal v4.0.0 — 8-Agent Council Engine
+ * Crypto-Signal v4.1.0 — 8-Agent Council Engine
  *
- * The legacy scanner/TraderSpy decision stack is intentionally replaced here.
- * This module is a bounded, deterministic market-discovery engine modeled on
- * the supplied Scanner Council - 8 Agent Discussion:
- * Wyckoff, OrderFlow, Exhaustion, SmartMoney, Structure, Whale, MTF, Pullback.
- *
- * It returns the existing signal contract consumed by delivery.js.
- * It does NOT own public formatting or channel delivery.
+ * Scoring is ported from the supplied Scanner Council HTML methodology.
+ * The scoring formulas, regime weights, pullback detector and consensus formula
+ * are intentionally preserved. Market data is fetched server-side from Binance
+ * Futures public endpoints so the same candle/taker/position fields are available.
  */
-
-const BITGET = "https://api.bitget.com";
-const PRODUCT = "USDT-FUTURES";
+const BINANCE = "https://fapi.binance.com";
 const CFG = {
   interval: process.env.SCANNER_INTERVAL || "5m",
-  candleLimit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 120), 80), 240),
-  universe: Math.min(Math.max(Number(process.env.SCANNER_UNIVERSE || 30), 10), 60),
+  candleLimit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 60), 40), 120),
+  universe: Math.min(Math.max(Number(process.env.SCANNER_UNIVERSE || 30), 10), 50),
   candidates: Math.min(Math.max(Number(process.env.SCANNER_CANDIDATES || 10), 3), 20),
   minQuoteVolume: Math.max(Number(process.env.SCANNER_MIN_VOLUME || 15000000), 0),
-  batch: Math.min(Math.max(Number(process.env.SCANNER_BATCH || 6), 2), 10),
-  minConsensus: Math.min(Math.max(Number(process.env.SCANNER_MIN_CONSENSUS || 52), 25), 90),
+  batch: Math.min(Math.max(Number(process.env.SCANNER_BATCH || 3), 1), 5),
+  minConsensus: Math.min(Math.max(Number(process.env.SCANNER_MIN_CONSENSUS || 45), 0), 100),
   deepCandidates: Math.min(Math.max(Number(process.env.SCANNER_DEEP_CANDIDATES || 10), 3), 15),
 };
-
 const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
-const clamp = (v,a,b) => Math.min(b,Math.max(a,v));
-const last = a => a?.[a.length-1];
-
-async function getJson(url, retries=2) {
+async function getJson(url,retries=2){
   let err;
-  for (let i=0;i<=retries;i++) {
-    try {
-      const res = await fetch(url,{headers:{Accept:"application/json", "User-Agent":"Crypto-Signal/4.0.0-bitget"}});
-      if (!res.ok) throw new Error("Bitget HTTP "+res.status);
-      const json=await res.json();
-      if (json && json.code && json.code !== "00000") throw new Error("Bitget API "+json.code+": "+(json.msg||"request failed"));
-      return json;
-    } catch(e) {
-      err=e;
-      if (i<retries) await new Promise(r=>setTimeout(r,250*(i+1)));
-    }
-  }
+  for(let i=0;i<=retries;i++){try{const res=await fetch(url,{headers:{Accept:"application/json","User-Agent":"Crypto-Signal/4.1.0"}});if(!res.ok)throw new Error(`Binance HTTP ${res.status}`);return await res.json();}catch(e){err=e;if(i<retries)await new Promise(r=>setTimeout(r,250*(i+1)));}}
   throw err;
 }
-
-
-function klinesToCandles(rows) {
-  return (rows||[]).map(k=>({
-    ts:+k[0], open:+k[1], high:+k[2], low:+k[3], close:+k[4],
-    volume:+k[5], closeTs:null, quoteVolume:+k[6],
-    trades:null, takerBuyBase:null, takerBuyQuote:null
-  })).filter(c=>[c.open,c.high,c.low,c.close,c.volume].every(Number.isFinite));
-}
-
-function ema(v,p) {
-  if(v.length<p) return null;
-  let e=mean(v.slice(0,p)), k=2/(p+1);
-  for(let i=p;i<v.length;i++) e=(v[i]-e)*k+e;
-  return e;
-}
-function rsi(v,p=14) {
-  if(v.length<=p) return 50;
-  let g=0,l=0;
-  for(let i=1;i<=p;i++){const d=v[i]-v[i-1];g+=Math.max(d,0);l+=Math.max(-d,0);}
-  let ag=g/p, al=l/p;
-  for(let i=p+1;i<v.length;i++){const d=v[i]-v[i-1];ag=(ag*(p-1)+Math.max(d,0))/p;al=(al*(p-1)+Math.max(-d,0))/p;}
-  return al===0?100:100-100/(1+ag/al);
-}
-function atr(cs,p=14) {
-  if(cs.length<p+1) return null;
-  const tr=cs.map((c,i)=>i===0?c.high-c.low:Math.max(c.high-c.low,Math.abs(c.high-cs[i-1].close),Math.abs(c.low-cs[i-1].close)));
-  let a=mean(tr.slice(0,p));
-  for(let i=p;i<tr.length;i++) a=(a*(p-1)+tr[i])/p;
-  return a;
-}
-function bollinger(v,p=20,m=2) {
-  if(v.length<p) return null;
-  const w=v.slice(-p), mid=mean(w), sd=Math.sqrt(mean(w.map(x=>(x-mid)**2)));
-  return {mid,upper:mid+m*sd,lower:mid-m*sd,width:mid?2*m*sd/mid:0};
-}
-function slope(v,n=10){if(v.length<=n)return 0;const a=v[v.length-1-n],b=v.at(-1);return a?((b-a)/a)*100:0;}
-function structure(cs) {
-  if(cs.length<30) return {trend:"neutral",support:null,resistance:null,hh:false,hl:false,lh:false,ll:false};
-  const highs=[],lows=[];
-  for(let i=2;i<cs.length-2;i++){
-    if(cs[i].high>=cs[i-1].high&&cs[i].high>=cs[i-2].high&&cs[i].high>=cs[i+1].high&&cs[i].high>=cs[i+2].high) highs.push(cs[i].high);
-    if(cs[i].low<=cs[i-1].low&&cs[i].low<=cs[i-2].low&&cs[i].low<=cs[i+1].low&&cs[i].low<=cs[i+2].low) lows.push(cs[i].low);
-  }
-  const h1=highs.at(-2),h2=highs.at(-1),l1=lows.at(-2),l2=lows.at(-1);
-  const hh=Number.isFinite(h1)&&Number.isFinite(h2)&&h2>h1, lh=Number.isFinite(h1)&&Number.isFinite(h2)&&h2<h1;
-  const hl=Number.isFinite(l1)&&Number.isFinite(l2)&&l2>l1, ll=Number.isFinite(l1)&&Number.isFinite(l2)&&l2<l1;
-  let trend="neutral";
-  if((hh&&hl)||(hh&&!ll))trend="up";
-  else if((lh&&ll)||(ll&&!hh))trend="down";
-  else {
-    const a=cs.slice(-20,-10),b=cs.slice(-10);
-    if(Math.max(...b.map(x=>x.high))>Math.max(...a.map(x=>x.high))&&Math.min(...b.map(x=>x.low))>Math.min(...a.map(x=>x.low)))trend="up";
-    if(Math.max(...b.map(x=>x.high))<Math.max(...a.map(x=>x.high))&&Math.min(...b.map(x=>x.low))<Math.min(...a.map(x=>x.low)))trend="down";
-  }
-  return {trend,support:Number.isFinite(l2)?l2:null,resistance:Number.isFinite(h2)?h2:null,hh,hl,lh,ll};
-}
-function trend(cs) {
-  const c=last(cs), closes=cs.map(x=>x.close), e9=ema(closes,9),e21=ema(closes,21),e50=ema(closes,50),st=structure(cs);
-  let v=0;
-  if(e9>e21)v+=1; else if(e9<e21)v-=1;
-  if(e21>e50)v+=1; else if(e21<e50)v-=1;
-  if(st.trend==="up")v+=2; if(st.trend==="down")v-=2;
-  if(c.close>e21)v+=1; if(c.close<e21)v-=1;
-  const s=slope(closes,12); if(s>0.12)v+=1;if(s<-0.12)v-=1;
-  return {dir:v>=2?"bullish":v<=-2?"bearish":"neutral",score:clamp(v/7*100,-100,100),ema9:e9,ema21:e21,ema50:e50,structure:st,slope:s};
-}
-function regime(cs) {
-  const c=last(cs), a=atr(cs), pct=a&&c.close?a/c.close*100:0, bb=bollinger(cs.map(x=>x.close));
-  if(pct>1.8)return "volatile";
-  if(bb&&bb.width<0.012)return "ranging";
-  return "trending";
-}
-function fibPullback(cs,side) {
-  const win=cs.slice(-40), hi=Math.max(...win.map(c=>c.high)),lo=Math.min(...win.map(c=>c.low)),range=hi-lo||1;
-  const levels=side==="LONG" ? [hi-range*.382,hi-range*.5,hi-range*.618] : [lo+range*.382,lo+range*.5,lo+range*.618];
-  return {hi,lo,levels};
-}
-function candlePressure(cs) {
-  const recent=cs.slice(-12), buy=recent.reduce((s,c)=>s+(c.close>c.open?c.volume:0),0),sell=recent.reduce((s,c)=>s+(c.close<=c.open?c.volume:0),0);
-  const p=(buy-sell)/(buy+sell||1)*100;
-  const taker=recent.reduce((s,c)=>s+(c.quoteVolume?((2*c.takerBuyQuote-c.quoteVolume)):0),0);
-  return {pressure:p,takerPressure:taker/(recent.reduce((s,c)=>s+c.quoteVolume,0)||1)*100,spike:last(cs).volume>=mean(cs.slice(-30,-1).map(c=>c.volume))*1.35};
-}
-function reversal(cs,side) {
-  const c=last(cs),p=cs.at(-2),body=Math.abs(c.close-c.open),range=Math.max(c.high-c.low,1e-12),lw=Math.min(c.open,c.close)-c.low,uw=c.high-Math.max(c.open,c.close);
-  if(side==="LONG") {
-    if(p?.close<p?.open&&c.close>c.open&&c.open<=p.close&&c.close>=p.open)return .95;
-    if(lw>=body*2&&lw/range>.45)return .82;
-    if(c.close>c.open&&lw/range>.55)return .76;
-  } else {
-    if(p?.close>p?.open&&c.close<c.open&&c.open>=p.close&&c.close<=p.open)return .95;
-    if(uw>=body*2&&uw/range>.45)return .82;
-    if(c.close<c.open&&uw/range>.55)return .76;
-  }
-  return 0;
-}
-
-function scoreAgents(ctx) {
-  const sides=["LONG","SHORT"];
-  const out={};
-  const weights={
-    trending:{Wyckoff:1.0,OrderFlow:1.25,Exhaustion:.8,SmartMoney:1.2,Structure:1.3,Whale:1.0,MTF:1.35,Pullback:1.15},
-    ranging:{Wyckoff:1.15,OrderFlow:1.0,Exhaustion:1.25,SmartMoney:1.0,Structure:.9,Whale:1.0,MTF:.8,Pullback:1.3},
-    volatile:{Wyckoff:.9,OrderFlow:1.35,Exhaustion:1.3,SmartMoney:1.15,Structure:1.0,Whale:1.25,MTF:1.0,Pullback:.85},
-  }[ctx.regime];
-  for(const side of sides){
-    const sg=side==="LONG"?1:-1;
-    const t5=ctx.tf5,t15=ctx.tf15,t1=ctx.tf1,t4=ctx.tf4,p=ctx.pressure;
-    const fib=ctx.fib[side],price=ctx.price;
-    const location=side==="LONG"?clamp((fib.hi-price)/(fib.hi-fib.lo||1),0,1):clamp((price-fib.lo)/(fib.hi-fib.lo||1),0,1);
-    const agents={};
-    agents.Wyckoff=clamp(50+sg*((t15.structure.trend==="up"?18:t15.structure.trend==="down"?-18:0)+(p.pressure*0.45)+reversal(ctx.c5,side)*18),0,100);
-    agents.OrderFlow=clamp(50+sg*(p.pressure*.9+p.takerPressure*.6+(p.spike?8:0)),0,100);
-    const rsi5=ctx.rsi5, ext=side==="LONG"?clamp((42-rsi5)*3.2,0,28):clamp((rsi5-58)*3.2,0,28);
-    agents.Exhaustion=clamp(50+ext+reversal(ctx.c5,side)*22,0,100);
-    agents.SmartMoney=clamp(50+sg*((t1.structure.trend==="up"?15:t1.structure.trend==="down"?-15:0)+(t15.structure.trend==="up"?10:t15.structure.trend==="down"?-10:0)),0,100);
-    agents.Structure=clamp(50+sg*((t1.structure.trend==="up"?25:t1.structure.trend==="down"?-25:0)+(t15.structure.trend==="up"?15:t15.structure.trend==="down"?-15:0)),0,100);
-    agents.Whale=clamp(50+sg*(p.takerPressure*.7),0,100);
-    const mtf=(t4.score*.35+t1.score*.35+t15.score*.2+t5.score*.1);
-    agents.MTF=clamp(50+sg*mtf*.5,0,100);
-    const pb=location>.35&&location<.78?18:location>=.78?8:0;
-    agents.Pullback=clamp(50+pb+sg*(p.pressure*.35),0,100);
-    const total=Object.entries(agents).reduce((s,[k,v])=>s+(v*weights[k]),0);
-    const max=Object.values(weights).reduce((a,b)=>a+b,0)*100;
-    out[side]={agents,consensus:total/max*100,weight:weights};
-  }
-  return out;
-}
-
-async function deepData(symbol) {
-  const q=encodeURIComponent(symbol);
-  const [depth, fills, oi, funding, longShort] = await Promise.allSettled([
-    getJson(BITGET+"/api/v3/market/orderbook?category="+PRODUCT+"&symbol="+q+"&limit=50"),
-    getJson(BITGET+"/api/v3/market/fills?category="+PRODUCT+"&symbol="+q+"&limit=100"),
-    getJson(BITGET+"/api/v2/mix/market/open-interest?productType="+PRODUCT+"&symbol="+q),
-    getJson(BITGET+"/api/v2/mix/market/current-fund-rate?productType="+PRODUCT+"&symbol="+q)
-  ]);
-  const d=depth.status==="fulfilled"?depth.value?.data:null;
-  const trades=fills.status==="fulfilled"?(fills.value?.data||[]):[];
-  const bids=(d?.b||[]).reduce((s,x)=>s+Number(x[0])*Number(x[1]),0);
-  const asks=(d?.a||[]).reduce((s,x)=>s+Number(x[0])*Number(x[1]),0);
-  const imbalance=(bids+asks)?(bids-asks)/(bids+asks)*100:0;
-  let buy=0,sell=0;
-  for(const t of trades){const usd=Number(t.price)*Number(t.size); if(String(t.side).toLowerCase()==="sell")sell+=usd;else buy+=usd;}
-  const flow=(buy+sell)?(buy-sell)/(buy+sell)*100:0;
-  const oiRows=oi.status==="fulfilled"?(oi.value?.data?.openInterestList||[]):[];
-  const oiVal=Number(oiRows.find(x=>x.symbol===symbol)?.size||oiRows[0]?.size);
-  const fr= funding.status==="fulfilled" ? (funding.value?.data||[])[0] : null;
-  return {imbalance,flow,buy,sell,oi:Number.isFinite(oiVal)?oiVal:null,funding:Number(fr?.fundingRate||0)*100};
-}
-
-function applyDeep(v,side) {
-  if(!v)return 50;
-  const sg=side==="LONG"?1:-1;
-  let s=50+sg*(v.imbalance*.22+v.flow*.32);
-  if(Number.isFinite(v.funding))s+=sg*(-clamp(v.funding*18,-8,8));
-  if(Number.isFinite(v.longShortRatio))s+=sg*clamp((v.longShortRatio-1)*8,-8,8);
-  return clamp(s,0,100);
-}
-
-async function fetchFrames(symbol) {
-  const map={"5m":"5m","15m":"15m","1h":"1H","4h":"4H"};
-  const rows=await Promise.all(["5m","15m","1h","4h"].map(k=>
-    getJson(BITGET+"/api/v3/market/candles?category="+PRODUCT+"&symbol="+symbol+"&interval="+map[k]+"&limit="+CFG.candleLimit)
-  ));
-  return {c5:klinesToCandles(rows[0].data),c15:klinesToCandles(rows[1].data),c1:klinesToCandles(rows[2].data),c4:klinesToCandles(rows[3].data)};
-}
-
-function makeContext(symbol,frames) {
-  const c5=frames.c5,c15=frames.c15,c1=frames.c1,c4=frames.c4,price=last(c5)?.close;
-  const t5=trend(c5),t15=trend(c15),t1=trend(c1),t4=trend(c4);
-  const rs=regime(c15),pressure=candlePressure(c5);
-  const rsi5=rsi(c5.map(c=>c.close));
-  return {symbol,price,c5,c15,c1,c4,tf5:t5,tf15:t15,tf1:t1,tf4:t4,regime:rs,pressure,rsi5,
-    fib:{LONG:fibPullback(c15,"LONG"),SHORT:fibPullback(c15,"SHORT")}};
-}
-
-function candidateSignal(ctx,votes,deep) {
-  const long=clamp(votes.LONG.consensus+(deep?applyDeep(deep,"LONG")-50:0)*.25,0,100);
-  const short=clamp(votes.SHORT.consensus+(deep?applyDeep(deep,"SHORT")-50:0)*.25,0,100);
-  const side=long>=short?"LONG":"SHORT";
-  const consensus=Math.max(long,short),opposite=Math.min(long,short);
-  if(consensus<CFG.minConsensus || consensus-opposite<7)return null;
-  const sg=side==="LONG"?1:-1;
-  const s=ctx.tf15.structure;
-  const atrv=atr(ctx.c15)||atr(ctx.c5)||ctx.price*.005;
-  let structural=side==="LONG"?(s.support||ctx.price-atrv):(s.resistance||ctx.price+atrv);
-  const maxRisk=ctx.price*.005;
-  if(side==="LONG") structural=clamp(structural,ctx.price-maxRisk*.90,ctx.price-maxRisk*.35);
-  else structural=clamp(structural,ctx.price+maxRisk*.35,ctx.price+maxRisk*.90);
-  const validUntil=new Date(Date.now()+15*60*1000).toISOString();
-  const agents=votes[side].agents;
-  return {
-    strategyId:"zorath-core-v4.0",
-    base:ctx.symbol.replace(/USDT$/,""),instId:ctx.symbol,action:side,
-    probability:Math.round(consensus),qualityScore:Math.round(consensus),
-    rawQualityScore:Math.round(consensus),setup:"SCALP_MTF",validUntil,
-    entry:ctx.price,sl:structural,
-    h1:{bias:ctx.tf1.dir==="bullish"?"bullish":ctx.tf1.dir==="bearish"?"bearish":"neutral",position:50,rsi:rsi(ctx.c1.map(c=>c.close)),volume:{side:ctx.pressure.pressure>0?"BUY":"SELL"}},
-    m15:{bias:ctx.tf15.dir==="bullish"?"bullish":ctx.tf15.dir==="bearish"?"bearish":"neutral",position:50,rsi:rsi(ctx.c15.map(c=>c.close)),volume:{side:ctx.pressure.pressure>0?"BUY":"SELL"}},
-    m5:{bias:ctx.tf5.dir==="bullish"?"bullish":ctx.tf5.dir==="bearish"?"bearish":"neutral",position:50,rsi:ctx.rsi5,volume:{side:ctx.pressure.pressure>8?"BUY":ctx.pressure.pressure<-8?"SELL":"BALANCED",spike:ctx.pressure.spike}},
-    h4:{bias:ctx.tf4.dir==="bullish"?"bullish":ctx.tf4.dir==="bearish"?"bearish":"neutral"},
-    trends:{h4:ctx.tf4.dir,m15:ctx.tf15.dir,h1:ctx.tf1.dir},
-    regime:{regime:ctx.regime,atrPct:+((atr(ctx.c15)||0)/ctx.price*100).toFixed(3)},
-    book:deep?{side:deep.imbalance>8?"BUY":deep.imbalance<-8?"SELL":"FLAT",imbalance:+deep.imbalance.toFixed(2),quality:Math.abs(deep.imbalance)>18?"STRONG":"NORMAL"}:null,
-    volConfirm:ctx.pressure.spike,pillars:Object.entries(agents).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]),
-    confluence:Object.values(agents).filter(x=>x>=65).length,
-    council:{regime:ctx.regime,agents,votes:{long:+long.toFixed(2),short:+short.toFixed(2)},deep:deep||null},
-    riskPct:.5,
-  };
-}
-
-async function getUniverse() {
-  const [contracts,tickers]=await Promise.all([
-    getJson(BITGET+"/api/v2/mix/market/contracts?productType="+PRODUCT),
-    getJson(BITGET+"/api/v2/mix/market/tickers?productType="+PRODUCT)
-  ]);
-  const active=new Set((contracts.data||[]).filter(s=>String(s.symbolType||"").toLowerCase()!=="delivery" && String(s.symbolStatus||"normal").toLowerCase()==="normal").map(s=>s.symbol));
-  return (tickers.data||[]).filter(t=>active.has(t.symbol))
-    .map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||Number(t.usdtVolume)||0,price:Number(t.lastPr)||Number(t.lastPrice)||0,change:Number(t.change24h)||Number(t.changeUtc24h)||0}))
-    .filter(x=>x.price>0&&x.volume>=CFG.minQuoteVolume)
-    .sort((a,b)=>b.volume-a.volume)
-    .slice(0,CFG.universe);
-}
-
-async function mapLimit(items,limit,fn) {
-  const out=[]; let idx=0;
-  async function worker(){while(true){const i=idx++;if(i>=items.length)return;try{out[i]=await fn(items[i],i);}catch(e){out[i]={error:e};}}}
-  await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));
-  return out;
-}
-
-async function runCouncilEngine() {
-  console.log("=== Crypto-Signal v4.0 | 8-Agent Council Engine ===");
-  console.log(new Date().toISOString());
-  console.log("Engine: Bitget USDT Futures → liquid universe → 8 agents → regime weighting → deep validation");
-  const universe=await getUniverse();
-  console.log("Universe:",universe.length,universe.map(x=>x.symbol.replace("USDT","")).join(", "));
-  const scanned=await mapLimit(universe,CFG.batch,async u=>{
-    const frames=await fetchFrames(u.symbol);
-    if(frames.c5.length<60||frames.c15.length<60||frames.c1.length<60)return null;
-    const ctx=makeContext(u.symbol,frames);
-    const votes=scoreAgents(ctx);
-    return {u,ctx,votes,top:Math.max(votes.LONG.consensus,votes.SHORT.consensus)};
-  });
-  const viable=scanned.filter(x=>x&&!x.error).sort((a,b)=>b.top-a.top).slice(0,CFG.deepCandidates);
-  console.log("Council shortlist:",viable.map(x=>x.u.symbol.replace("USDT","")+":"+x.top.toFixed(1)).join(", ")||"none");
-  const deep=await mapLimit(viable,Math.min(CFG.batch,4),async x=>({x,d:await deepData(x.u.symbol)}));
-  const bySymbol=new Map(deep.map(x=>[x.x.u.symbol,x.d]));
-  const signals=[];
-  for(const x of viable){
-    const s=candidateSignal(x.ctx,x.votes,bySymbol.get(x.u.symbol));
-    if(s)signals.push(s);
-  }
-  signals.sort((a,b)=>b.probability-a.probability||b.confluence-a.confluence);
-  console.log("Council VALID candidates:",signals.length);
-  for(const s of signals)console.log(" ",s.base,s.action,"score="+s.probability,"agents="+s.confluence);
-  return signals;
-}
-
-module.exports={runCouncilEngine,CFG};
+function klinesToCandles(rows){return(rows||[]).map(k=>({ts:+k[0],open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5],quoteVolume:+k[7],trades:+k[8],takerBuyBase:+k[9],takerBuyQuote:+k[10]})).filter(c=>[c.open,c.high,c.low,c.close,c.volume,c.quoteVolume,c.takerBuyBase,c.takerBuyQuote].every(Number.isFinite));}
+function calcEMA(a,p){if(a.length<p)return a[a.length-1];const k=2/(p+1);let e=mean(a.slice(0,p));for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
+function calcRSI(c,p=14){if(c.length<p+1)return 50;let g=0,l=0;for(let i=c.length-p;i<c.length;i++){const d=c[i]-c[i-1];if(d>=0)g+=d;else l-=d;}const ag=g/p,al=l/p;if(al===0)return 100;return 100-(100/(1+ag/al));}
+function calcATR(h,l,c,p=14){if(c.length<p+1)return c[c.length-1]*.02;const t=[];for(let i=1;i<c.length;i++)t.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));return t.slice(-p).reduce((a,b)=>a+b,0)/p;}
+function detectRegime(closes,highs,lows,vols,atr,price){const ema20=calcEMA(closes,20),ema50=calcEMA(closes,50),emaDiff=Math.abs(ema20-ema50)/price*100,rh=Math.max(...highs.slice(-30)),rl=Math.min(...lows.slice(-30)),rangePct=(rh-rl)/price*100,atrPct=atr/price*100,volRatio=mean(vols.slice(-10))/(mean(vols.slice(-30))||1);let type="ranging",desc="";if(emaDiff>.5&&rangePct>1.5&&atrPct>.3){type="trending";desc=`Trend kuat · EMA diff ${emaDiff.toFixed(2)}% · Range ${rangePct.toFixed(1)}%`;}else if(atrPct>.8||volRatio>1.8){type="volatile";desc=`Volatil tinggi · ATR ${atrPct.toFixed(2)}% · Vol ${volRatio.toFixed(1)}x`;}else desc=`Ranging/sideways · ATR ${atrPct.toFixed(2)}%`;return{type,desc,atrPct,emaDiff,volRatio};}
+function getRegimeWeights(r){if(r.type==='trending')return{wyckoff:1,of:1.3,exh:1,sm:1.5,struct:.8,whale:1.8,mtf:2,pb:1.2};if(r.type==='volatile')return{wyckoff:1.5,of:1.5,exh:1.8,sm:1.2,struct:1,whale:1.5,mtf:.8,pb:1.5};return{wyckoff:1.2,of:1,exh:1,sm:1.2,struct:1.5,whale:1,mtf:.8,pb:1.2};}
+function closesOf(rows){return(rows||[]).map(x=>Array.isArray(x)?+x[4]:+x.close);}
+function analyzeMTF(k15,k1h,k4h,price){try{const c15=closesOf(k15),c1h=closesOf(k1h),c4h=closesOf(k4h);if(c15.length<20||c1h.length<20||c4h.length<20)return{trend15:'bull',trend1h:'bull',trend4h:'bull',bullCount:1,bearCount:0};const trend15=price>calcEMA(c15,50)?'bull':'bear',trend1h=price>calcEMA(c1h,50)?'bull':'bear',trend4h=price>calcEMA(c4h,50)?'bull':'bear';const bullCount=(trend15==='bull')+(trend1h==='bull')+(trend4h==='bull'),bearCount=(trend15==='bear')+(trend1h==='bear')+(trend4h==='bear');return{trend15,trend1h,trend4h,bullCount,bearCount};}catch{return{trend15:'bull',trend1h:'bull',trend4h:'bull',bullCount:1,bearCount:0};}}
+function detectPullback(closes,highs,lows,vols,deltas,cvd,price,atr,mtf){const n=closes.length,result={status:'none',direction:'NEUTRAL',reason:'Tidak ada pullback terdeteksi',conf:50,fibLow:0,fibHigh:0,retracement:0,volumeOk:false,cvdFlat:false},swingHigh=Math.max(...highs.slice(-20)),swingLow=Math.min(...lows.slice(-20)),range=swingHigh-swingLow;if(range<=0)return result;const retracement=(swingHigh-price)/range;result.fibLow=swingLow;result.fibHigh=swingHigh;result.retracement=retracement*100;result.volumeOk=mean(vols.slice(-3))<mean(vols.slice(-20))*.8;const c10=cvd.slice(-10),cMin=Math.min(...c10),cMax=Math.max(...c10),cRp=price>0?((cMax-cMin)/(price*100))*100:0;result.cvdFlat=cRp<1;const dLast=deltas[n-1],dPrev5=mean(deltas.slice(-6,-1)),decay=Math.abs(dPrev5)>0?Math.abs(dLast)/Math.abs(dPrev5):1;if(mtf.trend4h==='bull'&&retracement>.15&&retracement<.7){if(retracement<.382){result.status='active';result.direction='LONG';result.reason='Pullback sedang di 23.6%-38.2% (zona entry awal)';result.conf=70;}else if(retracement<.618){result.status='ending';result.direction='LONG';result.reason='Pullback di zona emas (38.2-61.8%), siap reversal';result.conf=80;}else{result.status='ending';result.direction='LONG';result.reason='Pullback dalam (61.8-78.6%), hati-hati';result.conf=65;}}else if(mtf.trend4h==='bear'&&retracement>.15&&retracement<.7){if(retracement<.382){result.status='active';result.direction='SHORT';result.reason='Rally ke 23.6-38.2%, mungkin lanjut';result.conf=70;}else if(retracement<.618){result.status='ending';result.direction='SHORT';result.reason='Rally di zona emas (38.2-61.8%), siap reversal';result.conf=80;}else{result.status='ending';result.direction='SHORT';result.reason='Rally dalam, hati-hati';result.conf=65;}}else if(retracement<.15)result.reason='Harga di ekstrem, tidak ada pullback';if(result.status==='ending'&&decay<.7&&result.volumeOk){result.reason+=' · Konfirmasi: delta decay + volume kering';result.conf=Math.min(95,result.conf+10);}return result;}
+function scoreCouncil({symbol,frames,topPos,globalLS,agg,price,chg}){const k=frames.c5,k15=frames.c15,k1h=frames.c1h,k4h=frames.c4h,n=k.length,closes=k.map(x=>x.close),opens=k.map(x=>x.open),highs=k.map(x=>x.high),lows=k.map(x=>x.low),vols=k.map(x=>x.volume),deltas=k.map(x=>x.takerBuyBase-(x.volume-x.takerBuyBase));let cum=0;const cvd=deltas.map(d=>cum+=d),atr=calcATR(highs,lows,closes,14),regime=detectRegime(closes,highs,lows,vols,atr,price),agents=[];const ema21=calcEMA(closes,21),ema50=calcEMA(closes,50),rsi=calcRSI(closes,14),rLow=Math.min(...lows.slice(-20,-1)),rHigh=Math.max(...highs.slice(-20,-1)),lL=lows[n-1],lH=highs[n-1],lC=closes[n-1],lO=opens[n-1],lw=Math.min(lC,lO)-lL,uw=lH-Math.max(lC,lO),bd=Math.abs(lC-lO),rg=lH-lL||1;let s='NEUTRAL',sc=0,reason='Tidak ada pola',conf=50;if(lL<rLow*.997&&lC>rLow&&lw>bd&&lw>rg*.3){s='LONG';sc=22;reason=`Spring terdeteksi di ${rLow.toFixed(4)}`;conf=80;}else if(lH>rHigh*1.003&&lC<rHigh&&uw>bd&&uw>rg*.3){s='SHORT';sc=22;reason=`Upthrust terdeteksi di ${rHigh.toFixed(4)}`;conf=80;}else if(price<ema21&&price<ema50&&rsi<35){s='LONG';sc=12;reason=`Oversold RSI ${rsi.toFixed(1)}`;conf=55;}else if(price>ema21&&price>ema50&&rsi>65){s='SHORT';sc=12;reason=`Overbought RSI ${rsi.toFixed(1)}`;conf=55;}agents.push({id:'wyckoff',name:'Wyckoff',signal:s,score:sc,reason,conf});const dR=deltas.slice(-5).reduce((a,b)=>a+b,0);s='NEUTRAL';sc=0;reason='Delta seimbang';conf=50;if(dR>0&&price<rLow*1.01){s='LONG';sc=22;reason=`Delta positif di area bawah (${(dR/1000).toFixed(0)}K)`;conf=75;}else if(dR<0&&price>rHigh*.99){s='SHORT';sc=22;reason=`Delta negatif di area atas (${(dR/1000).toFixed(0)}K)`;conf=75;}else if(dR>0){s='LONG';sc=12;reason='Delta positif dominan';conf=55;}else if(dR<0){s='SHORT';sc=12;reason='Delta negatif dominan';conf=55;}agents.push({id:'of',name:'OrderFlow',signal:s,score:sc,reason,conf});const c10=cvd.slice(-10),cMin=Math.min(...c10),cMax=Math.max(...c10),cRp=price>0?((cMax-cMin)/(price*100))*100:0,flat=cRp<1;let aA=0;for(let q=n-20;q<n;q++)aA+=Math.abs(deltas[q]);aA/=20;const decay=aA>0?Math.abs(deltas[n-1])/aA:1,pM=(closes[n-1]-closes[n-6])/closes[n-6]*100;s='NEUTRAL';sc=0;reason='Tidak ada exhaustion';conf=50;if(deltas[n-1]<0&&decay<.7&&flat&&pM<-.15){s='LONG';sc=25;reason=`Seller decay ${(decay*100).toFixed(0)}% + CVD flat`;conf=80;}else if(deltas[n-1]>0&&decay<.7&&flat&&pM>.15){s='SHORT';sc=25;reason=`Buyer decay ${(decay*100).toFixed(0)}% + CVD flat`;conf=80;}else if(flat){s=pM<0?'LONG':pM>0?'SHORT':'NEUTRAL';sc=10;reason=`CVD flat (${cRp.toFixed(2)}%)`;conf=55;}agents.push({id:'exh',name:'Exhaustion',signal:s,score:sc,reason,conf});const tpL=topPos>=1.2,tpS=topPos<=.85,rHls=globalLS>=1.8,rLls=globalLS<=.6;s='NEUTRAL';sc=0;reason='Posisi netral';conf=50;if(rLls&&tpL){s='LONG';sc=25;reason='Retail SHORT vs Whale LONG (kontrarian)';conf=85;}else if(rHls&&tpS){s='SHORT';sc=25;reason='Retail LONG vs Whale SHORT (kontrarian)';conf=85;}else if(tpL){s='LONG';sc=12;reason=`Top trader LONG (rasio ${topPos.toFixed(2)})`;conf=60;}else if(tpS){s='SHORT';sc=12;reason=`Top trader SHORT (rasio ${topPos.toFixed(2)})`;conf=60;}agents.push({id:'sm',name:'SmartMoney',signal:s,score:sc,reason,conf});const rh100=Math.max(...highs.slice(-100)),rl100=Math.min(...lows.slice(-100)),rPos=(price-rl100)/(rh100-rl100);s='NEUTRAL';sc=0;reason=`Mid-range (${(rPos*100).toFixed(0)}%)`;conf=50;if(rPos<.2){s='LONG';sc=20;reason=`Discount zone (${(rPos*100).toFixed(0)}% dari range)`;conf=75;}else if(rPos>.8){s='SHORT';sc=20;reason=`Premium zone (${(rPos*100).toFixed(0)}% dari range)`;conf=75;}else if(rPos<.35){s='LONG';sc=10;reason=`Lower range (${(rPos*100).toFixed(0)}%)`;conf=55;}else if(rPos>.65){s='SHORT';sc=10;reason=`Upper range (${(rPos*100).toFixed(0)}%)`;conf=55;}agents.push({id:'struct',name:'Structure',signal:s,score:sc,reason,conf});let wB=0,wS=0,wBV=0,wSV=0;for(const t of agg||[]){const usd=Number(t.p)*Number(t.q);if(usd>=30000){if(t.m===false){wB++;wBV+=usd;}else{wS++;wSV+=usd;}}}s='NEUTRAL';sc=0;reason='Tidak ada aktivitas whale';conf=40;const whTotal=wB+wS;if(whTotal>=2){const bR=wBV/(wBV+wSV||1);if(bR>=.6){s='LONG';sc=22;reason=`Whale BUY dominan (${wB}B/${wS}S, net +$${((wBV-wSV)/1000).toFixed(0)}K)`;conf=80;}else if(bR<=.4){s='SHORT';sc=22;reason=`Whale SELL dominan (${wB}B/${wS}S, net -$${((wSV-wBV)/1000).toFixed(0)}K)`;conf=80;}}agents.push({id:'whale',name:'Whale',signal:s,score:sc,reason,conf});const mtf=analyzeMTF(k15,k1h,k4h,price);s='NEUTRAL';sc=0;reason='MTF tidak selaras';conf=50;if(mtf.bullCount===3){s='LONG';sc=22;reason='Semua TF bull (4H+1H+15m)';conf=85;}else if(mtf.bearCount===3){s='SHORT';sc=22;reason='Semua TF bear (4H+1H+15m)';conf=85;}else if(mtf.bullCount===2){s='LONG';sc=12;reason=mtf.bullCount+'/3 TF bull';conf=60;}else if(mtf.bearCount===2){s='SHORT';sc=12;reason=mtf.bearCount+'/3 TF bear';conf=60;}agents.push({id:'mtf',name:'MTF',signal:s,score:sc,reason,conf,detail:mtf});const pullback=detectPullback(closes,highs,lows,vols,deltas,cvd,price,atr,mtf);s='NEUTRAL';sc=0;reason=pullback.reason;conf=pullback.conf;if(pullback.status==='ending'){s=pullback.direction;sc=20;}agents.push({id:'pb',name:'Pullback',signal:s,score:sc,reason,conf,detail:pullback});const weights=getRegimeWeights(regime);let longScore=0,shortScore=0,longW=0,shortW=0,totalW=0;for(const ag of agents){const w=weights[ag.id]||1;ag.weight=w;const contribution=ag.score*w;totalW+=w;if(ag.signal==='LONG'){longScore+=contribution;longW+=w;}else if(ag.signal==='SHORT'){shortScore+=contribution;shortW+=w;}}const direction=longScore>shortScore?'LONG':shortScore>longScore?'SHORT':null;if(!direction)return null;const winScore=direction==='LONG'?longScore:shortScore,winW=direction==='LONG'?longW:shortW,opposingScore=direction==='LONG'?shortScore:longScore,maxPossible=120*totalW,netScore=winScore-opposingScore*.5;let consensus=Math.round(netScore/maxPossible*100);consensus=Math.max(0,Math.min(100,consensus));if(consensus<CFG.minConsensus||winW<2)return null;const trends={h4:mtf.trend4h==='bull'?'bullish':'bearish',h1:mtf.trend1h==='bull'?'bullish':'bearish',m15:mtf.trend15==='bull'?'bullish':'bearish'},m5={rsi,volume:{side:dR>8?'BUY':dR<-8?'SELL':'BALANCED',spike:vols[n-1]>=mean(vols.slice(-21,-1))*1.35}};return{symbol:symbol.replace('USDT',''),base:symbol.replace('USDT',''),instId:symbol,direction,action:direction,consensus,probability:consensus,longScore,shortScore,agents,weights,regime:{regime:regime.type,atrPct:+(atr/price*100).toFixed(3)},pullback,mtf,price,chg24:chg,topPos,globalLS,rsi,atr,atrPct:(atr/price*100).toFixed(2),rLow,rHigh,rPos:rPos*100,trends,m5,council:{regime:regime.type,agents,votes:{long:longScore,short:shortScore},pullback},setup:'SCALP_MTF'};}
+async function fetchFrames(symbol){const mk=async interval=>{const raw=await getJson(`${BINANCE}/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${CFG.candleLimit}`);return klinesToCandles(raw);};const[c5,c15,c1h,c4h]=await Promise.all([mk(CFG.interval),mk('15m'),mk('1h'),mk('4h')]);return{c5,c15,c1h,c4h};}
+async function deepData(symbol){const[top,global,agg]=await Promise.all([getJson(`${BINANCE}/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=5m&limit=1`),getJson(`${BINANCE}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=5m&limit=1`),getJson(`${BINANCE}/fapi/v1/aggTrades?symbol=${symbol}&limit=100`)]);return{topPos:Number(top?.[0]?.longShortRatio||1),globalLS:Number(global?.[0]?.longShortRatio||1),agg:Array.isArray(agg)?agg:[]};}
+async function getUniverse(){const[info,tickers]=await Promise.all([getJson(`${BINANCE}/fapi/v1/exchangeInfo`),getJson(`${BINANCE}/fapi/v1/ticker/24hr`)]);const active=new Set((info.symbols||[]).filter(s=>s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT'&&s.status==='TRADING').map(s=>s.symbol));return(Array.isArray(tickers)?tickers:[]).filter(t=>active.has(t.symbol)).map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||0,price:Number(t.lastPrice)||0,change:Number(t.priceChangePercent)||0})).filter(x=>x.price>0&&x.volume>=CFG.minQuoteVolume).sort((a,b)=>b.volume-a.volume).slice(0,CFG.universe);}
+async function mapLimit(items,limit,fn){const out=[];let idx=0;async function worker(){while(true){const i=idx++;if(i>=items.length)return;try{out[i]=await fn(items[i],i);}catch(e){out[i]={error:e};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;}
+async function runCouncilEngine(){console.log('=== Crypto-Signal v4.1 | 8-Agent Council (source-calibrated) ===');const universe=await getUniverse();console.log('Universe:',universe.length,universe.map(x=>x.symbol.replace('USDT','')).join(', '));const scanned=await mapLimit(universe,CFG.batch,async u=>{const frames=await fetchFrames(u.symbol);if(frames.c5.length<40||frames.c15.length<40||frames.c1h.length<40||frames.c4h.length<40)return null;return{u,frames};});const base=scanned.filter(x=>x&&!x.error),scored=await mapLimit(base,CFG.batch,async x=>({x,d:await deepData(x.u.symbol)})),signals=[];for(const row of scored){if(!row||row.error)continue;const s=scoreCouncil({symbol:row.x.u.symbol,frames:row.x.frames,topPos:row.d.topPos,globalLS:row.d.globalLS,agg:row.d.agg,price:row.x.u.price,chg:row.x.u.change});if(s)signals.push(s);}signals.sort((a,b)=>b.consensus-a.consensus);const result=signals.slice(0,CFG.candidates);console.log('Council VALID:',result.length);for(const s of result)console.log(` ${s.base} ${s.direction} consensus=${s.consensus} retracement=${s.pullback.retracement.toFixed(1)}%`);return result;}
+module.exports={runCouncilEngine,CFG,detectRegime,getRegimeWeights,detectPullback,scoreCouncil};
