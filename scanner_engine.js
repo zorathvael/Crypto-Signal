@@ -48,8 +48,8 @@ async function getJson(url, retries=2) {
 function klinesToCandles(rows) {
   return (rows||[]).map(k=>({
     ts:+k[0], open:+k[1], high:+k[2], low:+k[3], close:+k[4],
-    volume:+k[5], closeTs:+k[6], quoteVolume:+k[7],
-    trades:+k[8], takerBuyBase:+k[9], takerBuyQuote:+k[10]
+    volume:+k[5], closeTs:null, quoteVolume:+k[6],
+    trades:null, takerBuyBase:null, takerBuyQuote:null
   })).filter(c=>[c.open,c.high,c.low,c.close,c.volume].every(Number.isFinite));
 }
 
@@ -263,7 +263,7 @@ async function getUniverse() {
   ]);
   const active=new Set((contracts.data||[]).filter(s=>String(s.symbolType||"").toLowerCase()!=="delivery" && String(s.symbolStatus||"normal").toLowerCase()==="normal").map(s=>s.symbol));
   return (tickers.data||[]).filter(t=>active.has(t.symbol))
-    .map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||Number(t.usdtVolume)||0,price:Number(t.lastPr)||Number(t.lastPrice)||0,change:Number(t.change24h)||0}))
+    .map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||Number(t.usdtVolume)||0,price:Number(t.lastPr)||Number(t.lastPrice)||0,change:Number(t.change24h)||Number(t.changeUtc24h)||0}))
     .filter(x=>x.price>0&&x.volume>=CFG.minQuoteVolume)
     .sort((a,b)=>b.volume-a.volume)
     .slice(0,CFG.universe);
