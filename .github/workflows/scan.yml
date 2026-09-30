@@ -52,6 +52,7 @@ jobs:
           SCANNER_MIN_VOLUME: "15000000"
           SCANNER_BATCH: "6"
           SCANNER_MIN_CONSENSUS: "52"
+          SCANNER_MARKET_DATA: "bitget"
           SCANNER_DEEP_CANDIDATES: "10"
         run: node scanner.js
 
