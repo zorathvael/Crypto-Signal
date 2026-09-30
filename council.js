@@ -218,7 +218,9 @@ async function getCouncilCandidates(){
           json(BINANCE+"/fapi/v1/klines?symbol="+symbol+"&interval="+tf+"&limit="+CFG.candleLimit)
             .then(candles).catch(()=>[])));
         if(k5.length<40||k15.length<40||k1.length<40||k4.length<40)return null;
-        return analyze(symbol,map.get(symbol),{"5m":k5,"15m":k15,"1h":k1,"4h":k4});
+        const result=analyze(symbol,map.get(symbol),{"5m":k5,"15m":k15,"1h":k1,"4h":k4});
+        if(result) result._frames={"5m":k5,"15m":k15,"1h":k1,"4h":k4};
+        return result;
       }catch(e){return null;}
     }));
     for(const r of rows)if(r)candidates.push(r);
@@ -244,13 +246,17 @@ async function getCouncilCandidates(){
         if(x.m===false){buy++;buyUsd+=usd;}else{sell++;sellUsd+=usd;}
       }
       c.deep={topLongShortPositionRatio:top,globalLongShortAccountRatio:global,whale:{buy,sell,buyUsd,sellUsd}};
-      const upgraded=analyze(c.symbol,{lastPrice:c.price,priceChangePercent:c.chg24},{"5m":[],"15m":[],"1h":[],"4h":[]},c.deep);
-      // The full re-analysis above requires candles; retain the original score
-      // when deep data is unavailable instead of fabricating a new consensus.
-      if(upgraded){c.deepConsensus=upgraded.consensus;}
+      // Re-run the same eight-agent council with deep positioning/order-flow
+      // evidence. This is the actual final council vote, not a cosmetic field.
+      const upgraded=analyze(c.symbol,{lastPrice:c.price,priceChangePercent:c.chg24},c._frames,c.deep);
+      if(upgraded){
+        Object.assign(c,upgraded);
+        c.deepConsensus=upgraded.consensus;
+      }
     }catch{}
   }
   candidates.sort((a,b)=>(b.deepConsensus??b.consensus)-(a.deepConsensus??a.consensus));
+  for(const c of candidates) delete c._frames;
   return candidates.slice(0,CFG.candidateLimit);
 }
 
