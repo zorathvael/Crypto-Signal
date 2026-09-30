@@ -10,7 +10,8 @@
  * It does NOT own public formatting or channel delivery.
  */
 
-const BINANCE = "https://fapi.binance.com";
+const BITGET = "https://api.bitget.com";
+const PRODUCT = "USDT-FUTURES";
 const CFG = {
   interval: process.env.SCANNER_INTERVAL || "5m",
   candleLimit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 120), 80), 240),
@@ -30,10 +31,11 @@ async function getJson(url, retries=2) {
   let err;
   for (let i=0;i<=retries;i++) {
     try {
-      const res = await fetch(url,{headers:{Accept:"application/json", "User-Agent":"Crypto-Signal/4.0.0-council"}});
-      if (res.status === 429) throw new Error("Binance API 429");
-      if (!res.ok) throw new Error("Binance API "+res.status);
-      return await res.json();
+      const res = await fetch(url,{headers:{Accept:"application/json", "User-Agent":"Crypto-Signal/4.0.0-bitget"}});
+      if (!res.ok) throw new Error("Bitget HTTP "+res.status);
+      const json=await res.json();
+      if (json && json.code && json.code !== "00000") throw new Error("Bitget API "+json.code+": "+(json.msg||"request failed"));
+      return json;
     } catch(e) {
       err=e;
       if (i<retries) await new Promise(r=>setTimeout(r,250*(i+1)));
@@ -41,6 +43,7 @@ async function getJson(url, retries=2) {
   }
   throw err;
 }
+
 
 function klinesToCandles(rows) {
   return (rows||[]).map(k=>({
@@ -172,28 +175,24 @@ function scoreAgents(ctx) {
 
 async function deepData(symbol) {
   const q=encodeURIComponent(symbol);
-  const [depth,agg,oi,premium,top,global]=await Promise.allSettled([
-    getJson(BINANCE+"/fapi/v1/depth?symbol="+q+"&limit=20"),
-    getJson(BINANCE+"/fapi/v1/aggTrades?symbol="+q+"&limit=500"),
-    getJson(BINANCE+"/fapi/v1/openInterest?symbol="+q),
-    getJson(BINANCE+"/fapi/v1/premiumIndex?symbol="+q),
-    getJson(BINANCE+"/futures/data/topLongShortPositionRatio?symbol="+q+"&period=5m&limit=20"),
-    getJson(BINANCE+"/futures/data/globalLongShortAccountRatio?symbol="+q+"&period=5m&limit=20")
+  const [depth, fills, oi, funding] = await Promise.allSettled([
+    getJson(BITGET+"/api/v3/market/orderbook?category="+PRODUCT+"&symbol="+q+"&limit=50"),
+    getJson(BITGET+"/api/v3/market/fills?category="+PRODUCT+"&symbol="+q+"&limit=100"),
+    getJson(BITGET+"/api/v2/mix/market/open-interest?productType="+PRODUCT+"&symbol="+q),
+    getJson(BITGET+"/api/v2/mix/market/current-fund-rate?productType="+PRODUCT+"&symbol="+q)
   ]);
-  const d=depth.status==="fulfilled"?depth.value:null;
-  const trades=agg.status==="fulfilled"?agg.value:[];
-  const oiVal=oi.status==="fulfilled"?Number(oi.value?.openInterest):null;
-  const prem=premium.status==="fulfilled"?premium.value:null;
-  const bids=(d?.bids||[]).reduce((s,x)=>s+Number(x[0])*Number(x[1]),0);
-  const asks=(d?.asks||[]).reduce((s,x)=>s+Number(x[0])*Number(x[1]),0);
+  const d=depth.status==="fulfilled"?depth.value?.data:null;
+  const trades=fills.status==="fulfilled"?(fills.value?.data||[]):[];
+  const bids=(d?.b||[]).reduce((s,x)=>s+Number(x[0])*Number(x[1]),0);
+  const asks=(d?.a||[]).reduce((s,x)=>s+Number(x[0])*Number(x[1]),0);
   const imbalance=(bids+asks)?(bids-asks)/(bids+asks)*100:0;
   let buy=0,sell=0;
-  for(const t of trades){const usd=Number(t.p)*Number(t.q); if(t.m)sell+=usd;else buy+=usd;}
+  for(const t of trades){const usd=Number(t.price)*Number(t.size); if(String(t.side).toLowerCase()==="sell")sell+=usd;else buy+=usd;}
   const flow=(buy+sell)?(buy-sell)/(buy+sell)*100:0;
-  const topLast=top.status==="fulfilled"?last(top.value||[]):null;
-  const glLast=global.status==="fulfilled"?last(global.value||[]):null;
-  return {imbalance,flow,buy,sell,oi:oiVal,funding:Number(prem?.lastFundingRate||0)*100,
-    topLongShort:Number(topLast?.longShortRatio||0),globalLongShort:Number(glLast?.longShortRatio||0)};
+  const oiRows=oi.status==="fulfilled"?(oi.value?.data?.openInterestList||[]):[];
+  const oiVal=Number(oiRows.find(x=>x.symbol===symbol)?.size||oiRows[0]?.size);
+  const fr= funding.status==="fulfilled" ? (funding.value?.data||[])[0] : null;
+  return {imbalance,flow,buy,sell,oi:Number.isFinite(oiVal)?oiVal:null,funding:Number(fr?.fundingRate||0)*100};
 }
 
 function applyDeep(v,side) {
@@ -206,13 +205,11 @@ function applyDeep(v,side) {
 }
 
 async function fetchFrames(symbol) {
-  const [a,b,c,d]=await Promise.all([
-    getJson(BINANCE+"/fapi/v1/klines?symbol="+symbol+"&interval=5m&limit="+CFG.candleLimit),
-    getJson(BINANCE+"/fapi/v1/klines?symbol="+symbol+"&interval=15m&limit="+CFG.candleLimit),
-    getJson(BINANCE+"/fapi/v1/klines?symbol="+symbol+"&interval=1h&limit="+CFG.candleLimit),
-    getJson(BINANCE+"/fapi/v1/klines?symbol="+symbol+"&interval=4h&limit="+Math.min(CFG.candleLimit,120))
-  ]);
-  return {c5:klinesToCandles(a),c15:klinesToCandles(b),c1:klinesToCandles(c),c4:klinesToCandles(d)};
+  const map={5m:"5m",15m:"15m",1h:"1H",4h:"4H"};
+  const rows=await Promise.all(["5m","15m","1h","4h"].map(k=>
+    getJson(BITGET+"/api/v2/mix/market/candles?symbol="+symbol+"&productType="+PRODUCT+"&granularity="+map[k]+"&limit="+CFG.candleLimit)
+  ));
+  return {c5:klinesToCandles(rows[0].data),c15:klinesToCandles(rows[1].data),c1:klinesToCandles(rows[2].data),c4:klinesToCandles(rows[3].data)};
 }
 
 function makeContext(symbol,frames) {
@@ -260,13 +257,13 @@ function candidateSignal(ctx,votes,deep) {
 }
 
 async function getUniverse() {
-  const [info,tickers]=await Promise.all([
-    getJson(BINANCE+"/fapi/v1/exchangeInfo"),
-    getJson(BINANCE+"/fapi/v1/ticker/24hr")
+  const [contracts,tickers]=await Promise.all([
+    getJson(BITGET+"/api/v2/mix/market/contracts?productType="+PRODUCT),
+    getJson(BITGET+"/api/v2/mix/market/tickers?productType="+PRODUCT)
   ]);
-  const active=new Set((info.symbols||[]).filter(s=>s.contractType==="PERPETUAL"&&s.quoteAsset==="USDT"&&s.status==="TRADING").map(s=>s.symbol));
-  return (tickers||[]).filter(t=>active.has(t.symbol))
-    .map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||0,price:Number(t.lastPrice)||0,change:Number(t.priceChangePercent)||0}))
+  const active=new Set((contracts.data||[]).filter(s=>String(s.symbolType||"").toLowerCase()!=="delivery" && String(s.symbolStatus||"normal").toLowerCase()==="normal").map(s=>s.symbol));
+  return (tickers.data||[]).filter(t=>active.has(t.symbol))
+    .map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||Number(t.usdtVolume)||0,price:Number(t.lastPr)||Number(t.lastPrice)||0,change:Number(t.change24h)||0}))
     .filter(x=>x.price>0&&x.volume>=CFG.minQuoteVolume)
     .sort((a,b)=>b.volume-a.volume)
     .slice(0,CFG.universe);
@@ -282,7 +279,7 @@ async function mapLimit(items,limit,fn) {
 async function runCouncilEngine() {
   console.log("=== Crypto-Signal v4.0 | 8-Agent Council Engine ===");
   console.log(new Date().toISOString());
-  console.log("Engine: Binance Futures → liquid universe → 8 agents → regime weighting → deep validation");
+  console.log("Engine: Bitget USDT Futures → liquid universe → 8 agents → regime weighting → deep validation");
   const universe=await getUniverse();
   console.log("Universe:",universe.length,universe.map(x=>x.symbol.replace("USDT","")).join(", "));
   const scanned=await mapLimit(universe,CFG.batch,async u=>{
