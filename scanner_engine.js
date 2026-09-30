@@ -205,7 +205,7 @@ function applyDeep(v,side) {
 }
 
 async function fetchFrames(symbol) {
-  const map={5m:"5m",15m:"15m",1h:"1H",4h:"4H"};
+  const map={"5m":"5m","15m":"15m","1h":"1H","4h":"4H"};
   const rows=await Promise.all(["5m","15m","1h","4h"].map(k=>
     getJson(BITGET+"/api/v2/mix/market/candles?symbol="+symbol+"&productType="+PRODUCT+"&granularity="+map[k]+"&limit="+CFG.candleLimit)
   ));
