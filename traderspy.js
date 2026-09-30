@@ -594,7 +594,6 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     ts: now,
     validUntil: new Date(ageValidUntil).toISOString(),
     horizons: {},
-    council: discovery.council || null,
     traderSpy: {
       id: "",
       resolutionStatus: "candidate",
@@ -617,37 +616,18 @@ async function getTraderSpyIntelligence(options = {}){
   const trackedSymbols=new Set((Array.isArray(trackedPayload?.symbols)?trackedPayload.symbols:[]).map(x=>String(x).toUpperCase()));
   if(!trackedSymbols.size)throw new Error("TraderSpy tracked-symbol universe is empty; refusing to validate candidates.");
 
-  // Candidate-first architecture: when the Council engine supplies candidates,
-  // TraderSpy is used for validation rather than discovery. This keeps the
-  // eight-agent funnel deterministic and preserves TraderSpy as the validation
-  // authority. Native TraderSpy discovery remains the safe fallback if Council
-  // discovery is unavailable.
-  const externalCandidates=Array.isArray(options.councilCandidates)?options.councilCandidates:[];
-  let discovery;
-  if(externalCandidates.length){
-    discovery=externalCandidates
-      .map(x=>({
-        symbol:String(x.symbol||"").toUpperCase(),
-        base:String(x.base||String(x.symbol||"").replace(/USDT$/i,"")),
-        score:Number(x.consensus??x.score??0),
-        bias:String(x.bias||"").toLowerCase(),
-        trend:String(x.trend||"").toLowerCase(),
-        council:x
-      }))
-      .filter(x=>x.symbol&&trackedSymbols.has(x.symbol))
-      .sort((a,b)=>b.score-a.score);
-    console.log("Council discovery: tracked="+trackedSymbols.size+" screened="+discovery.length+" validationTargetCap="+clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||20),1,20));
-  }else{
-    const discoveryPayload=await callTool(url,sessionId,callId++,"screen_symbols",{
-      interval:"4h",
-      universe:clamp(Number(process.env.TRADERSPY_DISCOVERY_UNIVERSE||100),5,100),
-      limit:clamp(Number(process.env.TRADERSPY_DISCOVERY_LIMIT||50),5,50),
-      sortBy:"volume",
-      sortOrder:"desc"
-    });
-    discovery=normalizeDiscoveryRows(discoveryPayload).filter(x=>trackedSymbols.has(x.symbol));
-    console.log("TraderSpy native discovery fallback: tracked="+trackedSymbols.size+" screened="+discovery.length+" validationTargetCap="+clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||20),1,20));
-  }
+  const discoveryPayload=await callTool(url,sessionId,callId++,"screen_symbols",{
+    interval:"4h",
+    universe:clamp(Number(process.env.TRADERSPY_DISCOVERY_UNIVERSE||100),5,100),
+    limit:clamp(Number(process.env.TRADERSPY_DISCOVERY_LIMIT||50),5,50),
+    sortBy:"volume",
+    sortOrder:"desc"
+  });
+  const discovery=normalizeDiscoveryRows(discoveryPayload).filter(x=>trackedSymbols.has(x.symbol));
+
+  // Keep the discovery funnel observable. A large tracked universe is useful
+  // only if enough candidates are handed to the validation stage.
+  console.log("TraderSpy discovery: tracked="+trackedSymbols.size+" screened="+discovery.length+" validationTargetCap="+clamp(Number(process.env.TRADERSPY_VALIDATION_TARGETS||20),1,20));
 
   const signalPayload=await callTool(url,sessionId,callId++,"get_signals",{
     limit:clamp(Number(process.env.TRADERSPY_SIGNAL_LIMIT||50),1,50),
