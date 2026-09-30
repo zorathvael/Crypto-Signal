@@ -175,7 +175,7 @@ function scoreAgents(ctx) {
 
 async function deepData(symbol) {
   const q=encodeURIComponent(symbol);
-  const [depth, fills, oi, funding] = await Promise.allSettled([
+  const [depth, fills, oi, funding, longShort] = await Promise.allSettled([
     getJson(BITGET+"/api/v3/market/orderbook?category="+PRODUCT+"&symbol="+q+"&limit=50"),
     getJson(BITGET+"/api/v3/market/fills?category="+PRODUCT+"&symbol="+q+"&limit=100"),
     getJson(BITGET+"/api/v2/mix/market/open-interest?productType="+PRODUCT+"&symbol="+q),
@@ -200,14 +200,14 @@ function applyDeep(v,side) {
   const sg=side==="LONG"?1:-1;
   let s=50+sg*(v.imbalance*.22+v.flow*.32);
   if(Number.isFinite(v.funding))s+=sg*(-clamp(v.funding*18,-8,8));
-  if(v.topLongShort>0)s+=sg*clamp((v.topLongShort-1)*10,-10,10);
+  if(Number.isFinite(v.longShortRatio))s+=sg*clamp((v.longShortRatio-1)*8,-8,8);
   return clamp(s,0,100);
 }
 
 async function fetchFrames(symbol) {
   const map={"5m":"5m","15m":"15m","1h":"1H","4h":"4H"};
   const rows=await Promise.all(["5m","15m","1h","4h"].map(k=>
-    getJson(BITGET+"/api/v2/mix/market/candles?symbol="+symbol+"&productType="+PRODUCT+"&granularity="+map[k]+"&limit="+CFG.candleLimit)
+    getJson(BITGET+"/api/v3/market/candles?category="+PRODUCT+"&symbol="+symbol+"&interval="+map[k]+"&limit="+CFG.candleLimit)
   ));
   return {c5:klinesToCandles(rows[0].data),c15:klinesToCandles(rows[1].data),c1:klinesToCandles(rows[2].data),c4:klinesToCandles(rows[3].data)};
 }
