@@ -594,6 +594,7 @@ function buildScreenCandidate(discovery, technicalPayload, now, actionHint = nul
     ts: now,
     validUntil: new Date(ageValidUntil).toISOString(),
     horizons: {},
+    council: discovery.council || null,
     traderSpy: {
       id: "",
       resolutionStatus: "candidate",
