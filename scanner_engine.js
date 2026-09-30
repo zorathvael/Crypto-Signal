@@ -235,8 +235,8 @@ function candidateSignal(ctx,votes,deep) {
   const atrv=atr(ctx.c15)||atr(ctx.c5)||ctx.price*.005;
   let structural=side==="LONG"?(s.support||ctx.price-atrv):(s.resistance||ctx.price+atrv);
   const maxRisk=ctx.price*.005;
-  if(side==="LONG") structural=Math.min(structural,ctx.price-maxRisk*.35);
-  else structural=Math.max(structural,ctx.price+maxRisk*.35);
+  if(side==="LONG") structural=clamp(structural,ctx.price-maxRisk*.90,ctx.price-maxRisk*.35);
+  else structural=clamp(structural,ctx.price+maxRisk*.35,ctx.price+maxRisk*.90);
   const validUntil=new Date(Date.now()+15*60*1000).toISOString();
   const agents=votes[side].agents;
   return {
