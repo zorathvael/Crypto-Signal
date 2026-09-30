@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: crypto-signal-scan
+  cancel-in-progress: false
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -68,6 +72,7 @@ jobs:
               echo "No outcome log changes"
             else
               git commit -m "chore: update signals-log outcome tracker"
+              git pull --rebase origin main
               git push
             fi
           fi
