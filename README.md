@@ -1,502 +1,201 @@
-# Crypto-Signal v4.0
+# Crypto-Signal v4.0.0
 
-Crypto-Signal adalah pipeline publikasi signal futures v4.0 dengan **tiered market validation** dan delivery flow yang sudah ada. Provider intelligence tetap berada di backend dan tidak ditampilkan sebagai identitas sumber pada posting publik:
+Eight-agent market scanner for crypto futures with the existing Telegram, Discord, and Binance Square output contract.
 
-**Discovery → full validation → dedup → outcome tracking → Discord + Telegram + Binance Square**
+## Production architecture
 
-> Crypto-Signal tidak mengeksekusi order. Signal adalah informasi untuk validasi manual.
-
-## Perubahan inti v4.0
-
-### Intelligence engine
-Mulai v4.0, workflow aktif tidak lagi membuat signal dari scanner Bitget lokal.
-
-Signal aktif berasal dari TraderSpy MCP `get_signals`, kemudian dinormalisasi oleh `traderspy.js`.
-
-Yang tetap dipertahankan:
-- `signals-log.json`
-- outcome tracking
-- persistent duplicate-result fingerprint + legacy dedup window
-- semua signal baru yang lolos validasi dan dedup
-- tidak ada suppression delivery berdasarkan loss streak
-- Binance Square batch maksimal 3 coin per post
-- format dan destination posting
-- GitHub Actions
-- Discord
-- Telegram
-- Binance Square
-
-Yang tidak lagi menjadi sumber signal pada mode aktif:
-- local MTF scoring
-- local orderbook scoring
-- local funding/OI/L/S scoring
-- local BTC-bias signal generation
-- local probability heuristics
-- legacy SHORT/LONG direction bias
-
-File scanner lama masih berada di `scanner.js` sebagai rollback reference, tetapi **workflow aktif memakai `TRADERSPY_ONLY=true`** sehingga jalur lama tidak dieksekusi.
-
-## TraderSpy quota fallback
-
-TraderSpy tetap menjadi **sumber utama**. Jika TraderSpy mengembalikan **HTTP 429 / daily quota exhausted**, scanner otomatis berpindah ke `traderspy_fallback.js`.
-
-Fallback memakai **public Binance USDⓈ-M Futures market data** dan mempertahankan observable TraderSpy-compatible pipeline:
+The active scanner is now a **single engine**. The legacy scanner tree, TraderSpy discovery/validation path, Council add-on path, and fallback decision tree are not executed.
 
 ```
-Binance futures universe
-    ↓
-liquidity discovery
-    ↓
-15M + 1H + 4H technical direction
-    ↓
-MTF agreement
-    ↓
-ATR / structure SL-TP
-    ↓
-funding + open interest + orderbook sanity
-    ↓
-bounded quality gate
-    ↓
-same signal contract
-    ↓
-same dedup / delivery pipeline
+Binance Futures public market data
+        ↓
+Liquid USDT perpetual universe
+        ↓
+5M / 15M / 1H / 4H market structure
+        ↓
+8-agent Council
+  ├─ Wyckoff
+  ├─ OrderFlow
+  ├─ Exhaustion
+  ├─ SmartMoney
+  ├─ Structure
+  ├─ Whale
+  ├─ MTF
+  └─ Pullback
+        ↓
+Regime-dependent weighting
+  ├─ trending
+  ├─ ranging
+  └─ volatile
+        ↓
+Weighted LONG / SHORT consensus
+        ↓
+Deep validation for the strongest candidates
+  ├─ order book imbalance
+  ├─ aggregate trades
+  ├─ open interest
+  ├─ funding
+  ├─ top long/short positioning
+  └─ global long/short positioning
+        ↓
+Executable trade geometry
+        ↓
+UNCHANGED DELIVERY CONTRACT
+  ├─ Discord
+  ├─ Telegram
+  └─ Binance Square (max 3 coins/post + visual)
 ```
 
-Fallback **tidak** menjadi sumber kedua yang selalu aktif dan tidak mengubah TraderSpy ketika TraderSpy tersedia. Ia hanya aktif pada quota exhaustion. Authentication errors, malformed TraderSpy responses, dan error lain tetap fail-closed.
+The Council score is a deterministic **screening/quality score**, not a statistical win probability.
 
-Default fallback budget:
-- discovery: top 20 liquid perpetual USDT symbols
-- validation targets: 10
-- hard maximum validation targets: 10
-- per target: 3 kline requests + OI + funding + depth
-- no order execution
-- no synthetic/mock market data
-- Binance Futures endpoint failover: `fapi.binance.com` → `fapi1` → `fapi2` → `fapi3` → `fapi4`; the first working endpoint is reused for the scan
-- failover is bounded to 403/429/451/5xx responses and network failures; unexpected 4xx errors are not masked
+## Eight-agent model
 
-Fallback tidak mengklaim mereplikasi proprietary internals TraderSpy. Ia mereplikasi **observable validation contract dan decision structure** yang digunakan repository ini untuk menjaga bentuk/aturan signal tetap kompatibel.
+Each candidate receives independent directional scores from eight agents.
 
-Fallback geometry is now wired directly to `trade_plan.js`: structural stops are checked against the immutable 0.5% maximum, while the production engine remains the sole owner of the fixed 20x SL/TP geometry. This prevents a missing-module runtime failure and prevents the fallback from inventing a separate TP/SL contract.
-
-## TraderSpy adapter
-
-File:
-- `traderspy.js` — remote MCP client + signal normalization
-- `traderspy.test.js` — unit tests untuk normalisasi
-- `scanner.js` — pipeline, dedup, public formatting, dan delivery
-- `signals-log.json` — outcome tracker
-- `.github/workflows/scan.yml` — scheduled runtime
-
-Adapter memakai **bounded tiered validation** per scan:
-
-```
-get_tracked_symbols
-    ↓
-screen_symbols (4H, top-volume universe)
-    ↓
-get_signals (up to 50 recent candidates)
-    ↓
-age/status/level/crypto validation
-    ↓
-bounded validation targets (default 20, configurable up to 20)
-    ↓
-get_derivatives (batched)
-    ↓
-get_technical_indicators (15M + 1H + 4H)
-    ↓
-get_signal_details (deep-check for strongest candidates)
-    ↓
-final validation score
-    ↓
-dedup / safety
-    ↓
-Discord
-Telegram
-Binance Square
-```
-
-The pipeline deliberately uses TraderSpy's screener and tracked-symbol universe before signal validation. A stale signal is never accepted merely because its timestamp is present: signals older than the normal delivery window can survive candidate selection only when current multi-timeframe technical and derivatives data still validate the setup. The tracked-symbol check is combined with an explicit non-crypto denylist so tokenized equities, metals, and other known non-crypto instruments do not enter the crypto delivery path.
-
-### Candidate funnel optimization
-
-The discovery stage can screen up to 100 tracked futures symbols and return up to 50 liquid candidates, but validating only 10 of those candidates created an unnecessary bottleneck: many potentially valid setups never reached the technical/derivatives gate. The active default is now **20 validation targets**. This widens opportunity coverage without weakening the final validation criteria, fixed 20x geometry, freshness rules, Alpha Hunter gate, or delivery deduplication. The validation target count remains hard-bounded at 20 to keep MCP usage predictable.
-
-## Signal normalization
-
-TraderSpy memberikan:
-- action: buy/sell
-- symbol
-- timeframe
-- trigger price
-- TP1/TP2/TP3 percentage
-- SL percentage
-- signal strength
-- importance
-- resolution status
-- createdAt
-- triggered conditions
-
-Crypto-Signal memperlakukan trigger price provider sebagai discovery/reference saja. Sebelum publication, setiap published signal wajib melewati Timing Calibration menggunakan harga market live + ATR + support/resistance terbaru. Entry production kemudian selalu berasal dari live market price; structural level menjadi bukti timing/structural-SL, lalu satu-satunya production trade-plan engine menghitung executable SL dan TP dari margin contract:
-
-- LONG: SL di bawah entry, TP di atas entry
-- SHORT: SL di atas entry, TP di bawah entry
-- Margin: 5 USDT
-- Maximum risk: 10% margin = 0.50 USDT
-- Leverage: **20x fixed**
-- Maximum SL loss: **10% margin = 0.50 USDT**
-- TP1/TP2/TP3: **30% / 60% / 120% of margin**
-
-R:R tetap tersedia sebagai metrik diagnostik/outcome, tetapi tidak lagi menjadi pengendali Entry/SL/TP.
-
-### Quality score
-
-Field lama `probability` tetap dipertahankan di internal schema agar outcome/delivery layer kompatibel.
-
-**Penting:** nilai tersebut bukan probabilitas statistik terkalibrasi.
-
-Ia adalah **derived quality score** dari:
-- TraderSpy signal strength
-- TraderSpy importance
-
-Mapping:
-- very_strong → 96
-- strong → 90
-- moderate → 84
-- weak → 76
-- high importance mendapat bonus +3
-- medium importance mendapat bonus +1
-
-Default delivery floor: **80**.
-
-Dengan demikian repository tidak mengklaim bahwa score tersebut adalah win probability.
-
-## Signal freshness
-
-Default:
-- maximum signal age: 120 menit
-- hanya `resolutionStatus=pending`
-- signal dengan timestamp masa depan yang tidak wajar ditolak
-- valid-until mengikuti timeframe TraderSpy dan freshness window
-
-Environment variables dapat mengubah:
-- `TRADERSPY_SIGNAL_LIMIT`
-- `TRADERSPY_MAX_AGE_MIN`
-- `TRADERSPY_MIN_SCORE`
-
-## Timing Calibration vs Trade Geometry
-
-Kedua layer ini sengaja dipisahkan dan tidak boleh saling mengambil alih:
-
-### Timing Calibration — adaptif, ENTRY NOW
-
-`timing_calibration.js` adalah layer timing. Untuk signal yang berlabel ENTRY NOW, **Entry selalu menggunakan live market price**. Support/resistance tidak dipakai untuk memindahkan Entry menjadi limit/pullback entry; level tersebut hanya menjadi bukti timing dan structural-SL.
-
-Aturan arah:
-- LONG → support di bawah live price.
-- SHORT → resistance di atas live price.
-- Struktur harus berada di dalam envelope risiko maksimum 0.5% harga.
-- Jika tidak ada struktur directional yang executable, candidate ditolak fail-closed.
-- Timing score mengukur kualitas/proximity struktur, bukan mengubah Entry.
-
-Timing Calibration boleh menggunakan:
-- live price
-- ATR/volatility
-- support/resistance
-- technical anchor sebagai konteks
-- geometry utilisation
-- timing score dan timing mode
-
-Timing Calibration **tidak boleh** menentukan leverage, margin, executable SL, atau TP1/TP2/TP3.
-
-### Trade Geometry — deterministik
-
-`trade_plan.js` adalah satu-satunya source of truth untuk executable trade geometry:
-- Margin: **5 USDT**
-- Leverage: **20x fixed**
-- Notional: **100 USDT**
-- SL: **-10% margin = -0.50 USDT = -0.5% harga**
-- TP1: **+30% margin = +1.50 USDT = +1.5% harga**
-- TP2: **+60% margin = +3.00 USDT = +3.0% harga**
-- TP3: **+120% margin = +6.00 USDT = +6.0% harga**
-
-Alur produksi:
-
-`Market Data → MTF → Alpha/Candidate → Timing Calibration (Entry + structural SL) → Trade Geometry (fixed SL/TP) → Execution Validation → Signal`
-
-Jika structural SL dari Timing Calibration melebihi envelope 0.5% harga, trade ditolak. **Leverage tidak dinaikkan untuk memaksa trade lolos. Entry tidak diubah oleh Trade Geometry.**
-
-## Independent entry calibration
-
-Entry Calibration is a separate adaptive layer from Entry Geometry.
-
-- **Entry Geometry remains immutable:** 5 USDT margin, fixed 20x leverage, 0.5% maximum price-risk envelope, TP1/TP2/TP3 = 30/60/120% of margin.
-- Entry calibration derives its usable structural distance from the **actual geometry capacity in ATR units**:
-  `geometryCapacityAtr = (Entry × 0.5%) / ATR`.
-- Nearby support/resistance is usable only when it can fit inside that executable envelope.
-- The calibration score is continuous and combines market proximity, structural proximity, and geometry utilisation; it does not use fixed 0.75/1.5 ATR entry thresholds.
-- Closed outcomes now persist calibration score/distance/capacity so Alpha Hunter can learn an empirical calibration floor from observed outcomes.
-- The empirical floor uses smoothed historical outcome evidence and only activates after sufficient observations; before that, the system uses the calibrated cold-start floor.
-
-This makes threshold selection **measured by entry context**, rather than manually tightening or loosening arbitrary scanner thresholds.
-
-## Alpha Hunter v3
-— conditional edge selection
-
-Alpha Hunter memakai conditional empirical evidence dari outcome tracker, bukan hanya score teknikal.
-
-Evidence historis dikondisikan secara bertingkat: action; setup + action; symbol + action; quality bucket + action; dan 15M follow-through sebagai secondary edge component.
-
-Historical evidence dibatasi ke active crypto-signal era (`ALPHA_HISTORY_AFTER_TS`, default `2026-09-18T00:00:00Z`) dan mengecualikan instrumen non-crypto/legacy yang diketahui. Cohort kecil hanya menjadi diagnostik dan tidak melakukan veto.
-
-Default:
-- `ALPHA_MIN_SCORE=72`
-- `ALPHA_HISTORY_AFTER_TS=2026-09-18T00:00:00Z`
-- hard veto jika MTF alignment < 2/3
-- hard veto jika calibrated Entry > 2 ATR dari live price
-- historical R metrics may be used for outcome analysis, but never define public Entry/SL/TP geometry
-- hard veto jika entry > 2 ATR dari live price
-- hard veto jika signal > 120 menit
-- empirical edge negatif menjadi hard veto hanya setelah cohort stabil minimal 20 outcome
-
-Scanner sekarang meneruskan `signals-log.json` ke Alpha Hunter pada jalur published signal maupun discovery candidate.
-Destination tetap:
-
-1. **Discord** — semua signal baru yang lolos dedup
-2. **Telegram** — semua signal baru yang lolos dedup
-3. **Binance Square** — semua signal baru yang lolos dedup, dibagi batch maksimal 3 coin per post
-
-Urutan pemanggilan di scanner tetap:
-
-```js
-await sendDiscord(postSignals);
-await sendTelegram(postSignals);
-await sendBinanceSquare(postSignals);
-```
-
-Secret lama tetap digunakan:
-
-| Secret | Fungsi |
+| Agent | Primary evidence |
 |---|---|
-| `DISCORD_WEBHOOK` | Discord |
-| `TELEGRAM_BOT_TOKEN` | Telegram |
-| `TELEGRAM_CHAT_ID` | Telegram |
-| `BINANCE_SQUARE_OPENAPI_KEY` | Binance Square |
-
-## Tiered validation configuration
-
-Default workflow settings:
-
-```yaml
-TRADERSPY_SIGNAL_LIMIT: "50"
-TRADERSPY_MAX_AGE_MIN: "120"
-TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
-TRADERSPY_DISCOVERY_UNIVERSE: "100"
-TRADERSPY_DISCOVERY_LIMIT: "50"
-TRADERSPY_VALIDATION_TARGETS: "20"
-TRADERSPY_VALIDATION_MIN_SCORE: "88"
-TRADERSPY_STALE_MIN_SCORE: "90"
-```
-
-`TRADERSPY_MAX_AGE_MIN` remains the normal freshness gate. `TRADERSPY_CANDIDATE_MAX_AGE_MIN` is only a wider candidate window; it does not bypass live validation. The final gate requires multi-timeframe technical agreement, derivatives sanity checks, and the bounded validation score.
-
-## TraderSpy authentication
-
-TraderSpy mendukung personal key `mcp_…` sebagai Bearer token pada endpoint MCP resmi, dan juga personal connection URL yang menanamkan key sebagai `?token=mcp_…`. citeturn3search0turn3search1
-
-Runtime mendukung keduanya:
-- `TRADERSPY_MCP_URL` bila endpoint/personal URL ingin ditentukan secara eksplisit.
-- `TRADERSPY_MCP_TOKEN` untuk raw `mcp_…` Bearer token atau personal URL yang berisi credential.
-- Jika `TRADERSPY_MCP_URL` kosong, raw token memakai `https://mcp.traderspy.app/mcp`; jika token sendiri berupa URL, URL tersebut dipakai langsung.
-
-Run 36272996060 gagal HTTP 401. Workflow sebelumnya selalu menyuntikkan endpoint publik ke `TRADERSPY_MCP_URL`, sehingga bila `TRADERSPY_MCP_TOKEN` berisi personal URL, URL credential tersebut tidak pernah dipakai. Workflow sekarang membiarkan `TRADERSPY_MCP_URL` kosong dan adapter memilih endpoint dari secret yang tersedia.
-
-Jangan commit URL/token TraderSpy ke repository.
-## GitHub Actions
-
-Workflow:
-`.github/workflows/scan.yml`
-
-Schedule tetap **setiap jam UTC**.
-
-Runtime environment:
-
-```yaml
-TRADERSPY_ONLY: "true"
-TRADERSPY_SIGNAL_LIMIT: "50"
-TRADERSPY_MAX_AGE_MIN: "120"
-TRADERSPY_MIN_SCORE: "80"
-```
-
-Secret yang perlu ditambahkan:
-
-```
-TRADERSPY_MCP_URL
-```
-
-atau:
-
-```
-TRADERSPY_MCP_TOKEN
-```
-
-Secret delivery tetap sama.
-
-## Testing
-
-Sebelum runtime:
-
-```bash
-node --check traderspy.js
-node --check scanner.js
-node --check positioning.js
-npm test
-```
-
-Test adapter mencakup:
-- LONG normalization
-- SHORT normalization
-- TP/SL conversion
-- fixed margin geometry validation (10% risk, 30/60/120% reward, fixed 20x)
-- quality score
-- stale signal rejection
-- resolved signal rejection
-- non-crypto instrument rejection
-- incomplete target rejection
-
-## Cost / call discipline
-
-Pipeline tidak memanggil tool detail yang tidak diperlukan. Discovery dan validation tetap bounded pada default 20 validation targets:
-
-- 1 `get_tracked_symbols`
-- 1 `screen_symbols` across up to 100 high-volume futures
-- 1 `get_signals` request for up to 50 recent candidates
-- 1 batched `get_derivatives` request for the validation targets
-- up to 20 `get_technical_indicators` calls when all validation targets require validation
-- up to 2 `get_signal_details` calls for the strongest published candidates
-
-This keeps the deep validation stage small while making the candidate universe substantially broader than the previous 20-signal-only importer.
-
-Tujuannya:
-- menjaga candidate discovery tetap bounded (maksimal 50 candidate discovery)
-- menjaga validation default tetap 20 target agar coverage tetap lebar dengan batas quota yang terukur
-- menghindari pemanggilan data redundan
-- menggunakan signal engine TraderSpy langsung sebagai source of truth
-- tidak membuang signal valid hanya karena batas delivery channel
-
-TraderSpy MCP memiliki daily tool-call allowance berdasarkan plan akun. Karena itu adapter tidak melakukan `get_candles`, `get_derivatives`, `get_positions`, atau `get_signal_details` secara otomatis pada setiap signal.
-
-## Outcome tracker
-
-`signals-log.json` tetap dipertahankan agar repository mempunyai audit trail lokal.
-
-Signal baru yang berhasil melewati delivery filter diregistrasikan sebagai open outcome.
-
-Outcome lama tetap dievaluasi oleh tracker yang sudah ada. Jika market-data provider outcome gagal, tracker tidak mengubah signal menjadi WIN/LOSS secara paksa.
-
-## Operational safety
-
-Pipeline fail-closed:
-
-```
-TraderSpy unavailable
-        ↓
-HTTP 429 / quota exhausted → bounded public Futures fallback
-        ↓
-Bitget/Binance market data → MTF + OI/funding/order-book sanity
-        ↓
-ENTRY NOW timing calibration → executable structure ≤ 0.5%
-        ↓
-Fixed 20x geometry → same delivery contract
-        ↓
-Other provider/auth errors → NO VALID SIGNAL
-```
-
-Kesalahan authentication, malformed response, missing entry/SL/TP, expired signal, resolved signal, dan symbol non-crypto tidak boleh berubah menjadi signal valid.
-
-## Disclaimer
-
-Crypto-Signal adalah alat informasi/edukasi untuk analisis pasar.
-
-Bukan nasihat keuangan dan bukan sistem eksekusi order.
-
-Selalu validasi level, kondisi pasar, leverage, biaya, slippage, dan risiko sebelum mengambil keputusan trading.
-
-
-## Public posting rules
-
-- Binance Square selalu menggunakan professional visual card; jika renderer atau upload visual gagal, posting text-only tidak diperbolehkan.
-- Hashtag Binance Square: `#PintarPakaiBinanceEarn`.
-- Internal provider names such as `TraderSpy` are not exposed in public signal copy or visual labels.
-- Duplicate scan results are blocked using a persistent signal fingerprint covering symbol, direction, setup, and relative entry/SL/TP structure; duplicate suppression is the only cross-scan delivery filter.
-- Discord and Telegram receive every newly validated, non-duplicate signal; there is no global `max 3` delivery cap.
-- Binance Square posts the same signals in sequential batches of up to 3 coins, and each batch visual is rendered from the exact same coin set.
-- Loss streak is informational for the active TraderSpy delivery path and does not suppress newly validated signals.
-- Pull-request CI runs the scanner in delivery dry-run mode, so validation tests do not publish to external channels or mutate outcome/dedup state.
-- Production scheduled/manual runs retain live delivery.
-
-## Repository version
-
-The active repository release is **v4.0.0** (`package.json`). Legacy comments/names from older scanner generations are not part of the public v4.0 presentation.
-
-
-## CI regression fix
-
-The TraderSpy normalization path now separates provider discovery price from production Entry. Published signals are recalibrated after fresh 15M/1H/4H technical data arrives: live market price becomes `Entry`, directional support/resistance becomes structural timing evidence, and the immutable 20x trade geometry derives executable SL/TP. If fresh timing data or an executable structural level is unavailable, the published signal is rejected fail-closed rather than retaining a stale provider trigger. The quota fallback now applies the same ENTRY NOW timing rule: Entry is the latest live market price, and support/resistance is accepted only when it lies inside the immutable 0.5% price-risk envelope. Screened candidates reject only when the fixed executable geometry covers less than 10% of the observed ATR. This is an execution-capacity gate derived from the geometry/volatility ratio; it does not alter the calibrated entry score or widen/tighten the fixed risk geometry.
-
-## Operational reliability rule
-
-Perubahan produksi wajib diperlakukan sebagai perubahan runtime, bukan hanya perubahan kode. Sebelum merge: cek syntax, unit test, workflow dry-run, konsumsi quota/tool call, error-path provider, delivery fan-out, dedup, batching Square, dan sinkronisasi README. Jangan menaikkan validation target tanpa menghitung dampaknya terhadap quota harian. Jika provider quota habis, runtime harus berhenti aman tanpa duplicate post, tanpa outcome mutation, dan tanpa crash yang tidak terkontrol.
-
-## Empirical calibration v4.1
-
-The scanner no longer treats the provider quality score as a probability. Before a signal can publish, the engine snapshots the live state and calibrates the result against resolved outcomes in `signals-log.json`.
-
-Calibration dimensions:
-- historical outcome rate with Bayesian/Laplace smoothing;
-- direction and setup;
-- 15m/1h/4h trend alignment;
-- order-flow pressure from taker buy/sell ratio;
-- funding/crowding;
-- open-interest regime;
-- volatility regime from ATR/price;
-- live entry timing / distance-to-ATR;
-- raw quality-score band.
-
-Legacy outcomes remain usable for cold-start calibration through action/setup/quality history. New signals persist the complete live feature snapshot so later outcomes can calibrate the feature interactions without inventing historical values.
-
-The published `probability` field is now the empirical calibrated posterior, not a fixed 99-style heuristic score. The raw ranking score is retained separately for diagnostics. Calibration is hierarchical: sparse cohorts are shrunk toward the global outcome rate instead of being allowed to produce unstable 0%/100% estimates.
-
-Runtime thresholds:
-- `CALIBRATED_MIN_PROB=45`
-- `CALIBRATED_MAX_NEGATIVE_R=-0.25`
-- existing MTF, derivatives, Alpha Hunter and fixed trade-geometry gates remain mandatory.
-
-This is intentionally an online/rolling calibration system. It does not claim that a calibrated historical probability is a guarantee of future returns.
-
-
-## Council candidate engine
-
-The active scanner now uses a candidate-first funnel modeled on the supplied **Scanner Council - 8 Agent Discussion** design.
-
-Pipeline:
-
-1. Binance Futures public data builds a bounded liquid universe.
-2. Eight deterministic agents evaluate each candidate: **Wyckoff, OrderFlow, Exhaustion, SmartMoney, Structure, Whale, MTF, Pullback**.
-3. Agent weights change with the detected market regime (**trending / ranging / volatile**).
-4. Weighted LONG/SHORT consensus produces the candidate set.
-5. Only the bounded council candidates are handed to TraderSpy for technical, derivatives, alpha, calibration, timing, and execution validation.
-6. Existing production trade geometry, delivery fan-out, deduplication, and outcome tracking remain authoritative.
-
-The council is a **discovery and prioritization layer**, not a replacement for TraderSpy validation. If Binance public discovery is temporarily unavailable, the scanner safely falls back to TraderSpy's native discovery path rather than crashing the workflow.
-
-### Council configuration
+| Wyckoff | structure, pressure, reversal behavior |
+| OrderFlow | candle/taker pressure and volume expansion |
+| Exhaustion | RSI location, reversal candles, exhaustion |
+| SmartMoney | higher-timeframe structure alignment |
+| Structure | swing structure and directional trend |
+| Whale | taker flow and deep market participation |
+| MTF | 4H + 1H + 15M + 5M agreement |
+| Pullback | Fibonacci retracement/location and pressure |
+
+Weights change by detected regime rather than using one static weighting table.
+
+## Candidate funnel
+
+The default production funnel is bounded:
+
+- liquid universe: **30** USDT perpetuals
+- candle depth: **120** bars
+- initial data: 5M, 15M, 1H, 4H
+- Council shortlist: strongest **10**
+- deep validation: strongest **10**
+- minimum weighted consensus: **52**
+- Binance request concurrency: **6** initial / bounded deep pass
+
+The limits are intentionally configurable so the scanner does not create uncontrolled public-API load.
+
+## Configuration
 
 Optional environment variables:
 
-- `COUNCIL_MIN_VOLUME_USDT` — minimum 24h quote volume for the discovery universe.
-- `COUNCIL_TOP_SYMBOLS` — maximum liquid symbols screened (10–50).
-- `COUNCIL_CANDIDATES` — maximum council candidates passed to validation (5–20).
-- `COUNCIL_MIN_CONSENSUS` — minimum weighted consensus (25–90).
-- `COUNCIL_BATCH` — concurrent Binance screening batch size (2–8).
+```
+SCANNER_INTERVAL=5m
+SCANNER_CANDLES=120
+SCANNER_UNIVERSE=30
+SCANNER_CANDIDATES=10
+SCANNER_MIN_VOLUME=15000000
+SCANNER_BATCH=6
+SCANNER_MIN_CONSENSUS=52
+SCANNER_DEEP_CANDIDATES=10
+SCANNER_DRY_RUN=false
+```
 
-The public presentation should not be interpreted as a guarantee of trade outcome; council consensus is a deterministic screening score, not a calibrated win probability.
+## Trade geometry
+
+The scanner engine determines the market direction and live Entry candidate. Production executable geometry remains delegated to `trade_plan.js`.
+
+The existing contract is retained:
+
+- Margin: **5 USDT**
+- Leverage: **20x**
+- Maximum price-risk envelope: **0.5%**
+- TP1 / TP2 / TP3: existing production geometry
+- Entry / SL / TP are emitted as actual prices
+
+The scanner does not increase leverage to force an invalid structural stop through the geometry gate.
+
+## Output contract
+
+The public presentation layer is intentionally isolated in `delivery.js`.
+
+It preserves the existing destinations and presentation behavior:
+
+### Discord
+Every newly validated, non-duplicate signal is sent individually.
+
+### Telegram
+Every newly validated, non-duplicate signal is sent individually using the existing HTML message format.
+
+### Binance Square
+- signals are grouped in sequential batches of up to **3 coins**
+- the text and visual use the **same three coins**
+- the visual remains mandatory
+- a failed visual render/upload aborts that Square batch instead of publishing mismatched text
+- hashtag remains `#PintarPakaiBinanceEarn`
+
+Internal engine/provider names are not intentionally exposed in public signal copy.
+
+## Deduplication
+
+Cross-scan duplicates remain blocked using the persistent fingerprint in `signals-log.json`.
+
+The fingerprint covers:
+
+- symbol
+- direction
+- setup
+- relative SL
+- relative TP1
+- relative TP2
+- relative TP3
+
+This prevents the same scanner result from being repeatedly distributed while still allowing different valid coins in the same scan.
+
+## Files
+
+| File | Role |
+|---|---|
+| `scanner.js` | production orchestration, geometry, dedup, delivery |
+| `scanner_engine.js` | complete 8-agent market decision engine |
+| `delivery.js` | preserved Telegram / Discord / Binance Square output layer |
+| `trade_plan.js` | executable margin/leverage/SL/TP geometry |
+| `signals-log.json` | persistent signal/dedup audit state |
+| `.github/workflows/scan.yml` | scheduled/manual/PR scanner workflow |
+
+## Workflow
+
+GitHub Actions:
+
+- scheduled hourly
+- manual `workflow_dispatch`
+- pull-request validation
+- Node 22
+- syntax checks for all active production modules
+- `npm test`
+- PR runs the scanner in dry-run mode
+- scheduled/manual runs retain live delivery
+
+## Failure behavior
+
+The active engine is fail-closed:
+
+- Binance market discovery failure → scanner run fails rather than inventing data
+- malformed market data → candidate skipped
+- insufficient timeframe data → candidate skipped
+- weak Council consensus → candidate rejected
+- invalid executable geometry → candidate rejected
+- duplicate signal → not delivered
+- delivery failure → logged explicitly
+
+No mock market data is generated.
+
+## Testing
+
+Local/CI checks:
+
+```bash
+node --check scanner.js
+node --check scanner_engine.js
+node --check delivery.js
+node --check trade_plan.js
+npm test
+```
+
+## Disclaimer
+
+Crypto-Signal is an information/education tool for market analysis. It is not financial advice and does not execute orders automatically. Always validate market conditions, execution price, fees, slippage, leverage, and risk independently.
