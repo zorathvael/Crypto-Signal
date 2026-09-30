@@ -1,5 +1,426 @@
 {
-  "open": [],
+  "open": [
+    {
+      "id": "ENA_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "ENA",
+      "instId": "ENAUSDT",
+      "action": "SHORT",
+      "fingerprint": "ENA|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 80,
+      "entry": 0.24632,
+      "sl": 0.24755159999999998,
+      "tp1": 0.2426252,
+      "tp2": 0.23893040000000001,
+      "tp3": 0.2315408,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "trending",
+        "agents": {
+          "Wyckoff": 57.129161641474084,
+          "OrderFlow": 88.25832328294817,
+          "Exhaustion": 50,
+          "SmartMoney": 75,
+          "Structure": 90,
+          "Whale": 100,
+          "MTF": 77.85714285714286,
+          "Pullback": 41.54490349892429
+        },
+        "votes": {
+          "long": 21.98,
+          "short": 80.31
+        },
+        "deep": {
+          "imbalance": -70.58255588083142,
+          "flow": -33.32592014678223,
+          "buy": 8512.955580000002,
+          "sell": 17023.07161,
+          "oi": 192704470,
+          "funding": 0.005
+        }
+      }
+    },
+    {
+      "id": "HYPE_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "HYPE",
+      "instId": "HYPEUSDT",
+      "action": "SHORT",
+      "fingerprint": "HYPE|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 78,
+      "entry": 85.743,
+      "sl": 86.17171499999999,
+      "tp1": 84.45685499999999,
+      "tp2": 83.17071,
+      "tp3": 80.59841999999999,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.987Z",
+      "council": {
+        "regime": "ranging",
+        "agents": {
+          "Wyckoff": 85.91020524515393,
+          "OrderFlow": 100,
+          "Exhaustion": 50,
+          "SmartMoney": 75,
+          "Structure": 90,
+          "Whale": 100,
+          "MTF": 87.85714285714286,
+          "Pullback": 81.93015963511972
+        },
+        "votes": {
+          "long": 27.27,
+          "short": 78.3
+        },
+        "deep": {
+          "imbalance": -13.636303773488095,
+          "flow": 63.52881615136441,
+          "buy": 14365.509960000007,
+          "sell": 3203.88276,
+          "oi": 2175671.0300000003,
+          "funding": 0.001
+        }
+      }
+    },
+    {
+      "id": "INTC_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "INTC",
+      "instId": "INTCUSDT",
+      "action": "SHORT",
+      "fingerprint": "INTC|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 78,
+      "entry": 116.13,
+      "sl": 116.71064999999999,
+      "tp1": 114.38804999999999,
+      "tp2": 112.64609999999999,
+      "tp3": 109.16219999999998,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "ranging",
+        "agents": {
+          "Wyckoff": 70.50026344504536,
+          "OrderFlow": 100,
+          "Exhaustion": 50,
+          "SmartMoney": 75,
+          "Structure": 90,
+          "Whale": 100,
+          "MTF": 87.5,
+          "Pullback": 51.94464934614639
+        },
+        "votes": {
+          "long": 30.66,
+          "short": 77.75
+        },
+        "deep": {
+          "imbalance": -42.7676978283308,
+          "flow": 5.549636902487582,
+          "buy": 37588.769499999995,
+          "sell": 33636.0506,
+          "oi": 179250.32000000036,
+          "funding": 0
+        }
+      }
+    },
+    {
+      "id": "SPCX_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "SPCX",
+      "instId": "SPCXUSDT",
+      "action": "SHORT",
+      "fingerprint": "SPCX|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 78,
+      "entry": 149.46,
+      "sl": 150.2073,
+      "tp1": 147.2181,
+      "tp2": 144.9762,
+      "tp3": 140.4924,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "ranging",
+        "agents": {
+          "Wyckoff": 92.66200913980668,
+          "OrderFlow": 100,
+          "Exhaustion": 50,
+          "SmartMoney": 60,
+          "Structure": 65,
+          "Whale": 100,
+          "MTF": 37.142857142857146,
+          "Pullback": 87.18156266429409
+        },
+        "votes": {
+          "long": 27.17,
+          "short": 78.41
+        },
+        "deep": {
+          "imbalance": -9.47960466006266,
+          "flow": -35.142285516800605,
+          "buy": 20551.382299999997,
+          "sell": 42822.36579999999,
+          "oi": 210899.53999999995,
+          "funding": 0
+        }
+      }
+    },
+    {
+      "id": "MSTR_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "MSTR",
+      "instId": "MSTRUSDT",
+      "action": "SHORT",
+      "fingerprint": "MSTR|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 74,
+      "entry": 154.55,
+      "sl": 155.32274999999998,
+      "tp1": 152.23175,
+      "tp2": 149.9135,
+      "tp3": 145.27700000000002,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "ranging",
+        "agents": {
+          "Wyckoff": 58.046978266249894,
+          "OrderFlow": 90.09395653249979,
+          "Exhaustion": 51.136011198625646,
+          "SmartMoney": 75,
+          "Structure": 90,
+          "Whale": 100,
+          "MTF": 72.14285714285714,
+          "Pullback": 60.25876087374992
+        },
+        "votes": {
+          "long": 31.45,
+          "short": 74.29
+        },
+        "deep": {
+          "imbalance": -81.71631119774572,
+          "flow": 39.47903849604534,
+          "buy": 45876.69090000001,
+          "sell": 19906.227299999995,
+          "oi": 204182.7300000002,
+          "funding": 0
+        }
+      }
+    },
+    {
+      "id": "SOXL_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "SOXL",
+      "instId": "SOXLUSDT",
+      "action": "SHORT",
+      "fingerprint": "SOXL|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 72,
+      "entry": 145.35,
+      "sl": 146.07674999999998,
+      "tp1": 143.16975,
+      "tp2": 140.9895,
+      "tp3": 136.629,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "trending",
+        "agents": {
+          "Wyckoff": 58.78050788488875,
+          "OrderFlow": 83.5610157697775,
+          "Exhaustion": 50,
+          "SmartMoney": 75,
+          "Structure": 90,
+          "Whale": 100,
+          "MTF": 61.42857142857143,
+          "Pullback": 42.82928391046903
+        },
+        "votes": {
+          "long": 29.05,
+          "short": 72.12
+        },
+        "deep": {
+          "imbalance": -84.4328197605238,
+          "flow": 40.51495657226536,
+          "buy": 45352.055299999985,
+          "sell": 19199.1589,
+          "oi": 363401.85999999905,
+          "funding": -0.058600000000000006
+        }
+      }
+    },
+    {
+      "id": "CL_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "CL",
+      "instId": "CLUSDT",
+      "action": "SHORT",
+      "fingerprint": "CL|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 71,
+      "entry": 89.687,
+      "sl": 90.13543499999999,
+      "tp1": 88.341695,
+      "tp2": 86.99638999999999,
+      "tp3": 84.30578,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "ranging",
+        "agents": {
+          "Wyckoff": 39.098179506048226,
+          "OrderFlow": 81.71635901209646,
+          "Exhaustion": 68.03999999999999,
+          "SmartMoney": 75,
+          "Structure": 90,
+          "Whale": 100,
+          "MTF": 75.71428571428571,
+          "Pullback": 47.00080628248196
+        },
+        "votes": {
+          "long": 31,
+          "short": 70.9
+        },
+        "deep": {
+          "imbalance": -10.736364563404594,
+          "flow": -1.7947316584817956,
+          "buy": 14632.601829999998,
+          "sell": 15167.432480000005,
+          "oi": 326660.0100000001,
+          "funding": 0
+        }
+      }
+    },
+    {
+      "id": "HBAR_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "HBAR",
+      "instId": "HBARUSDT",
+      "action": "SHORT",
+      "fingerprint": "HBAR|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 71,
+      "entry": 0.10443,
+      "sl": 0.10495214999999998,
+      "tp1": 0.10286355,
+      "tp2": 0.10129709999999999,
+      "tp3": 0.0981642,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "trending",
+        "agents": {
+          "Wyckoff": 53.74936199348507,
+          "OrderFlow": 100,
+          "Exhaustion": 50,
+          "SmartMoney": 55,
+          "Structure": 60,
+          "Whale": 100,
+          "MTF": 44.285714285714285,
+          "Pullback": 84.91617043937728
+        },
+        "votes": {
+          "long": 30.92,
+          "short": 71.37
+        },
+        "deep": {
+          "imbalance": 0.1841122279164533,
+          "flow": -35.08827677085874,
+          "buy": 3791.0901099999996,
+          "sell": 7889.666220000001,
+          "oi": 217574352,
+          "funding": 0.01
+        }
+      }
+    },
+    {
+      "id": "NEAR_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "NEAR",
+      "instId": "NEARUSDT",
+      "action": "SHORT",
+      "fingerprint": "NEAR|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 69,
+      "entry": 4.9407,
+      "sl": 4.965403499999999,
+      "tp1": 4.8665895,
+      "tp2": 4.792478999999999,
+      "tp3": 4.644258,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "trending",
+        "agents": {
+          "Wyckoff": 60.49503899178387,
+          "OrderFlow": 94.99007798356774,
+          "Exhaustion": 50,
+          "SmartMoney": 60,
+          "Structure": 65,
+          "Whale": 100,
+          "MTF": 55.714285714285715,
+          "Pullback": 62.16280810472079
+        },
+        "votes": {
+          "long": 35.7,
+          "short": 68.87
+        },
+        "deep": {
+          "imbalance": -60.63448901462441,
+          "flow": 41.044193809041055,
+          "buy": 19525.4962,
+          "sell": 8161.5651,
+          "oi": 14572124,
+          "funding": 0.01
+        }
+      }
+    },
+    {
+      "id": "ZEC_SHORT_1790745907656",
+      "ts": 1790745907656,
+      "base": "ZEC",
+      "instId": "ZECUSDT",
+      "action": "SHORT",
+      "fingerprint": "ZEC|SHORT|SCALP_MTF|0.50|-1.50|-3.00|-6.00",
+      "setup": "SCALP_MTF",
+      "probability": 66,
+      "entry": 1406.91,
+      "sl": 1413.94455,
+      "tp1": 1385.80635,
+      "tp2": 1364.7027,
+      "tp3": 1322.4954,
+      "rr": 3,
+      "validUntil": "2026-09-30T05:39:39.988Z",
+      "council": {
+        "regime": "trending",
+        "agents": {
+          "Wyckoff": 58.921511346685094,
+          "OrderFlow": 91.84302269337019,
+          "Exhaustion": 50,
+          "SmartMoney": 60,
+          "Structure": 65,
+          "Whale": 100,
+          "MTF": 81.42857142857143,
+          "Pullback": 60.93895326964396
+        },
+        "votes": {
+          "long": 38.26,
+          "short": 66.31
+        },
+        "deep": {
+          "imbalance": -22.84789786099666,
+          "flow": 85.46689765913872,
+          "buy": 64657.32351,
+          "sell": 5066.518670000001,
+          "oi": 108841.19200000002,
+          "funding": 0.01
+        }
+      }
+    }
+  ],
   "closed": [
     {
       "id": "NEAR_LONG_1790597654993",
