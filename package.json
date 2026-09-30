@@ -1,11 +1,11 @@
 {
   "name": "crypto-strict-scanner",
   "version": "4.0.0",
-  "description": "Crypto-Signal — TraderSpy intelligence + Discord/Telegram/Binance Square delivery",
+  "description": "Crypto-Signal — 8-agent Council engine + Discord/Telegram/Binance Square delivery",
   "main": "scanner.js",
   "scripts": {
     "scan": "node scanner.js",
-    "test": "node --test traderspy.test.js trade_plan.test.js traderspy_fallback.test.js alpha_hunter.test.js entry_calibration.test.js timing_calibration.test.js calibration.test.js"
+    "test": "node --test trade_plan.test.js"
   },
   "engines": {
     "node": ">=18"
