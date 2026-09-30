@@ -33,6 +33,7 @@ jobs:
           node --check traderspy.js
           node --check alpha_hunter.js
           node --check scanner.js
+          node --check council.js
           node --check calibration.js
           npm test
 
@@ -53,6 +54,11 @@ jobs:
           TRADERSPY_MCP_URL: ${{ secrets.TRADERSPY_MCP_URL }}
           TRADERSPY_MCP_TOKEN: ${{ secrets.TRADERSPY_MCP_TOKEN }}
           TRADERSPY_SIGNAL_LIMIT: "50"
+          COUNCIL_MIN_VOLUME_USDT: "15000000"
+          COUNCIL_TOP_SYMBOLS: "30"
+          COUNCIL_CANDIDATES: "12"
+          COUNCIL_MIN_CONSENSUS: "45"
+          COUNCIL_BATCH: "6"
           TRADERSPY_MAX_AGE_MIN: "120"
           TRADERSPY_CANDIDATE_MAX_AGE_MIN: "360"
           TRADERSPY_DISCOVERY_UNIVERSE: "100"
