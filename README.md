@@ -25,13 +25,17 @@ The engine does **not** invent a second scoring system. AI is a moderator/valida
 
 ## Market data
 
-Production discovery uses Binance Futures public endpoints because the source methodology requires:
+Production discovery uses Binance Futures public endpoints when reachable and automatically falls back to Bitget USDT-M Futures public market data when the runner cannot access Binance (for example HTTP 451). The fallback supplies the same logical inputs required by the Council: candles, taker buy/sell volume, long/short positioning, account long/short positioning, and public fills. No mock market data is generated.
+
+The source methodology requires:
 
 - candle taker-buy volume
 - aggregate trades
 - top-trader long/short positioning
 - global long/short account positioning
 - 5M / 15M / 1H / 4H candles
+
+Provider selection is automatic; no API key is required for either public market-data source.
 
 No mock market data is generated.
 
