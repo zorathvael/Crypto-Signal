@@ -27,6 +27,7 @@ const { runTraderSpyScan } = require("./traderspy");
 const { getFallbackIntelligence } = require("./traderspy_fallback");
 const { calculateTradePlan } = require("./trade_plan");
 const { calibrateEntry } = require("./entry_calibration");
+const { getCouncilCandidates } = require("./council");
 
 const BITGET = "https://api.bitget.com";
 const BG_PRODUCT = "USDT-FUTURES";
@@ -3035,9 +3036,30 @@ async function runTraderSpyPipeline() {
   }
 
   let signals;
-  let intelligenceSource = "TraderSpy";
+  let intelligenceSource = "TraderSpy + Council";
+  let councilCandidates = [];
   try {
-    signals = await runTraderSpyScan({ history: outcomeLog });
+    // Candidate-first funnel modeled on scanner-council.html:
+    // liquid universe -> 8-agent weighted discussion -> bounded candidates.
+    // TraderSpy remains the validation/normalization authority after this stage.
+    try {
+      councilCandidates = await getCouncilCandidates();
+      console.log(
+        "Council funnel: candidates=" +
+          councilCandidates.length +
+          " top=" +
+          (councilCandidates.slice(0, 5).map((x) => x.base + ":" + x.consensus + "%").join(", ") || "none")
+      );
+    } catch (councilError) {
+      // Do not turn a public Binance discovery outage into a failed production
+      // scan. TraderSpy native discovery remains the controlled fallback.
+      console.warn("Council discovery unavailable — using TraderSpy native discovery:", councilError.message);
+    }
+
+    signals = await runTraderSpyScan({
+      history: outcomeLog,
+      councilCandidates,
+    });
   } catch (e) {
     if (e?.quota || e?.code === "HTTP_429") {
       console.warn("TraderSpy daily quota exhausted — activating TraderSpy-compatible Binance fallback.");
@@ -3057,6 +3079,7 @@ async function runTraderSpyPipeline() {
     }
   }
   console.log(`${intelligenceSource} delivery gate: only tier-validated signals can be published.`);
+  console.log("Council/validation funnel complete: councilCandidates="+councilCandidates.length+" validated="+signals.length);
   let postSignals = filterSignalsForDelivery(
     signals.slice(),
     outcomeLog || { open: [], closed: [] }
