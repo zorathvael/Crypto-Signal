@@ -1,5 +1,5 @@
 /**
- * Crypto-Signal v4.0.0 — delivery contract
+ * Crypto-Signal v4.1.0 — delivery contract
  * Output layer intentionally preserved from the existing scanner.
  */
 const fs = require("fs");
@@ -53,7 +53,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Crypto-Signal v4.0 · information only · NFA</i>`
+    `<i>Crypto-Signal v4.1 · information only · NFA</i>`
   );
 }
 
@@ -128,7 +128,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Crypto-Signal v4.0 · potensi + proteksi · NFA");
+  lines.push("Crypto-Signal v4.1 · Fibonacci Council · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -198,12 +198,12 @@ function buildSquareCardSvg(coins) {
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#ffffff"/>
   <rect x="0" y="0" width="${W}" height="${headerH}" fill="#0f172a"/>
-  <text x="${pad}" y="48" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">STRICT CORE v2.9</text>
+  <text x="${pad}" y="48" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">CRYPTO-SIGNAL v4.1</text>
   <text x="${pad}" y="84" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#94a3b8">Regime · OB Quality · 1H+15M lock</text>
   <text x="${pad}" y="110" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">${esc(now)} WIB</text>
   <text x="${W - pad}" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600" fill="#38bdf8">Top ${rows.length}</text>
   ${cards}
-  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Risk max 0.75%  ·  Educational only  ·  NFA</text>
+  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 5x–20x · TP 2R–6R · NFA</text>
 </svg>`;
 }
 
@@ -272,15 +272,20 @@ async function sendBinanceSquare(signals) {
   // Square is the only channel with a per-post capacity. Never truncate the
   // shared delivery list: Telegram/Discord receive every new signal. Square
   // publishes the same complete set in sequential batches of up to 3 coins.
+  const fullCount = Math.floor(ranked.length / SQUARE_POST_COUNT) * SQUARE_POST_COUNT;
   const batches = [];
-  for (let i = 0; i < ranked.length; i += SQUARE_POST_COUNT) {
+  for (let i = 0; i < fullCount; i += SQUARE_POST_COUNT) {
     batches.push(ranked.slice(i, i + SQUARE_POST_COUNT));
   }
-
+  const remainder = ranked.length - fullCount;
   console.log(
-    `Binance Square: ${batches.length} post batch(es) · ` +
-      `${ranked.length} coin(s) total · max ${SQUARE_POST_COUNT}/post`
+    `Binance Square: ${batches.length} full batch(es) · ${ranked.length} eligible coin(s) · ${SQUARE_POST_COUNT}/post` +
+    (remainder ? ` · ${remainder} remainder held for next full batch` : "")
   );
+  if (!batches.length) {
+    console.log("Binance Square: fewer than 3 eligible coins; no Square post created.");
+    return;
+  }
 
   for (let index = 0; index < batches.length; index++) {
     const batch = batches[index];
