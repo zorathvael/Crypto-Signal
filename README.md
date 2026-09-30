@@ -1,140 +1,100 @@
-# Crypto-Signal v4.0.0
+# Crypto-Signal v4.1.0
 
-Eight-agent market scanner for crypto futures with the existing Telegram, Discord, and Binance Square output contract.
+Source-calibrated 8-agent crypto futures scanner with AI moderation, Fibonacci entry geometry, adaptive 5x–20x risk geometry, and the existing Telegram/Discord/Binance Square delivery contract.
 
-## Production architecture
+## Decision methodology
 
-The active scanner is now a **single engine**. The legacy scanner tree, TraderSpy discovery/validation path, Council add-on path, and fallback decision tree are not executed.
+The supplied `scanner-council.html` is authoritative for the decision method. The production engine ports its:
 
-```
-Bitget USDT Futures public market data
-        ↓
-Liquid USDT perpetual universe
-        ↓
-5M / 15M / 1H / 4H market structure
-        ↓
-8-agent Council
-  ├─ Wyckoff
-  ├─ OrderFlow
-  ├─ Exhaustion
-  ├─ SmartMoney
-  ├─ Structure
-  ├─ Whale
-  ├─ MTF
-  └─ Pullback
-        ↓
-Regime-dependent weighting
-  ├─ trending
-  ├─ ranging
-  └─ volatile
-        ↓
-Weighted LONG / SHORT consensus
-        ↓
-Deep validation for the strongest candidates
-  ├─ order book imbalance
-  ├─ aggregate trades
-  ├─ open interest
-  ├─ funding
-  ├─ top long/short positioning
-  └─ global long/short positioning
-        ↓
-Executable trade geometry
-        ↓
-UNCHANGED DELIVERY CONTRACT
-  ├─ Discord
-  ├─ Telegram
-  └─ Binance Square (max 3 coins/post + visual)
-```
+- Wyckoff
+- OrderFlow
+- Exhaustion
+- SmartMoney
+- Structure
+- Whale
+- MTF
+- Pullback
+- trending / ranging / volatile regime detection
+- regime-dependent weights
+- weighted LONG/SHORT voting
+- consensus formula
+- minimum consensus and minimum winning-agent-weight gates
+- 20-candle Fibonacci pullback detector
 
-The Council score is a deterministic **screening/quality score**, not a statistical win probability.
+The engine does **not** invent a second scoring system. AI is a moderator/validator layer and never changes Council scores or weights.
 
-## Eight-agent model
+## Market data
 
-Each candidate receives independent directional scores from eight agents.
+Production discovery uses Binance Futures public endpoints because the source methodology requires:
 
-| Agent | Primary evidence |
-|---|---|
-| Wyckoff | structure, pressure, reversal behavior |
-| OrderFlow | candle/taker pressure and volume expansion |
-| Exhaustion | RSI location, reversal candles, exhaustion |
-| SmartMoney | higher-timeframe structure alignment |
-| Structure | swing structure and directional trend |
-| Whale | taker flow and deep market participation |
-| MTF | 4H + 1H + 15M + 5M agreement |
-| Pullback | Fibonacci retracement/location and pressure |
+- candle taker-buy volume
+- aggregate trades
+- top-trader long/short positioning
+- global long/short account positioning
+- 5M / 15M / 1H / 4H candles
 
-Weights change by detected regime rather than using one static weighting table.
+No mock market data is generated.
 
-## Candidate funnel
+## AI moderator
 
-The default production funnel is bounded:
+`ai_moderator.js` provides a free-provider path:
 
-- liquid universe: **30** USDT perpetuals
-- candle depth: **120** bars
-- initial data: 5M, 15M, 1H, 4H
-- Council shortlist: strongest **10**
-- deep validation: strongest **10**
-- minimum weighted consensus: **52**
-- Bitget request concurrency: **6** initial / bounded deep pass
+1. Optional OpenAI-compatible gateway such as **ReallyArtificial/freeport** via `FREEPORT_URL`.
+2. Pollinations public inference fallback, matching the AI approach present in the supplied Council HTML.
 
-The limits are intentionally configurable so the scanner does not create uncontrolled public-API load.
+The Freeport project is MIT licensed and provides an OpenAI-compatible multi-provider gateway; it is an adapter target, not a bundled server inside GitHub Actions.
 
-## Configuration
-
-Optional environment variables:
+Optional variables:
 
 ```
-SCANNER_INTERVAL=5m
-SCANNER_CANDLES=120
-SCANNER_UNIVERSE=30
-SCANNER_CANDIDATES=10
-SCANNER_MIN_VOLUME=15000000
-SCANNER_BATCH=6
-SCANNER_MIN_CONSENSUS=52
-SCANNER_DEEP_CANDIDATES=10
-SCANNER_DRY_RUN=false
+FREEPORT_URL=
+FREEPORT_API_KEY=
+FREEPORT_MODEL=gpt-4o-mini
+AI_TIMEOUT_MS=22000
+AI_MAX_CANDIDATES=3
 ```
 
-## Trade geometry
+AI is limited to the strongest Council candidates. If AI is unavailable, the deterministic Council result remains intact; no fabricated AI verdict is produced.
 
-The scanner engine determines the market direction and live Entry candidate. Production executable geometry remains delegated to `trade_plan.js`.
+## Fibonacci trade geometry
 
-The existing contract is retained:
+The supplied Council file calculates a 20-candle swing and identifies the 38.2%–61.8% pullback zone. Production execution geometry now uses that same swing:
 
+- Entry: **50% Fibonacci retracement**
+- Structural SL: swing extreme ± **0.8 ATR**, matching the source trade-plan method
 - Margin: **5 USDT**
-- Leverage: **5x–20x** (selected by the existing production geometry; never below 5x)
-- Maximum price-risk envelope: **0.5%**
-- TP1 / TP2 / TP3: existing production geometry
+- Risk target: **0.50 USDT**
+- Leverage: **adaptive 5x–20x**
+- TP1: **2R**
+- TP2: **4R**
+- TP3: **6R**
+- no leverage below 5x
+- no target above 6R
 - Entry / SL / TP are emitted as actual prices
 
-The scanner does not increase leverage to force an invalid structural stop through the geometry gate.
+If the structural Fibonacci stop would require leverage below 5x to stay within the 0.50 USDT risk budget, the candidate is rejected rather than distorting the stop.
 
-## Output contract
+## Delivery contract
 
-The public presentation layer is intentionally isolated in `delivery.js`.
+The existing destinations remain:
 
-It preserves the existing destinations and presentation behavior:
+- Telegram: every new valid signal
+- Discord: every new valid signal
+- Binance Square: only complete **3-coin** batches, with the exact same three coins in text and visual
 
-### Discord
-Every newly validated, non-duplicate signal is sent individually.
+If fewer than three eligible Square signals remain, no partial Square post is created. A remainder of 1–2 coins is held for a later full batch.
 
-### Telegram
-Every newly validated, non-duplicate signal is sent individually using the existing HTML message format.
+Public posts do not expose internal provider names.
 
-### Binance Square
-- signals are grouped in sequential batches of up to **3 coins**
-- the text and visual use the **same three coins**
-- the visual remains mandatory
-- a failed visual render/upload aborts that Square batch instead of publishing mismatched text
-- hashtag remains `#PintarPakaiBinanceEarn`
+Square hashtag remains:
 
-Internal engine/provider names are not intentionally exposed in public signal copy.
+`#PintarPakaiBinanceEarn`
+
+The Square visual is labeled **CRYPTO-SIGNAL v4.1**.
 
 ## Deduplication
 
-Cross-scan duplicates remain blocked using the persistent fingerprint in `signals-log.json`.
-
-The fingerprint covers:
+Cross-scan duplicates remain blocked through `signals-log.json`. Fingerprints include:
 
 - symbol
 - direction
@@ -144,58 +104,46 @@ The fingerprint covers:
 - relative TP2
 - relative TP3
 
-This prevents the same scanner result from being repeatedly distributed while still allowing different valid coins in the same scan.
+## Configuration
 
-## Files
+```
+SCANNER_INTERVAL=5m
+SCANNER_CANDLES=60
+SCANNER_UNIVERSE=30
+SCANNER_CANDIDATES=10
+SCANNER_MIN_VOLUME=15000000
+SCANNER_BATCH=3
+SCANNER_MIN_CONSENSUS=45
+SCANNER_DEEP_CANDIDATES=10
+SCANNER_DRY_RUN=false
+```
+
+## Production files
 
 | File | Role |
 |---|---|
-| `scanner.js` | production orchestration, geometry, dedup, delivery |
-| `scanner_engine.js` | complete 8-agent market decision engine |
-| `delivery.js` | preserved Telegram / Discord / Binance Square output layer |
-| `trade_plan.js` | executable margin/leverage/SL/TP geometry |
-| `signals-log.json` | persistent signal/dedup audit state |
-| `.github/workflows/scan.yml` | scheduled/manual/PR scanner workflow |
+| `scanner_engine.js` | Source-calibrated 8-agent Council |
+| `ai_moderator.js` | Free AI moderator adapter |
+| `trade_plan.js` | Fibonacci + adaptive risk geometry |
+| `scanner.js` | orchestration, AI, geometry, dedup and delivery |
+| `delivery.js` | Telegram / Discord / Binance Square |
+| `trade_plan.test.js` | geometry regression tests |
+| `signals-log.json` | persistent dedup/audit state |
+| `.github/workflows/scan.yml` | scheduled/manual/PR validation |
 
-## Workflow
+## Validation
 
-GitHub Actions:
-
-- scheduled hourly
-- manual `workflow_dispatch`
-- pull-request validation
-- Node 22
-- syntax checks for all active production modules
-- `npm test`
-- PR runs the scanner in dry-run mode
-- scheduled/manual runs retain live delivery
-
-## Failure behavior
-
-The active engine is fail-closed:
-
-- Bitget market-data failure → scanner run fails rather than inventing data
-- malformed market data → candidate skipped
-- insufficient timeframe data → candidate skipped
-- weak Council consensus → candidate rejected
-- invalid executable geometry → candidate rejected
-- duplicate signal → not delivered
-- delivery failure → logged explicitly
-
-No mock market data is generated.
-
-## Testing
-
-Local/CI checks:
-
-```bash
+```
 node --check scanner.js
 node --check scanner_engine.js
+node --check ai_moderator.js
 node --check delivery.js
 node --check trade_plan.js
 npm test
 ```
 
+No claim of production success is made until GitHub Actions validates the changed commit.
+
 ## Disclaimer
 
-Crypto-Signal is an information/education tool for market analysis. It is not financial advice and does not execute orders automatically. Always validate market conditions, execution price, fees, slippage, leverage, and risk independently.
+Crypto-Signal is an information/education tool for market analysis. It does not execute orders automatically and is not financial advice. Validate execution price, fees, slippage, leverage and risk independently.
