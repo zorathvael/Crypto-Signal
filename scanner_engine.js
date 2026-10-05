@@ -1,16 +1,21 @@
 /**
- * Crypto-Signal v5.0 — Live Binance Futures calibrated scanner.
- * Ported directly from the supplied scanner_live_binance.html methodology.
- * No Bitget fallback and no mock market data: Binance public market data only.
+ * Crypto-Signal v5.1 — Live Binance Futures scanner with Bitget fallback.
+ * The deterministic calibration method remains the supplied live-Binance scanner method.
+ * Binance is primary; Bitget USDT-Futures is the read-only market-data fallback.
+ * No mock market data.
  */
 const BINANCE_BASES = String(process.env.BINANCE_FAPI_URLS || "https://fapi.binance.com,https://fapi1.binance.com,https://fapi2.binance.com,https://fapi3.binance.com,https://fapi4.binance.com").split(",").map(s=>s.trim().replace(/\/$/,"")).filter(Boolean);
+const BITGET_BASE = String(process.env.BITGET_API_BASE || "https://api.bitget.com").replace(/\/$/,"");
+const BITGET_PRODUCT_TYPE = "USDT-FUTURES";
+const BITGET_INTERVALS = { "1m":"1m","3m":"3m","5m":"5m","15m":"15m","30m":"30m","1h":"1H","2h":"2H","4h":"4H","6h":"6H","12h":"12H","1d":"1D" };
 const DEFAULT_SYMBOLS = "NEARUSDT,PUMPUSDT,SOLUSDT,FARTCOINUSDT,PENGUUSDT,WIFUSDT,DOGEUSDT,1000PEPEUSDT,1000BONKUSDT,WLDUSDT,ENAUSDT,ONDOUSDT,SEIUSDT,GRASSUSDT,VIRTUALUSDT,TRUMPUSDT";
 const CFG = {
   symbols: (process.env.SCANNER_SYMBOLS || DEFAULT_SYMBOLS).split(",").map(s=>s.trim().toUpperCase()).filter(Boolean),
   interval: process.env.SCANNER_INTERVAL || "1h",
   limit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 150), 120), 500),
   candidates: Math.min(Math.max(Number(process.env.SCANNER_CANDIDATES || 10), 1), 20),
-  concurrency: Math.min(Math.max(Number(process.env.SCANNER_CONCURRENCY || 4), 1), 8)
+  concurrency: Math.min(Math.max(Number(process.env.SCANNER_CONCURRENCY || 4), 1), 8),
+  provider: String(process.env.SCANNER_PROVIDER || "auto").toLowerCase()
 };
 async function getJson(url,retries=2){
   let err;
@@ -83,12 +88,40 @@ function analyze(symbol,closes,vols,livePrice=null){
   const sigs=[trendS,macdS,rsiS,volS],pos=sigs.filter(v=>v>0).length,neg=sigs.filter(v=>v<0).length;
   return{symbol,na:false,strength,confidence:Math.round(Math.max(pos,neg)/sigs.length*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BINANCE_CALIBRATED_120C"};
 }
-async function getBinanceJson(path){let last;for(const base of BINANCE_BASES){try{return await getJson(base+path,1);}catch(e){last=e;console.log("Binance endpoint failed",base,e.message);}}throw last||new Error("Binance unavailable");}
-async function fetchSymbol(symbol){
+async function getBinanceJson(path){let last;for(const base of BINANCE_BASES){try{return await getJson(base+path,0);}catch(e){last=e;console.log("Binance endpoint failed",base,e.message);}}throw last||new Error("Binance unavailable");}
+async function getBitgetJson(path){const r=await getJson(BITGET_BASE+path,1);if(!r||r.code!=="00000")throw new Error(`Bitget API ${r?.code||"invalid"}: ${r?.msg||"request failed"}`);return r.data;}
+function bitgetInterval(interval){const key=String(interval||"1h").toLowerCase();return BITGET_INTERVALS[key]||"1H";}
+function normalizeBitgetCandles(rows){
+  if(!Array.isArray(rows))return [];
+  return rows.map(k=>({ts:Number(k[0]),open:Number(k[1]),high:Number(k[2]),low:Number(k[3]),close:Number(k[4]),volume:Number(k[5])}))
+    .filter(k=>Number.isFinite(k.ts)&&Number.isFinite(k.close)&&Number.isFinite(k.volume))
+    .sort((a,b)=>a.ts-b.ts);
+}
+async function fetchBinanceSymbol(symbol){
   const rows=await getBinanceJson(`/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(CFG.interval)}&limit=${CFG.limit}`);
   if(!Array.isArray(rows)||rows.length<40)throw new Error("data tidak cukup");
   const ticker=await getBinanceJson(`/fapi/v1/ticker/price?symbol=${encodeURIComponent(symbol)}`).catch(()=>null);
-  return analyze(symbol,rows.map(k=>+k[4]),rows.map(k=>+k[5]),ticker?.price);
+  const r=analyze(symbol,rows.map(k=>+k[4]),rows.map(k=>+k[5]),ticker?.price);
+  return {...r,source:"BINANCE_FUTURES"};
+}
+async function fetchBitgetSymbol(symbol){
+  const rows=await getBitgetJson(`/api/v2/mix/market/candles?symbol=${encodeURIComponent(symbol)}&productType=${encodeURIComponent(BITGET_PRODUCT_TYPE)}&granularity=${encodeURIComponent(bitgetInterval(CFG.interval))}&limit=${CFG.limit}`);
+  const candles=normalizeBitgetCandles(rows);
+  if(candles.length<40)throw new Error("data tidak cukup");
+  const ticker=await getBitgetJson(`/api/v2/mix/market/ticker?symbol=${encodeURIComponent(symbol)}&productType=${encodeURIComponent(BITGET_PRODUCT_TYPE)}`).catch(()=>null);
+  const last=ticker?.[0]?.lastPr ?? ticker?.[0]?.markPrice ?? candles.at(-1)?.close;
+  const r=analyze(symbol,candles.map(k=>k.close),candles.map(k=>k.volume),last);
+  return {...r,source:"BITGET_USDT_FUTURES"};
+}
+async function fetchSymbol(symbol){
+  if(CFG.provider==="bitget")return fetchBitgetSymbol(symbol);
+  if(CFG.provider==="binance")return fetchBinanceSymbol(symbol);
+  try{return await fetchBinanceSymbol(symbol);}
+  catch(binanceError){
+    console.log(`Fallback Binance -> Bitget: ${symbol} (${binanceError.message})`);
+    try{return await fetchBitgetSymbol(symbol);}
+    catch(bitgetError){throw new Error(`Binance: ${binanceError.message}; Bitget: ${bitgetError.message}`);}
+  }
 }
 async function mapLimit(items,limit,fn){
   const out=new Array(items.length);let idx=0;
@@ -96,13 +129,13 @@ async function mapLimit(items,limit,fn){
   await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
 }
 async function runLiveScanner(){
-  console.log(`=== Crypto-Signal v5.0 | LIVE BINANCE | ${CFG.interval} ===`);
+  console.log(`=== Crypto-Signal v5.1 | LIVE BINANCE -> BITGET FALLBACK | ${CFG.interval} ===`);
   console.log("Symbols:",CFG.symbols.join(", "));
   const results=await mapLimit(CFG.symbols,CFG.concurrency,fetchSymbol);
   const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Math.abs(b.strength)-Math.abs(a.strength));
   const candidates=valid.slice(0,CFG.candidates);
   console.log("LIVE VALID:",candidates.length);
-  for(const s of candidates)console.log(` ${s.symbol} ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
+  for(const s of candidates)console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
   return candidates;
 }
-module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,CFG,BINANCE_BASES};
+module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BINANCE_BASES,BITGET_BASE};
