@@ -167,9 +167,9 @@ async function runLiveScanner(){
   console.log("Symbols:",universe.join(", "));
   const results=await mapLimit(universe,CFG.concurrency,fetchSymbol);
   const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Math.abs(b.strength)-Math.abs(a.strength));
-  const candidates=valid.slice(0,Math.max(CFG.candidates,Number(process.env.QWEN_MAX_CANDIDATES||20)));
-  console.log("LIVE VALID:",candidates.length);
-  for(const s of candidates)console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
-  return candidates;
+  console.log("LIVE VALID:",valid.length);
+  console.log("QWEN INPUT UNIVERSE:",valid.length);
+  for(const s of valid.slice(0,Math.max(CFG.candidates,20)))console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
+  return valid;
 }
 module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BINANCE_BASES,BITGET_BASE,isCryptoFuturesSymbol,discoverBinanceUniverse,discoverBitgetUniverse};
