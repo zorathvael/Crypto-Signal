@@ -78,7 +78,8 @@ jobs:
           SCANNER_DEEP_CANDIDATES: "10"
           QWEN_BASE_URL: "http://127.0.0.1:11434/v1"
           QWEN_MODEL: "qwen3-0.6b"
-          QWEN_MAX_CANDIDATES: "20"
+          SCANNER_PROVIDER: "bitget"
+          QWEN_SCAN_BATCH_SIZE: "30"
         run: node scanner.js
 
       - name: Commit signals-log.json
