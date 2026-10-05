@@ -61,7 +61,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Crypto-Signal v5.0 · Live Binance + Qwen3 · information only · NFA</i>`
+    `<i>Crypto-Signal v5.1 · Live Binance -> Bitget + Qwen3 · information only · NFA</i>`
   );
 }
 
@@ -136,7 +136,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Crypto-Signal v5.0 · Live Binance + Qwen3 · NFA");
+  lines.push("Crypto-Signal v5.1 · Live Binance + Qwen3 · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
