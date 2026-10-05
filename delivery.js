@@ -14,6 +14,14 @@ const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
 const MIN_PROB_VALID = 76;
 const MIN_PROB_SNIPER = 82;
 const SQUARE_POST_COUNT = 3;
+function resolvePlan(s){
+  if(s&&s.geometry==="LIVE_BINANCE_CALIBRATED_120C"){
+    const dist=Number(s.entry)>0?Math.abs(Number(s.entry)-Number(s.sl))/Number(s.entry)*100:null;
+    return {tp1:s.tp1,tp2:s.tp2,tp3:s.tp3,marginUsdt:s.marginUsdt??5,leverage:s.leverage??20,riskMarginPercent:Number.isFinite(s.riskMarginPercent)?s.riskMarginPercent:null,slDistancePercent:dist,rewardRMultiples:[1,1.618,2.618],rewardMarginPcts:[10,16.18,26.18]};
+  }
+  try{return calculateTradePlan(s);}catch{return null;}
+}
+
 
 function formatPrice(v) {
   if (!Number.isFinite(v)) return "—";
@@ -24,7 +32,7 @@ function formatPrice(v) {
 }
 
 function formatTelegramMessage(s) {
-  let plan; try { plan = calculateTradePlan(s); } catch { plan = null; }
+  const plan = resolvePlan(s);
   const isSniper = s.probability >= MIN_PROB_SNIPER;
   const tag = isSniper ? "🎯 SNIPER" : "✅ VALID";
   const arrow = s.action === "LONG" ? "🟢 LONG" : "🔴 SHORT";
@@ -53,7 +61,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Crypto-Signal v4.1 · information only · NFA</i>`
+    `<i>Crypto-Signal v5.0 · Live Binance + Qwen3 · information only · NFA</i>`
   );
 }
 
@@ -128,7 +136,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Crypto-Signal v4.1 · Fibonacci Council · NFA");
+  lines.push("Crypto-Signal v5.0 · Live Binance + Qwen3 · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -180,7 +188,7 @@ function buildSquareCardSvg(coins) {
     <text x="${pad + 28}" y="${y + 178}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
     <text x="${pad + 28}" y="${y + 210}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
     <text x="${pad + 28}" y="${y + 242}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
-    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(displaySetup(s.setup))}  ·  R:R 1:${s.rr.toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}${s.book ? " · Book " + esc(s.book.side) : ""}</text>
+    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(displaySetup(s.setup))}  ·  R:R 1:${Number(s.rr || 1).toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}${s.book ? " · Book " + esc(s.book.side) : ""}</text>
     <text x="${pad + 28}" y="${y + 312}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
   });
 
@@ -203,7 +211,7 @@ function buildSquareCardSvg(coins) {
   <text x="${pad}" y="110" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">${esc(now)} WIB</text>
   <text x="${W - pad}" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600" fill="#38bdf8">Top ${rows.length}</text>
   ${cards}
-  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 5x–20x · TP 2R–6R · NFA</text>
+  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 20x sizing · Live Binance calibration · NFA</text>
 </svg>`;
 }
 
