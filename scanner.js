@@ -27,7 +27,12 @@ async function main(){
     return {...s,technicalScore,aiScore,aiGate,probability:finalScore,score:finalScore};
   });
   for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · ${s.ai.reasons.join(" | ")}`);
-  signals=signals.filter(s=>s.probability>=90 && s.aiGate);
+  if(ai.available){
+    signals=signals.filter(s=>s.probability>=90 && s.ai?.verdict==="VALID");
+  }else{
+    signals=signals.filter(s=>s.probability>=90).slice(0,3);
+    console.warn("Qwen unavailable: deterministic fallback limited to top 3 calibrated candidates");
+  }
   console.log("SCORE >= 90:",signals.length);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
