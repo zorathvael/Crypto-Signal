@@ -161,3 +161,11 @@ Qwen3 is now an active scanner rather than a second-stage validator. Every quant
 - Qwen AI layer uses compact fast classification without deep reasoning; Qwen timeout no longer discards a valid calibrated scanner result.
 
 - Qwen now validates the top calibrated candidates rather than changing the deterministic score. If Qwen is unavailable, fallback is capped at the top 3 calibrated candidates to prevent signal flooding.
+
+### Posting eligibility
+
+- The hard posting threshold is **deterministic score >= 90**.
+- Scores below 90 are never posted.
+- If Qwen is available, a deterministic candidate must also receive Qwen `VALID`; if a Qwen batch is unavailable, the deterministic score >= 90 candidate is retained rather than discarded.
+- Deduplication runs after eligibility filtering.
+- Telegram and Discord receive all new eligible signals; Binance Square publishes at most 3 eligible signals per batch.
