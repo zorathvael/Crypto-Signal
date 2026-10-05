@@ -1,6 +1,6 @@
 {
   "name": "crypto-strict-scanner",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Crypto-Signal — live Binance calibrated scanner with Bitget fallback + local Qwen3 intelligence",
   "main": "scanner.js",
   "scripts": {
