@@ -70,15 +70,15 @@ jobs:
           AI_MAX_CANDIDATES: 3
           SCANNER_INTERVAL: "1h"
           SCANNER_CANDLES: "150"
-          SCANNER_UNIVERSE: "30"
-          SCANNER_CANDIDATES: "10"
-          SCANNER_MIN_VOLUME: "15000000"
+          SCANNER_UNIVERSE: "300"
+          SCANNER_CANDIDATES: "20"
+          SCANNER_MIN_VOLUME: "0"
           SCANNER_BATCH: "3"
           SCANNER_MIN_CONSENSUS: "45"
           SCANNER_DEEP_CANDIDATES: "10"
           QWEN_BASE_URL: "http://127.0.0.1:11434/v1"
           QWEN_MODEL: "qwen3-0.6b"
-          QWEN_MAX_CANDIDATES: "3"
+          QWEN_MAX_CANDIDATES: "20"
         run: node scanner.js
 
       - name: Commit signals-log.json
