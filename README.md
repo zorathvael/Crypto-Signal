@@ -1,6 +1,6 @@
-# Crypto-Signal v5.0.0
+# Crypto-Signal v5.1.0
 
-## Live Binance scanner + local Qwen3 intelligence
+## Live Binance scanner + Bitget fallback + local Qwen3 intelligence
 
 Production scanner v5 is based on the supplied **Radar Sinyal — Live Binance Futures** implementation. The deterministic market method is ported directly rather than replaced with a new scoring model.
 
@@ -12,14 +12,16 @@ The scanner uses Binance Futures public read-only market data:
 - `/fapi/v1/ticker/price`
 - configurable watchlist
 - default timeframe: **1H**
+- fallback provider: **Bitget USDT-Futures**
+- provider mode: `auto` (Binance first), `binance`, or `bitget`
 - default history: **150 candles**
 - no Binance API key or secret required
 
-There is **no Bitget fallback and no mock market data** in v5. If Binance is inaccessible, affected symbols become N/A and the scan completes without inventing a signal.
+There is **no mock market data**. Provider order is Binance → Bitget. If Binance is blocked, unavailable, times out, or returns invalid market data for a symbol, that symbol is automatically retried against Bitget USDT-Futures.
 
 Binance documents public REST data endpoints and the Futures kline interval family. citeturn1search0turn1search3
 
-### Deterministic calibration
+### Deterministic calibration (unchanged across providers)
 
 The supplied scanner methodology is preserved:
 
@@ -108,6 +110,8 @@ SCANNER_INTERVAL=1h
 SCANNER_CANDLES=150
 SCANNER_CANDIDATES=10
 SCANNER_CONCURRENCY=4
+SCANNER_PROVIDER=auto
+BITGET_API_BASE=api.bitget.com
 
 QWEN_BASE_URL=http://127.0.0.1:11434/v1
 QWEN_MODEL=qwen3-0.6b
