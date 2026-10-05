@@ -1,7 +1,7 @@
 {
   "name": "crypto-strict-scanner",
-  "version": "4.1.0",
-  "description": "Crypto-Signal — source-calibrated 8-agent Council + AI moderator + Fibonacci risk geometry",
+  "version": "5.0.0",
+  "description": "Crypto-Signal — live Binance calibrated scanner + local Qwen3 intelligence",
   "main": "scanner.js",
   "scripts": {
     "scan": "node scanner.js",
