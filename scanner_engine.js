@@ -3,7 +3,7 @@
  * Ported directly from the supplied scanner_live_binance.html methodology.
  * No Bitget fallback and no mock market data: Binance public market data only.
  */
-const BINANCE = process.env.BINANCE_FAPI_URL || "https://fapi.binance.com";
+const BINANCE_BASES = String(process.env.BINANCE_FAPI_URLS || "https://fapi.binance.com,https://fapi1.binance.com,https://fapi2.binance.com,https://fapi3.binance.com,https://fapi4.binance.com").split(",").map(s=>s.trim().replace(/\/$/,"")).filter(Boolean);
 const DEFAULT_SYMBOLS = "NEARUSDT,PUMPUSDT,SOLUSDT,FARTCOINUSDT,PENGUUSDT,WIFUSDT,DOGEUSDT,1000PEPEUSDT,1000BONKUSDT,WLDUSDT,ENAUSDT,ONDOUSDT,SEIUSDT,GRASSUSDT,VIRTUALUSDT,TRUMPUSDT";
 const CFG = {
   symbols: (process.env.SCANNER_SYMBOLS || DEFAULT_SYMBOLS).split(",").map(s=>s.trim().toUpperCase()).filter(Boolean),
@@ -83,11 +83,11 @@ function analyze(symbol,closes,vols,livePrice=null){
   const sigs=[trendS,macdS,rsiS,volS],pos=sigs.filter(v=>v>0).length,neg=sigs.filter(v=>v<0).length;
   return{symbol,na:false,strength,confidence:Math.round(Math.max(pos,neg)/sigs.length*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BINANCE_CALIBRATED_120C"};
 }
+async function getBinanceJson(path){let last;for(const base of BINANCE_BASES){try{return await getJson(base+path,1);}catch(e){last=e;console.log("Binance endpoint failed",base,e.message);}}throw last||new Error("Binance unavailable");}
 async function fetchSymbol(symbol){
-  const u=`${BINANCE}/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(CFG.interval)}&limit=${CFG.limit}`;
-  const rows=await getJson(u);
+  const rows=await getBinanceJson(`/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(CFG.interval)}&limit=${CFG.limit}`);
   if(!Array.isArray(rows)||rows.length<40)throw new Error("data tidak cukup");
-  const ticker=await getJson(`${BINANCE}/fapi/v1/ticker/price?symbol=${encodeURIComponent(symbol)}`).catch(()=>null);
+  const ticker=await getBinanceJson(`/fapi/v1/ticker/price?symbol=${encodeURIComponent(symbol)}`).catch(()=>null);
   return analyze(symbol,rows.map(k=>+k[4]),rows.map(k=>+k[5]),ticker?.price);
 }
 async function mapLimit(items,limit,fn){
@@ -105,4 +105,4 @@ async function runLiveScanner(){
   for(const s of candidates)console.log(` ${s.symbol} ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
   return candidates;
 }
-module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,CFG};
+module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,CFG,BINANCE_BASES};
