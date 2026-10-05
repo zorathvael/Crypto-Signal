@@ -174,8 +174,8 @@ function buildSquareCardSvg(coins) {
     const grade = s.probability >= MIN_PROB_SNIPER ? "SNIPER" : "VALID";
     const side = isLong ? "LONG" : "SHORT";
     const trendLine = s.trends
-      ? `1H ${esc(s.trends.h1)}  ·  15M ${esc(s.trends.m15)}  ·  4H ${esc(s.trends.h4)}`
-      : `1H ${esc(s.h1.structure)}  ·  15M ${esc(s.m15.bias)}`;
+      ? `1H ${esc(s.trends.h1 || s.h1?.bias || "—")}  ·  15M ${esc(s.trends.m15 || s.m15?.bias || "—")}  ·  4H ${esc(s.trends.h4 || s.h4?.bias || "—")}`
+      : `1H ${esc(s.h1?.structure || s.h1?.bias || "—")}  ·  15M ${esc(s.m15?.bias || "—")}`;
 
     cards += `
     <rect x="${pad}" y="${y}" width="${W - pad * 2}" height="${rowH}" rx="20" fill="${soft}" stroke="${accent}" stroke-width="3"/>
@@ -188,7 +188,7 @@ function buildSquareCardSvg(coins) {
     <text x="${pad + 28}" y="${y + 178}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP1     ${esc(formatPrice(s.tp1))}</text>
     <text x="${pad + 28}" y="${y + 210}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#1e293b">TP2     ${esc(formatPrice(s.tp2))}</text>
     <text x="${pad + 28}" y="${y + 242}" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#0f766e">TP3     ${esc(formatPrice(s.tp3 || s.tp2))}  ·  runner</text>
-    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(displaySetup(s.setup))}  ·  R:R 1:${Number(s.rr || 1).toFixed(1)}  ·  Vol ${esc(s.m5.volume.side)}${s.book ? " · Book " + esc(s.book.side) : ""}</text>
+    <text x="${pad + 28}" y="${y + 280}" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#475569">${esc(displaySetup(s.setup))}  ·  R:R 1:${Number(s.rr || 1).toFixed(1)}  ·  Vol ${esc(s.m5?.volume?.side || "—")}${s.book ? " · Book " + esc(s.book.side) : ""}</text>
     <text x="${pad + 28}" y="${y + 312}" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#64748b">${trendLine}</text>`;
   });
 
