@@ -278,14 +278,11 @@ async function sendBinanceSquare(signals) {
     return;
   }
 
-  // Square publishes exactly one post per scanner run, containing the top 3 eligible coins.
+  // Square publishes one post per scanner run with up to 3 eligible coins.
+  // A run with 1 or 2 valid coins is still published; 3 remains the maximum.
   // Telegram/Discord still receive every score >= 90 signal.
-  if (ranked.length < SQUARE_POST_COUNT) {
-    console.log(`Binance Square: only ${ranked.length} eligible coin(s); requires exactly 3, so no post created.`);
-    return;
-  }
   const batches = [ranked];
-  console.log(`Binance Square: exactly ${ranked.length} coin(s) in this run`);
+  console.log(`Binance Square: ${ranked.length} eligible coin(s) in this run (max 3)`);
 
   for (let index = 0; index < batches.length; index++) {
     const batch = batches[index];
