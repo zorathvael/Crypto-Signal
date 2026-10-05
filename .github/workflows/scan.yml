@@ -69,7 +69,7 @@ jobs:
           SCANNER_DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
           AI_MAX_CANDIDATES: 3
           SCANNER_INTERVAL: "1h"
-          SCANNER_CANDLES: "60"
+          SCANNER_CANDLES: "150"
           SCANNER_UNIVERSE: "30"
           SCANNER_CANDIDATES: "10"
           SCANNER_MIN_VOLUME: "15000000"
