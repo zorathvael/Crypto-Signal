@@ -1,153 +1,133 @@
-# Crypto-Signal v4.1.0
+# Crypto-Signal v5.0.0
 
-Source-calibrated 8-agent crypto futures scanner with AI moderation, Fibonacci entry geometry, adaptive 5x–20x risk geometry, and the existing Telegram/Discord/Binance Square delivery contract.
+## Live Binance scanner + local Qwen3 intelligence
 
-## Decision methodology
+Production scanner v5 is based on the supplied **Radar Sinyal — Live Binance Futures** implementation. The deterministic market method is ported directly rather than replaced with a new scoring model.
 
-The supplied `scanner-council.html` is authoritative for the decision method. The production engine ports its:
+### Live Binance data
 
-- Wyckoff
-- OrderFlow
-- Exhaustion
-- SmartMoney
-- Structure
-- Whale
-- MTF
-- Pullback
-- trending / ranging / volatile regime detection
-- regime-dependent weights
-- weighted LONG/SHORT voting
-- consensus formula
-- minimum consensus and minimum winning-agent-weight gates
-- 20-candle Fibonacci pullback detector
+The scanner uses Binance Futures public read-only market data:
 
-The engine does **not** invent a second scoring system. AI is a moderator/validator layer and never changes Council scores or weights.
+- `/fapi/v1/klines`
+- `/fapi/v1/ticker/price`
+- configurable watchlist
+- default timeframe: **1H**
+- default history: **150 candles**
+- no Binance API key or secret required
 
-## Market data
+There is **no Bitget fallback and no mock market data** in v5. If Binance is inaccessible, affected symbols become N/A and the scan completes without inventing a signal.
 
-Production discovery uses Binance Futures public endpoints when reachable and automatically falls back to Bitget USDT-M Futures public market data when the runner cannot access Binance (for example HTTP 451). The fallback supplies the same logical inputs required by the Council: candles, taker buy/sell volume, long/short positioning, account long/short positioning, and public fills. No mock market data is generated.
+Binance documents public REST data endpoints and the Futures kline interval family. citeturn1search0turn1search3
 
-The source methodology requires:
+### Deterministic calibration
 
-- candle taker-buy volume
-- aggregate trades
-- top-trader long/short positioning
-- global long/short account positioning
-- 5M / 15M / 1H / 4H candles
+The supplied scanner methodology is preserved:
 
-Provider selection is automatic; no API key is required for either public market-data source.
+1. EMA20 / EMA50 trend
+2. RSI14
+3. MACD histogram
+4. relative volume
+5. signed strength
+6. historical forward-move calibration over the latest 120-candle window
+7. median adverse/favourable movement
+8. calibrated entry distance
+9. structural stop
+10. historical fill probability
+11. historical TP1 reach probability
 
-No mock market data is generated.
+The original source explicitly describes the calibration as using a 120-candle pullback history and derives Entry/SL/TP from those historical distributions. fileciteturn14file0L156-L218
 
-## AI moderator
+### Qwen3 local intelligence
 
-`ai_moderator.js` provides a free-provider path:
+The scanner now has a second-stage **Qwen3-0.6B Q4_K_M** validator.
 
-1. Optional OpenAI-compatible gateway such as **ReallyArtificial/freeport** via `FREEPORT_URL`.
-2. Pollinations public inference fallback, matching the AI approach present in the supplied Council HTML.
+The supplied model file was verified locally by SHA-256:
 
-The Freeport project is MIT licensed and provides an OpenAI-compatible multi-provider gateway; it is an adapter target, not a bundled server inside GitHub Actions.
+`3479875d3e4c726f7a20b2181f5e1536aefe9925f284f9ae9997a39a7e0d8dc9`
 
-Optional variables:
+This exactly matches the public `gvij/qwen3-0.6b-gguf` Q4_K_M file, which is 484 MB. citeturn3search2turn3search4
 
-```
-FREEPORT_URL=
-FREEPORT_API_KEY=
-FREEPORT_MODEL=gpt-4o-mini
-AI_TIMEOUT_MS=22000
-AI_MAX_CANDIDATES=3
-```
+Qwen does **not** rewrite the deterministic Entry/SL/TP. It receives the calculated market state and returns:
 
-AI is limited to the strongest Council candidates. If AI is unavailable, the deterministic Council result remains intact; no fabricated AI verdict is produced.
+- VALID / CAUTION / REJECT
+- AI score
+- AI confidence
+- reasons
+- risk flags
 
-## Fibonacci trade geometry
+The model is served through an OpenAI-compatible local endpoint. llama.cpp officially supports `/v1/chat/completions` and GGUF local models. citeturn0search1turn2search3
 
-The supplied Council file calculates a 20-candle swing and identifies the 38.2%–61.8% pullback zone. Production execution geometry now uses that same swing:
+### Local Qwen
 
-- Entry: **50% Fibonacci retracement**
-- Structural SL: swing extreme ± **0.8 ATR**, matching the source trade-plan method
-- Margin: **5 USDT**
-- Risk target: **0.50 USDT**
-- Leverage: **adaptive 5x–20x**
-- TP1: **2R**
-- TP2: **4R**
-- TP3: **6R**
-- no leverage below 5x
-- no target above 6R
-- Entry / SL / TP are emitted as actual prices
+Place the supplied file at:
 
-If the structural Fibonacci stop would require leverage below 5x to stay within the 0.50 USDT risk budget, the candidate is rejected rather than distorting the stop.
+`models/qwen3-0.6b-q4_k_m.gguf`
 
-## Delivery contract
+Then start a local llama.cpp server, for example:
 
-The existing destinations remain:
+`llama-server -m models/qwen3-0.6b-q4_k_m.gguf --alias qwen3-0.6b --host 127.0.0.1 --port 11434`
+
+The scanner expects:
+
+`QWEN_BASE_URL=http://127.0.0.1:11434/v1`
+
+The repository also contains `scripts/start_qwen.sh`, which verifies the model SHA and can provision the same model for CI.
+
+### GitHub Actions
+
+CI:
+
+- syntax-checks all production modules
+- runs deterministic regression tests
+- caches the 484 MB Qwen model
+- attempts to start local Qwen through the official llama.cpp server image
+- continues deterministically if Qwen or the model download is unavailable
+- runs the scanner against live Binance data
+- never generates mock signals
+
+This keeps a market-data outage from becoming a false trading result.
+
+### Output contract
+
+Existing distribution remains:
 
 - Telegram: every new valid signal
 - Discord: every new valid signal
-- Binance Square: only complete **3-coin** batches, with the exact same three coins in text and visual
+- Binance Square: complete 3-coin batches only
+- same three coins in Square text and visual
+- `#PintarPakaiBinanceEarn`
+- duplicate suppression via `signals-log.json`
 
-If fewer than three eligible Square signals remain, no partial Square post is created. A remainder of 1–2 coins is held for a later full batch.
+The public output is now labeled **Crypto-Signal v5.0** and **Live Binance + Qwen3**.
 
-Public posts do not expose internal provider names.
-
-Square hashtag remains:
-
-`#PintarPakaiBinanceEarn`
-
-The Square visual is labeled **CRYPTO-SIGNAL v4.1**.
-
-## Deduplication
-
-Cross-scan duplicates remain blocked through `signals-log.json`. Fingerprints include:
-
-- symbol
-- direction
-- setup
-- relative SL
-- relative TP1
-- relative TP2
-- relative TP3
-
-## Configuration
+### Configuration
 
 ```
-SCANNER_INTERVAL=5m
-SCANNER_CANDLES=60
-SCANNER_UNIVERSE=30
+SCANNER_SYMBOLS=NEARUSDT,PUMPUSDT,SOLUSDT,...
+SCANNER_INTERVAL=1h
+SCANNER_CANDLES=150
 SCANNER_CANDIDATES=10
-SCANNER_MIN_VOLUME=15000000
-SCANNER_BATCH=3
-SCANNER_MIN_CONSENSUS=45
-SCANNER_DEEP_CANDIDATES=10
-SCANNER_DRY_RUN=false
+SCANNER_CONCURRENCY=4
+
+QWEN_BASE_URL=http://127.0.0.1:11434/v1
+QWEN_MODEL=qwen3-0.6b
+QWEN_MAX_CANDIDATES=3
+QWEN_TIMEOUT_MS=20000
 ```
 
-## Production files
-
-| File | Role |
-|---|---|
-| `scanner_engine.js` | Source-calibrated 8-agent Council |
-| `ai_moderator.js` | Free AI moderator adapter |
-| `trade_plan.js` | Fibonacci + adaptive risk geometry |
-| `scanner.js` | orchestration, AI, geometry, dedup and delivery |
-| `delivery.js` | Telegram / Discord / Binance Square |
-| `trade_plan.test.js` | geometry regression tests |
-| `signals-log.json` | persistent dedup/audit state |
-| `.github/workflows/scan.yml` | scheduled/manual/PR validation |
-
-## Validation
+### Validation
 
 ```
 node --check scanner.js
 node --check scanner_engine.js
-node --check ai_moderator.js
+node --check qwen_ai.js
 node --check delivery.js
 node --check trade_plan.js
 npm test
 ```
 
-No claim of production success is made until GitHub Actions validates the changed commit.
+No claim of production success is made until the new GitHub Actions run validates the changed commit.
 
-## Disclaimer
+### Disclaimer
 
-Crypto-Signal is an information/education tool for market analysis. It does not execute orders automatically and is not financial advice. Validate execution price, fees, slippage, leverage and risk independently.
+Crypto-Signal is an information/education tool. It does not automatically execute orders and is not financial advice.
