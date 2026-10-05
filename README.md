@@ -144,3 +144,7 @@ No claim of production success is made until the new GitHub Actions run validate
 ### Disclaimer
 
 Crypto-Signal is an information/education tool. It does not automatically execute orders and is not financial advice.
+
+
+### Qwen active universe scanner
+Qwen3 is now an active scanner rather than a second-stage validator. Every quantitative candidate in the discovered crypto-futures universe is sent to Qwen in batches. Qwen independently scores signal quality, detects indicator conflicts and risk flags, and returns a verdict. The final publication score combines 60% quantitative score and 40% Qwen AI score. Entry/SL/TP remain deterministic and are not invented or modified by the LLM.
