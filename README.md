@@ -155,3 +155,5 @@ Qwen3 is now an active scanner rather than a second-stage validator. Every quant
 - Binance market-data endpoints are removed from the scanner execution path.
 - Qwen remains the active AI scanner over the discovered Bitget crypto-perpetual universe.
 - The deterministic calibration/Entry-SL-TP method is preserved; only the market-data source is changed.
+
+- Qwen AI layer uses compact fast classification without deep reasoning; Qwen timeout no longer discards a valid calibrated scanner result.
