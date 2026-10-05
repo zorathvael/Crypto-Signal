@@ -6,7 +6,7 @@
 const BASE=String(process.env.QWEN_BASE_URL||process.env.QWEN_URL||"http://127.0.0.1:11434/v1").replace(/\/$/,"");
 const MODEL=process.env.QWEN_MODEL||"default";
 const TIMEOUT=Number(process.env.QWEN_TIMEOUT_MS||20000);
-const MAX=Number(process.env.QWEN_MAX_CANDIDATES||3);
+const MAX=Number(process.env.QWEN_MAX_CANDIDATES||20);
 async function ask(messages){
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
   try{
@@ -26,7 +26,7 @@ function extractJson(text){
 }
 function buildPrompt(s){
   return [
-    {role:"system",content:"You are Qwen, a conservative crypto-futures market-analysis validator. Use ONLY the supplied live Binance metrics. Do not invent price, news, order flow, or indicators. Do not change the deterministic scanner's entry/SL/TP. Return JSON only with verdict (VALID|CAUTION|REJECT), score (0-100), confidence (0-100), reasons (array of max 3 short strings), riskFlags (array)."},
+    {role:"system",content:"You are Qwen, a conservative crypto-futures market-analysis validator. Use ONLY the supplied live market metrics. The deterministic scanner score is evidence, but you are also an active scanner: rank signal quality, detect conflicts, and assign an independent AI score. Do not invent price, news, order flow, or indicators. Do not change the deterministic scanner's entry/SL/TP. Return JSON only with verdict (VALID|CAUTION|REJECT), score (0-100), confidence (0-100), reasons (array of max 3 short strings), riskFlags (array)."},
     {role:"user",content:JSON.stringify({symbol:s.symbol,direction:s.direction,strength:s.strength,scannerConfidence:s.confidence,livePrice:s.livePrice,candleClose:s.candleClose,entry:s.entry,sl:s.sl,tp1:s.tp1,tp2:s.tp2,tp3:s.tp3,fillProbability:s.fillP,historicalTp1Reach:s.reachP,rsi:s.rsi,relativeVolume:s.relativeVolume,atr:s.atr,components:s.components,calibration:s.calibration})}
   ];
 }
