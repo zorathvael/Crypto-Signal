@@ -1,4 +1,4 @@
-# Crypto-Signal v5.2.0
+# Crypto-Signal v5.3.0
 
 ## Live Binance scanner + Bitget fallback + local Qwen3 intelligence
 
@@ -148,3 +148,10 @@ Crypto-Signal is an information/education tool. It does not automatically execut
 
 ### Qwen active universe scanner
 Qwen3 is now an active scanner rather than a second-stage validator. Every quantitative candidate in the discovered crypto-futures universe is sent to Qwen in batches. Qwen independently scores signal quality, detects indicator conflicts and risk flags, and returns a verdict. The final publication score combines 60% quantitative score and 40% Qwen AI score. Entry/SL/TP remain deterministic and are not invented or modified by the LLM.
+
+
+### v5.3.0 — Direct Bitget market data
+- Bitget USDT-Futures is now the **sole live market-data provider** for scanner discovery, candles and live prices.
+- Binance market-data endpoints are removed from the scanner execution path.
+- Qwen remains the active AI scanner over the discovered Bitget crypto-perpetual universe.
+- The deterministic calibration/Entry-SL-TP method is preserved; only the market-data source is changed.
