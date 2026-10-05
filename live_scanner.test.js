@@ -1,6 +1,6 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const {analyze,normalizeBitgetCandles,bitgetInterval}=require("./scanner_engine");
+const {analyze,normalizeBitgetCandles,bitgetInterval,isCryptoFuturesSymbol}=require("./scanner_engine");
 function series(n=150){
   let p=100,seed=7;const c=[],v=[];
   for(let i=0;i<n;i++){seed=(seed*9301+49297)%233280;const noise=(seed/233280-.5)*1.5;p*=1+(.0008+noise/100);c.push(p);v.push(1000+(seed%400));}
@@ -29,4 +29,12 @@ test("Bitget candles normalize to the same OHLCV ordering used by calibration",(
   assert.deepEqual(r.map(x=>x.close),[10.5,11.5,12.5]);
   assert.deepEqual(r.map(x=>x.volume),[80,90,100]);
   assert.equal(bitgetInterval("1h"),"1H");
+});
+
+test("universe excludes common TradFi symbols and keeps crypto futures",()=>{
+  assert.equal(isCryptoFuturesSymbol("BTCUSDT"),true);
+  assert.equal(isCryptoFuturesSymbol("1000PEPEUSDT"),true);
+  assert.equal(isCryptoFuturesSymbol("TSLAUSDT"),false);
+  assert.equal(isCryptoFuturesSymbol("AAPLUSDT"),false);
+  assert.equal(isCryptoFuturesSymbol("EURUSDT"),false);
 });
