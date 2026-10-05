@@ -1,47 +1,108 @@
 /**
- * Crypto-Signal v4.1.0 — 8-Agent Council Engine
- *
- * Scoring is ported from the supplied Scanner Council HTML methodology.
- * The scoring formulas, regime weights, pullback detector and consensus formula
- * are intentionally preserved. Market data is fetched server-side from Binance
- * Futures public endpoints so the same candle/taker/position fields are available.
+ * Crypto-Signal v5.0 — Live Binance Futures calibrated scanner.
+ * Ported directly from the supplied scanner_live_binance.html methodology.
+ * No Bitget fallback and no mock market data: Binance public market data only.
  */
-const BINANCE = "https://fapi.binance.com";
-const BITGET = "https://api.bitget.com";
-const PRODUCT = "USDT-FUTURES";
+const BINANCE = process.env.BINANCE_FAPI_URL || "https://fapi.binance.com";
+const DEFAULT_SYMBOLS = "NEARUSDT,PUMPUSDT,SOLUSDT,FARTCOINUSDT,PENGUUSDT,WIFUSDT,DOGEUSDT,1000PEPEUSDT,1000BONKUSDT,WLDUSDT,ENAUSDT,ONDOUSDT,SEIUSDT,GRASSUSDT,VIRTUALUSDT,TRUMPUSDT";
 const CFG = {
-  interval: process.env.SCANNER_INTERVAL || "5m",
-  candleLimit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 60), 40), 120),
-  universe: Math.min(Math.max(Number(process.env.SCANNER_UNIVERSE || 30), 10), 50),
-  candidates: Math.min(Math.max(Number(process.env.SCANNER_CANDIDATES || 10), 3), 20),
-  minQuoteVolume: Math.max(Number(process.env.SCANNER_MIN_VOLUME || 15000000), 0),
-  batch: Math.min(Math.max(Number(process.env.SCANNER_BATCH || 3), 1), 5),
-  minConsensus: Math.min(Math.max(Number(process.env.SCANNER_MIN_CONSENSUS || 45), 0), 100),
-  deepCandidates: Math.min(Math.max(Number(process.env.SCANNER_DEEP_CANDIDATES || 10), 3), 15),
+  symbols: (process.env.SCANNER_SYMBOLS || DEFAULT_SYMBOLS).split(",").map(s=>s.trim().toUpperCase()).filter(Boolean),
+  interval: process.env.SCANNER_INTERVAL || "1h",
+  limit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 150), 120), 500),
+  candidates: Math.min(Math.max(Number(process.env.SCANNER_CANDIDATES || 10), 1), 20),
+  concurrency: Math.min(Math.max(Number(process.env.SCANNER_CONCURRENCY || 4), 1), 8)
 };
-const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
 async function getJson(url,retries=2){
   let err;
-  for(let i=0;i<=retries;i++){try{const res=await fetch(url,{headers:{Accept:"application/json","User-Agent":"Crypto-Signal/4.1.0"}});if(!res.ok)throw new Error(`HTTP ${res.status}`);return await res.json();}catch(e){err=e;if(i<retries)await new Promise(r=>setTimeout(r,250*(i+1)));}}
+  for(let i=0;i<=retries;i++){
+    try{
+      const r=await fetch(url,{headers:{Accept:"application/json","User-Agent":"Crypto-Signal/5.0"}});
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    }catch(e){err=e;if(i<retries)await new Promise(r=>setTimeout(r,300*(i+1)));}
+  }
   throw err;
 }
-async function getBitget(path,params={}){const q=new URLSearchParams(params);return getJson(`${BITGET}${path}?${q}`);}
-async function getMarketJson(binanceUrl,bitgetPath,params={}){try{return{provider:"binance",data:await getJson(binanceUrl)}}catch(e){console.log(`Binance unavailable (${e.message}); fallback Bitget`);return{provider:"bitget",data:await getBitget(bitgetPath,params)}}}
-function klinesToCandles(rows){return(rows||[]).map(k=>({ts:+k[0],open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5],quoteVolume:+k[7],trades:+k[8],takerBuyBase:+k[9],takerBuyQuote:+k[10]})).filter(c=>[c.open,c.high,c.low,c.close,c.volume,c.quoteVolume,c.takerBuyBase,c.takerBuyQuote].every(Number.isFinite));}
-function bitgetKlines(rows,takerRows=[]){const taker=new Map((takerRows||[]).map(x=>[Number(x.ts??x.timestamp),x]));return(rows||[]).map(k=>{const ts=Number(k[0]),t=taker.get(ts)||{},buy=Number(t.buyVol??t.buyVolume??t.buyVolumeBase??0),sell=Number(t.sellVol??t.sellVolume??t.sellVolumeBase??0);return{ts,open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5],quoteVolume:+k[6],trades:0,takerBuyBase:buy,takerBuyQuote:sell};}).filter(c=>[c.open,c.high,c.low,c.close,c.volume,c.quoteVolume,c.takerBuyBase,c.takerBuyQuote].every(Number.isFinite)).sort((a,b)=>a.ts-b.ts);}
-function bitgetFillsToTakerRows(fills,interval){const ms=({"1m":60000,"3m":180000,"5m":300000,"15m":900000,"30m":1800000,"1H":3600000,"4H":14400000})[interval]||300000;const m=new Map();for(const f of fills||[]){const ts=Number(f.ts);if(!Number.isFinite(ts))continue;const bucket=Math.floor(ts/ms)*ms;const v=Number(f.size);if(!Number.isFinite(v))continue;const x=m.get(bucket)||{ts:bucket,buyVol:0,sellVol:0};if(String(f.side||'').toLowerCase()==='buy')x.buyVol+=v;else if(String(f.side||'').toLowerCase()==='sell')x.sellVol+=v;m.set(bucket,x);}return[...m.values()];}
-function calcEMA(a,p){if(a.length<p)return a[a.length-1];const k=2/(p+1);let e=mean(a.slice(0,p));for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
-function calcRSI(c,p=14){if(c.length<p+1)return 50;let g=0,l=0;for(let i=c.length-p;i<c.length;i++){const d=c[i]-c[i-1];if(d>=0)g+=d;else l-=d;}const ag=g/p,al=l/p;if(al===0)return 100;return 100-(100/(1+ag/al));}
-function calcATR(h,l,c,p=14){if(c.length<p+1)return c[c.length-1]*.02;const t=[];for(let i=1;i<c.length;i++)t.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));return t.slice(-p).reduce((a,b)=>a+b,0)/p;}
-function detectRegime(closes,highs,lows,vols,atr,price){const ema20=calcEMA(closes,20),ema50=calcEMA(closes,50),emaDiff=Math.abs(ema20-ema50)/price*100,rh=Math.max(...highs.slice(-30)),rl=Math.min(...lows.slice(-30)),rangePct=(rh-rl)/price*100,atrPct=atr/price*100,volRatio=mean(vols.slice(-10))/(mean(vols.slice(-30))||1);let type="ranging",desc="";if(emaDiff>.5&&rangePct>1.5&&atrPct>.3){type="trending";desc=`Trend kuat · EMA diff ${emaDiff.toFixed(2)}% · Range ${rangePct.toFixed(1)}%`;}else if(atrPct>.8||volRatio>1.8){type="volatile";desc=`Volatil tinggi · ATR ${atrPct.toFixed(2)}% · Vol ${volRatio.toFixed(1)}x`;}else desc=`Ranging/sideways · ATR ${atrPct.toFixed(2)}%`;return{type,desc,atrPct,emaDiff,volRatio};}
-function getRegimeWeights(r){if(r.type==='trending')return{wyckoff:1,of:1.3,exh:1,sm:1.5,struct:.8,whale:1.8,mtf:2,pb:1.2};if(r.type==='volatile')return{wyckoff:1.5,of:1.5,exh:1.8,sm:1.2,struct:1,whale:1.5,mtf:.8,pb:1.5};return{wyckoff:1.2,of:1,exh:1,sm:1.2,struct:1.5,whale:1,mtf:.8,pb:1.2};}
-function closesOf(rows){return(rows||[]).map(x=>Array.isArray(x)?+x[4]:+x.close);}
-function analyzeMTF(k15,k1h,k4h,price){try{const c15=closesOf(k15),c1h=closesOf(k1h),c4h=closesOf(k4h);if(c15.length<20||c1h.length<20||c4h.length<20)return{trend15:'bull',trend1h:'bull',trend4h:'bull',bullCount:1,bearCount:0};const trend15=price>calcEMA(c15,50)?'bull':'bear',trend1h=price>calcEMA(c1h,50)?'bull':'bear',trend4h=price>calcEMA(c4h,50)?'bull':'bear';const bullCount=(trend15==='bull')+(trend1h==='bull')+(trend4h==='bull'),bearCount=(trend15==='bear')+(trend1h==='bear')+(trend4h==='bear');return{trend15,trend1h,trend4h,bullCount,bearCount};}catch{return{trend15:'bull',trend1h:'bull',trend4h:'bull',bullCount:1,bearCount:0};}}
-function detectPullback(closes,highs,lows,vols,deltas,cvd,price,atr,mtf){const n=closes.length,result={status:'none',direction:'NEUTRAL',reason:'Tidak ada pullback terdeteksi',conf:50,fibLow:0,fibHigh:0,retracement:0,volumeOk:false,cvdFlat:false},swingHigh=Math.max(...highs.slice(-20)),swingLow=Math.min(...lows.slice(-20)),range=swingHigh-swingLow;if(range<=0)return result;const retracement=(swingHigh-price)/range;result.fibLow=swingLow;result.fibHigh=swingHigh;result.retracement=retracement*100;result.volumeOk=mean(vols.slice(-3))<mean(vols.slice(-20))*.8;const c10=cvd.slice(-10),cMin=Math.min(...c10),cMax=Math.max(...c10),cRp=price>0?((cMax-cMin)/(price*100))*100:0;result.cvdFlat=cRp<1;const dLast=deltas[n-1],dPrev5=mean(deltas.slice(-6,-1)),decay=Math.abs(dPrev5)>0?Math.abs(dLast)/Math.abs(dPrev5):1;if(mtf.trend4h==='bull'&&retracement>.15&&retracement<.7){if(retracement<.382){result.status='active';result.direction='LONG';result.reason='Pullback sedang di 23.6%-38.2% (zona entry awal)';result.conf=70;}else if(retracement<.618){result.status='ending';result.direction='LONG';result.reason='Pullback di zona emas (38.2-61.8%), siap reversal';result.conf=80;}else{result.status='ending';result.direction='LONG';result.reason='Pullback dalam (61.8-78.6%), hati-hati';result.conf=65;}}else if(mtf.trend4h==='bear'&&retracement>.15&&retracement<.7){if(retracement<.382){result.status='active';result.direction='SHORT';result.reason='Rally ke 23.6-38.2%, mungkin lanjut';result.conf=70;}else if(retracement<.618){result.status='ending';result.direction='SHORT';result.reason='Rally di zona emas (38.2-61.8%), siap reversal';result.conf=80;}else{result.status='ending';result.direction='SHORT';result.reason='Rally dalam, hati-hati';result.conf=65;}}else if(retracement<.15)result.reason='Harga di ekstrem, tidak ada pullback';if(result.status==='ending'&&decay<.7&&result.volumeOk){result.reason+=' · Konfirmasi: delta decay + volume kering';result.conf=Math.min(95,result.conf+10);}return result;}
-function scoreCouncil({symbol,frames,topPos,globalLS,agg,price,chg}){const k=frames.c5,k15=frames.c15,k1h=frames.c1h,k4h=frames.c4h,n=k.length,closes=k.map(x=>x.close),opens=k.map(x=>x.open),highs=k.map(x=>x.high),lows=k.map(x=>x.low),vols=k.map(x=>x.volume),deltas=k.map(x=>x.takerBuyBase-x.takerBuyQuote);let cum=0;const cvd=deltas.map(d=>cum+=d),atr=calcATR(highs,lows,closes,14),regime=detectRegime(closes,highs,lows,vols,atr,price),agents=[];const ema21=calcEMA(closes,21),ema50=calcEMA(closes,50),rsi=calcRSI(closes,14),rLow=Math.min(...lows.slice(-20,-1)),rHigh=Math.max(...highs.slice(-20,-1)),lL=lows[n-1],lH=highs[n-1],lC=closes[n-1],lO=opens[n-1],lw=Math.min(lC,lO)-lL,uw=lH-Math.max(lC,lO),bd=Math.abs(lC-lO),rg=lH-lL||1;let s='NEUTRAL',sc=0,reason='Tidak ada pola',conf=50;if(lL<rLow*.997&&lC>rLow&&lw>bd&&lw>rg*.3){s='LONG';sc=22;reason=`Spring terdeteksi di ${rLow.toFixed(4)}`;conf=80;}else if(lH>rHigh*1.003&&lC<rHigh&&uw>bd&&uw>rg*.3){s='SHORT';sc=22;reason=`Upthrust terdeteksi di ${rHigh.toFixed(4)}`;conf=80;}else if(price<ema21&&price<ema50&&rsi<35){s='LONG';sc=12;reason=`Oversold RSI ${rsi.toFixed(1)}`;conf=55;}else if(price>ema21&&price>ema50&&rsi>65){s='SHORT';sc=12;reason=`Overbought RSI ${rsi.toFixed(1)}`;conf=55;}agents.push({id:'wyckoff',name:'Wyckoff',signal:s,score:sc,reason,conf});const dR=deltas.slice(-5).reduce((a,b)=>a+b,0);s='NEUTRAL';sc=0;reason='Delta seimbang';conf=50;if(dR>0&&price<rLow*1.01){s='LONG';sc=22;reason=`Delta positif di area bawah (${(dR/1000).toFixed(0)}K)`;conf=75;}else if(dR<0&&price>rHigh*.99){s='SHORT';sc=22;reason=`Delta negatif di area atas (${(dR/1000).toFixed(0)}K)`;conf=75;}else if(dR>0){s='LONG';sc=12;reason='Delta positif dominan';conf=55;}else if(dR<0){s='SHORT';sc=12;reason='Delta negatif dominan';conf=55;}agents.push({id:'of',name:'OrderFlow',signal:s,score:sc,reason,conf});const c10=cvd.slice(-10),cMin=Math.min(...c10),cMax=Math.max(...c10),cRp=price>0?((cMax-cMin)/(price*100))*100:0,flat=cRp<1;let aA=0;for(let q=n-20;q<n;q++)aA+=Math.abs(deltas[q]);aA/=20;const decay=aA>0?Math.abs(deltas[n-1])/aA:1,pM=(closes[n-1]-closes[n-6])/closes[n-6]*100;s='NEUTRAL';sc=0;reason='Tidak ada exhaustion';conf=50;if(deltas[n-1]<0&&decay<.7&&flat&&pM<-.15){s='LONG';sc=25;reason=`Seller decay ${(decay*100).toFixed(0)}% + CVD flat`;conf=80;}else if(deltas[n-1]>0&&decay<.7&&flat&&pM>.15){s='SHORT';sc=25;reason=`Buyer decay ${(decay*100).toFixed(0)}% + CVD flat`;conf=80;}else if(flat){s=pM<0?'LONG':pM>0?'SHORT':'NEUTRAL';sc=10;reason=`CVD flat (${cRp.toFixed(2)}%)`;conf=55;}agents.push({id:'exh',name:'Exhaustion',signal:s,score:sc,reason,conf});const tpL=topPos>=1.2,tpS=topPos<=.85,rHls=globalLS>=1.8,rLls=globalLS<=.6;s='NEUTRAL';sc=0;reason='Posisi netral';conf=50;if(rLls&&tpL){s='LONG';sc=25;reason='Retail SHORT vs Whale LONG (kontrarian)';conf=85;}else if(rHls&&tpS){s='SHORT';sc=25;reason='Retail LONG vs Whale SHORT (kontrarian)';conf=85;}else if(tpL){s='LONG';sc=12;reason=`Top trader LONG (rasio ${topPos.toFixed(2)})`;conf=60;}else if(tpS){s='SHORT';sc=12;reason=`Top trader SHORT (rasio ${topPos.toFixed(2)})`;conf=60;}agents.push({id:'sm',name:'SmartMoney',signal:s,score:sc,reason,conf});const rh100=Math.max(...highs.slice(-100)),rl100=Math.min(...lows.slice(-100)),rPos=(price-rl100)/(rh100-rl100);s='NEUTRAL';sc=0;reason=`Mid-range (${(rPos*100).toFixed(0)}%)`;conf=50;if(rPos<.2){s='LONG';sc=20;reason=`Discount zone (${(rPos*100).toFixed(0)}% dari range)`;conf=75;}else if(rPos>.8){s='SHORT';sc=20;reason=`Premium zone (${(rPos*100).toFixed(0)}% dari range)`;conf=75;}else if(rPos<.35){s='LONG';sc=10;reason=`Lower range (${(rPos*100).toFixed(0)}%)`;conf=55;}else if(rPos>.65){s='SHORT';sc=10;reason=`Upper range (${(rPos*100).toFixed(0)}%)`;conf=55;}agents.push({id:'struct',name:'Structure',signal:s,score:sc,reason,conf});let wB=0,wS=0,wBV=0,wSV=0;for(const t of agg||[]){const usd=Number(t.p)*Number(t.q);if(usd>=30000){if(t.m===false){wB++;wBV+=usd;}else{wS++;wSV+=usd;}}}s='NEUTRAL';sc=0;reason='Tidak ada aktivitas whale';conf=40;const whTotal=wB+wS;if(whTotal>=2){const bR=wBV/(wBV+wSV||1);if(bR>=.6){s='LONG';sc=22;reason=`Whale BUY dominan (${wB}B/${wS}S, net +$${((wBV-wSV)/1000).toFixed(0)}K)`;conf=80;}else if(bR<=.4){s='SHORT';sc=22;reason=`Whale SELL dominan (${wB}B/${wS}S, net -$${((wSV-wBV)/1000).toFixed(0)}K)`;conf=80;}}agents.push({id:'whale',name:'Whale',signal:s,score:sc,reason,conf});const mtf=analyzeMTF(k15,k1h,k4h,price);s='NEUTRAL';sc=0;reason='MTF tidak selaras';conf=50;if(mtf.bullCount===3){s='LONG';sc=22;reason='Semua TF bull (4H+1H+15m)';conf=85;}else if(mtf.bearCount===3){s='SHORT';sc=22;reason='Semua TF bear (4H+1H+15m)';conf=85;}else if(mtf.bullCount===2){s='LONG';sc=12;reason=mtf.bullCount+'/3 TF bull';conf=60;}else if(mtf.bearCount===2){s='SHORT';sc=12;reason=mtf.bearCount+'/3 TF bear';conf=60;}agents.push({id:'mtf',name:'MTF',signal:s,score:sc,reason,conf,detail:mtf});const pullback=detectPullback(closes,highs,lows,vols,deltas,cvd,price,atr,mtf);s='NEUTRAL';sc=0;reason=pullback.reason;conf=pullback.conf;if(pullback.status==='ending'){s=pullback.direction;sc=20;}agents.push({id:'pb',name:'Pullback',signal:s,score:sc,reason,conf,detail:pullback});const weights=getRegimeWeights(regime);let longScore=0,shortScore=0,longW=0,shortW=0,totalW=0;for(const ag of agents){const w=weights[ag.id]||1;ag.weight=w;const contribution=ag.score*w;totalW+=w;if(ag.signal==='LONG'){longScore+=contribution;longW+=w;}else if(ag.signal==='SHORT'){shortScore+=contribution;shortW+=w;}}const direction=longScore>shortScore?'LONG':shortScore>longScore?'SHORT':null;if(!direction)return null;const winScore=direction==='LONG'?longScore:shortScore,winW=direction==='LONG'?longW:shortW,opposingScore=direction==='LONG'?shortScore:longScore,maxPossible=120*totalW,netScore=winScore-opposingScore*.5;let consensus=Math.round(netScore/maxPossible*100);consensus=Math.max(0,Math.min(100,consensus));if(consensus<CFG.minConsensus||winW<2)return null;const trends={h4:mtf.trend4h==='bull'?'bullish':'bearish',h1:mtf.trend1h==='bull'?'bullish':'bearish',m15:mtf.trend15==='bull'?'bullish':'bearish'},m5={rsi,volume:{side:dR>8?'BUY':dR<-8?'SELL':'BALANCED',spike:vols[n-1]>=mean(vols.slice(-21,-1))*1.35}};return{symbol:symbol.replace('USDT',''),base:symbol.replace('USDT',''),instId:symbol,direction,action:direction,consensus,probability:consensus,longScore,shortScore,agents,weights,regime:{regime:regime.type,atrPct:+(atr/price*100).toFixed(3)},pullback,mtf,price,chg24:chg,topPos,globalLS,rsi,atr,atrPct:(atr/price*100).toFixed(2),rLow,rHigh,rPos:rPos*100,trends,m5,council:{regime:regime.type,agents,votes:{long:longScore,short:shortScore},pullback},setup:'SCALP_MTF'};}
-async function fetchFrames(symbol){const mk=async interval=>{try{const raw=await getJson(`${BINANCE}/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${CFG.candleLimit}`);return klinesToCandles(raw);}catch(e){const raw=await getBitget('/api/v2/mix/market/candles',{symbol,productType:PRODUCT,granularity:interval,limit:String(CFG.candleLimit)});const fills=interval===CFG.interval?await getBitget('/api/v2/mix/market/fills',{symbol,productType:PRODUCT,limit:'100'}).catch(()=>({data:[]})):({data:[]});return bitgetKlines(raw.data||[],bitgetFillsToTakerRows(fills.data||[],interval));}};const[c5,c15,c1h,c4h]=await Promise.all([mk(CFG.interval),mk('15m'),mk('1H'),mk('4H')]);return{c5,c15,c1h,c4h};}
-async function deepData(symbol){try{const[top,global,agg]=await Promise.all([getJson(`${BINANCE}/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=5m&limit=1`),getJson(`${BINANCE}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=5m&limit=1`),getJson(`${BINANCE}/fapi/v1/aggTrades?symbol=${symbol}&limit=100`)]);return{topPos:Number(top?.[0]?.longShortRatio||1),globalLS:Number(global?.[0]?.longShortRatio||1),agg:Array.isArray(agg)?agg:[]};}catch(e){const[top,global,agg]=await Promise.all([getBitget('/api/v2/mix/market/position-long-short',{symbol,productType:PRODUCT,period:'5m'}),getBitget('/api/v2/mix/market/account-long-short',{symbol,productType:PRODUCT,period:'5m'}),getBitget('/api/v2/mix/market/fills',{symbol,productType:PRODUCT,limit:'100'})]);const tp=top.data?.[0]||{},gl=global.data?.[0]||{};const rows=(agg.data||[]).map(t=>({p:t.price,q:t.size,m:String(t.side||'').toLowerCase()!=='buy'}));return{topPos:Number(tp.longShortPositionRatio??tp.longShortRatio??1),globalLS:Number(gl.longShortAccountRatio??gl.longShortRatio??1),agg:rows};}}
-async function getUniverse(){try{const[info,tickers]=await Promise.all([getJson(`${BINANCE}/fapi/v1/exchangeInfo`),getJson(`${BINANCE}/fapi/v1/ticker/24hr`)]);const active=new Set((info.symbols||[]).filter(s=>s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT'&&s.status==='TRADING').map(s=>s.symbol));return(Array.isArray(tickers)?tickers:[]).filter(t=>active.has(t.symbol)).map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume)||0,price:Number(t.lastPrice)||0,change:Number(t.priceChangePercent)||0})).filter(x=>x.price>0&&x.volume>=CFG.minQuoteVolume).sort((a,b)=>b.volume-a.volume).slice(0,CFG.universe);}catch(e){const[contracts,tickers]=await Promise.all([getBitget('/api/v2/mix/market/contracts',{productType:PRODUCT}),getBitget('/api/v2/mix/market/tickers',{productType:PRODUCT})]);const active=new Set((contracts.data||[]).filter(s=>String(s.symbolType||'').toLowerCase()==='perpetual'&&String(s.quoteCoin||'').toUpperCase()==='USDT'&&['normal','online'].includes(String(s.symbolStatus||'').toLowerCase())).map(s=>s.symbol));return(Array.isArray(tickers.data)?tickers.data:[]).filter(t=>active.has(t.symbol)).map(t=>({symbol:t.symbol,volume:Number(t.quoteVolume||t.usdtVolume)||0,price:Number(t.lastPr)||0,change:Number(t.change24h)||0})).filter(x=>x.price>0&&x.volume>=CFG.minQuoteVolume).sort((a,b)=>b.volume-a.volume).slice(0,CFG.universe);}}
-async function mapLimit(items,limit,fn){const out=[];let idx=0;async function worker(){while(true){const i=idx++;if(i>=items.length)return;try{out[i]=await fn(items[i],i);}catch(e){out[i]={error:e};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;}
-async function runCouncilEngine(){console.log('=== Crypto-Signal v4.1 | 8-Agent Council (source-calibrated, Binance→Bitget fallback) ===');const universe=await getUniverse();console.log('Universe:',universe.length,universe.map(x=>x.symbol.replace('USDT','')).join(', '));const scanned=await mapLimit(universe,CFG.batch,async u=>{const frames=await fetchFrames(u.symbol);if(frames.c5.length<40||frames.c15.length<40||frames.c1h.length<40||frames.c4h.length<40)return null;return{u,frames};});const base=scanned.filter(x=>x&&!x.error),scored=await mapLimit(base,CFG.batch,async x=>({x,d:await deepData(x.u.symbol)})),signals=[];for(const row of scored){if(!row||row.error)continue;const s=scoreCouncil({symbol:row.x.u.symbol,frames:row.x.frames,topPos:row.d.topPos,globalLS:row.d.globalLS,agg:row.d.agg,price:row.x.u.price,chg:row.x.u.change});if(s)signals.push(s);}signals.sort((a,b)=>b.consensus-a.consensus);const result=signals.slice(0,CFG.candidates);console.log('Council VALID:',result.length);for(const s of result)console.log(` ${s.base} ${s.direction} consensus=${s.consensus} retracement=${s.pullback.retracement.toFixed(1)}%`);return result;}
-module.exports={runCouncilEngine,CFG,detectRegime,getRegimeWeights,detectPullback,scoreCouncil};
+function ema(arr,period){
+  const k=2/(period+1),out=new Array(arr.length).fill(null);let prev=null;
+  for(let i=0;i<arr.length;i++){
+    if(i<period-1)continue;
+    if(prev===null){let sum=0;for(let j=i-period+1;j<=i;j++)sum+=arr[j];prev=sum/period;}
+    else prev=arr[i]*k+prev*(1-k);
+    out[i]=prev;
+  }
+  return out;
+}
+function rsiArr(arr,period){
+  const out=new Array(arr.length).fill(null);let gain=0,loss=0;
+  for(let i=1;i<=period;i++){const d=arr[i]-arr[i-1];if(d>=0)gain+=d;else loss-=d;}
+  gain/=period;loss/=period;out[period]=loss===0?100:100-100/(1+gain/loss);
+  for(let i=period+1;i<arr.length;i++){const d=arr[i]-arr[i-1],g=d>0?d:0,l=d<0?-d:0;gain=(gain*(period-1)+g)/period;loss=(loss*(period-1)+l)/period;out[i]=loss===0?100:100-100/(1+gain/loss);}
+  return out;
+}
+function macdHistArr(arr){
+  const e12=ema(arr,12),e26=ema(arr,26);
+  const macd=arr.map((_,i)=>e12[i]!=null&&e26[i]!=null?e12[i]-e26[i]:null);
+  const valid=macd.filter(v=>v!=null),sig=ema(valid,9);let vi=0;
+  const signal=macd.map(v=>v==null?null:sig[vi++]);
+  return macd.map((v,i)=>v!=null&&signal[i]!=null?v-signal[i]:null);
+}
+function volAtr(arr,period){
+  const out=new Array(arr.length).fill(null);
+  for(let i=period;i<arr.length;i++){
+    const rets=[];for(let j=i-period+1;j<=i;j++)rets.push((arr[j]-arr[j-1])/arr[j-1]);
+    const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+    out[i]=Math.sqrt(rets.reduce((a,b)=>a+(b-mean)*(b-mean),0)/rets.length)*arr[i];
+  }
+  return out;
+}
+function percentile(arr,p){
+  if(!arr.length)return 0;const s=[...arr].sort((a,b)=>a-b);
+  return s[Math.min(s.length-1,Math.max(0,Math.ceil(p/100*s.length)-1))];
+}
+function clamp(x,lo,hi){return Math.min(hi,Math.max(lo,x));}
+function analyze(symbol,closes,vols,livePrice=null){
+  const N=closes.length;if(N<40)return{symbol,na:true,reason:"Data terlalu sedikit"};
+  const e20=ema(closes,20),e50=ema(closes,50),rsi=rsiArr(closes,14),hist=macdHistArr(closes),atrSeries=volAtr(closes,14);
+  const last=N-1,close=closes[last],atrNow=atrSeries[last];
+  if(atrNow==null||atrNow<=0)return{symbol,na:true,reason:"Volatilitas 0"};
+  let trendS=0;if(e20[last]!=null)trendS+=close>e20[last]?1:-1;if(e20[last]!=null&&e50[last]!=null)trendS+=e20[last]>e50[last]?1:-1;
+  let macdS=0;if(hist[last]!=null&&hist[last-1]!=null)macdS=hist[last]>0?(hist[last]>hist[last-1]?2:1):(hist[last]<hist[last-1]?-2:-1);
+  let rsiS=0;if(rsi[last]!=null){const r=rsi[last];rsiS=r>70?-1:r<30?1:(r>50?.5:-.5);}
+  const win20=vols.slice(Math.max(0,last-19),last+1),avgV=win20.reduce((a,b)=>a+b,0)/win20.length,rv=avgV>0?vols[last]/avgV:1,volS=rv>1.3?1:rv<.7?-1:0;
+  const maxRaw=6,raw=trendS+macdS+rsiS+volS,strength=Math.round(raw/maxRaw*100),s=strength>=0?1:-1;
+  const winStart=Math.max(20,N-120),fwdUp=[],fwdDn=[];
+  for(let i=winStart;i<=N-7;i++){const a=atrSeries[i];if(a==null||a<=0)continue;let hi=-Infinity,lo=Infinity;for(let j=i+1;j<=i+6;j++){hi=Math.max(hi,closes[j]);lo=Math.min(lo,closes[j]);}fwdUp.push((hi-closes[i])/a);fwdDn.push((closes[i]-lo)/a);}
+  if(fwdUp.length<10)return{symbol,na:true,reason:"Kalibrasi belum cukup"};
+  const upMed=percentile(fwdUp,50),dnMed=percentile(fwdDn,50),up80=percentile(fwdUp,80),dn80=percentile(fwdDn,80),advMed=s===1?dnMed:upMed,adv80=s===1?dn80:up80,favArr=s===1?fwdUp:fwdDn,advArr=s===1?fwdDn:fwdUp;
+  const entryK=clamp(.5*advMed,.1,.8),entry=close-s*entryK*atrNow,fillP=advArr.filter(v=>v>=entryK).length/advArr.length;
+  const win8=closes.slice(Math.max(0,last-7),last+1),ext=s===1?Math.min(...win8):Math.max(...win8);
+  const slStruct=ext-s*.15*atrNow,slMinK=clamp(adv80-entryK+.2,.8,1.5),slNear=entry-s*slMinK*atrNow,slFar=entry-s*2*atrNow;
+  const sl=s===1?Math.max(Math.min(slStruct,slNear),slFar):Math.min(Math.max(slStruct,slNear),slFar),r=Math.abs(entry-sl);
+  const tp1=entry+s*r,tp2=entry+s*1.618*r,tp3=entry+s*2.618*r,dTp1=s*(tp1-close)/atrNow,reachP=favArr.filter(v=>v>=dTp1).length/favArr.length;
+  const sigs=[trendS,macdS,rsiS,volS],pos=sigs.filter(v=>v>0).length,neg=sigs.filter(v=>v<0).length;
+  return{symbol,na:false,strength,confidence:Math.round(Math.max(pos,neg)/sigs.length*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BINANCE_CALIBRATED_120C"};
+}
+async function fetchSymbol(symbol){
+  const u=`${BINANCE}/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(CFG.interval)}&limit=${CFG.limit}`;
+  const rows=await getJson(u);
+  if(!Array.isArray(rows)||rows.length<40)throw new Error("data tidak cukup");
+  const ticker=await getJson(`${BINANCE}/fapi/v1/ticker/price?symbol=${encodeURIComponent(symbol)}`).catch(()=>null);
+  return analyze(symbol,rows.map(k=>+k[4]),rows.map(k=>+k[5]),ticker?.price);
+}
+async function mapLimit(items,limit,fn){
+  const out=new Array(items.length);let idx=0;
+  async function worker(){while(true){const i=idx++;if(i>=items.length)return;try{out[i]=await fn(items[i]);}catch(e){out[i]={symbol:items[i],na:true,reason:"Gagal: "+e.message};}}}
+  await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
+}
+async function runLiveScanner(){
+  console.log(`=== Crypto-Signal v5.0 | LIVE BINANCE | ${CFG.interval} ===`);
+  console.log("Symbols:",CFG.symbols.join(", "));
+  const results=await mapLimit(CFG.symbols,CFG.concurrency,fetchSymbol);
+  const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Math.abs(b.strength)-Math.abs(a.strength));
+  const candidates=valid.slice(0,CFG.candidates);
+  console.log("LIVE VALID:",candidates.length);
+  for(const s of candidates)console.log(` ${s.symbol} ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
+  return candidates;
+}
+module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,CFG};
