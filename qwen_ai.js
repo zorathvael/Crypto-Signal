@@ -1,16 +1,18 @@
 /**
- * Qwen3 local intelligence layer.
- * Uses an OpenAI-compatible llama.cpp/Ollama endpoint.
- * The supplied Qwen3-0.6B-Q4_K_M GGUF is intended to be served by llama.cpp.
+ * Crypto-Signal Qwen3 AI scanner.
+ * Qwen scans/ranks the supplied crypto-futures universe in batches.
+ * Quantitative analysis supplies factual market measurements and execution geometry.
  */
 const BASE=String(process.env.QWEN_BASE_URL||process.env.QWEN_URL||"http://127.0.0.1:11434/v1").replace(/\/$/,"");
 const MODEL=process.env.QWEN_MODEL||"default";
 const TIMEOUT=Number(process.env.QWEN_TIMEOUT_MS||20000);
-const MAX=Number(process.env.QWEN_MAX_CANDIDATES||20);
-async function ask(messages){
+const BATCH_SIZE=Math.max(10,Number(process.env.QWEN_SCAN_BATCH_SIZE||50));
+
+async function ask(messages,maxTokens=900){
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
   try{
-    const r=await fetch(BASE+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(process.env.QWEN_API_KEY||"sk-no-key-required")},body:JSON.stringify({model:MODEL,messages,temperature:.1,max_tokens:420}),signal:ctl.signal});
+    const r=await fetch(BASE+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(process.env.QWEN_API_KEY||"sk-no-key-required")},
+      body:JSON.stringify({model:MODEL,messages,temperature:.1,max_tokens:maxTokens}),signal:ctl.signal});
     if(!r.ok)throw new Error("Qwen HTTP "+r.status);
     const j=await r.json(),text=j?.choices?.[0]?.message?.content||"";
     if(!text)throw new Error("Qwen returned empty response");
@@ -18,24 +20,39 @@ async function ask(messages){
   }finally{clearTimeout(timer);}
 }
 function extractJson(text){
-  const fenced=text.match(/\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`/i);
+  const fenced=text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   const raw=(fenced?fenced[1]:text).trim();
   const start=raw.indexOf("{"),end=raw.lastIndexOf("}");
   if(start<0||end<=start)throw new Error("Qwen JSON not found");
   return JSON.parse(raw.slice(start,end+1));
 }
-function buildPrompt(s){
-  return [
-    {role:"system",content:"You are Qwen, a conservative crypto-futures market-analysis validator. Use ONLY the supplied live market metrics. The deterministic scanner score is evidence, but you are also an active scanner: rank signal quality, detect conflicts, and assign an independent AI score. Do not invent price, news, order flow, or indicators. Do not change the deterministic scanner's entry/SL/TP. Return JSON only with verdict (VALID|CAUTION|REJECT), score (0-100), confidence (0-100), reasons (array of max 3 short strings), riskFlags (array)."},
-    {role:"user",content:JSON.stringify({symbol:s.symbol,direction:s.direction,strength:s.strength,scannerConfidence:s.confidence,livePrice:s.livePrice,candleClose:s.candleClose,entry:s.entry,sl:s.sl,tp1:s.tp1,tp2:s.tp2,tp3:s.tp3,fillProbability:s.fillP,historicalTp1Reach:s.reachP,rsi:s.rsi,relativeVolume:s.relativeVolume,atr:s.atr,components:s.components,calibration:s.calibration})}
+function compact(s){
+  return {symbol:s.symbol,direction:s.direction,strength:s.strength,confidence:s.confidence,rsi:Number(s.rsi?.toFixed?.(2)??s.rsi),rv:Number(s.relativeVolume?.toFixed?.(2)??s.relativeVolume),atr:s.atr,fillP:Number(s.fillP?.toFixed?.(1)??s.fillP),reachP:Number(s.reachP?.toFixed?.(1)??s.reachP),components:s.components};
+}
+async function scanBatch(batch,index,total){
+  const messages=[
+    {role:"system",content:"You are Qwen, the AI scanner of a crypto-futures signal system. Scan EVERY supplied symbol in this batch. Rank market opportunity and risk using ONLY the supplied live quantitative metrics. Detect trend/momentum/volume conflicts, weak setups, overextended RSI, poor historical fill/reach probability, and conflicting components. Do not invent news, order flow, price or indicators. Do not calculate or alter Entry/SL/TP. Return JSON only: {scores:[{symbol,score,confidence,verdict,reasons,riskFlags}]}. score and confidence are 0-100; verdict is VALID, CAUTION or REJECT. Include EVERY supplied symbol exactly once."},
+    {role:"user",content:JSON.stringify({batch:index,total,symbols:batch.map(compact)})}
   ];
+  const parsed=extractJson(await ask(messages,Math.min(1800,Math.max(700,batch.length*28))));
+  if(!Array.isArray(parsed.scores))throw new Error("Qwen scores array missing");
+  return parsed.scores;
 }
-async function validateSignals(signals){
-  const out=[];
-  for(const s of (signals||[]).slice(0,MAX)){
-    try{const j=extractJson(await ask(buildPrompt(s)));out.push({...s,ai:{provider:"Qwen3-local",model:MODEL,verdict:String(j.verdict||"CAUTION").toUpperCase(),score:Number(j.score)||0,confidence:Number(j.confidence)||0,reasons:Array.isArray(j.reasons)?j.reasons.slice(0,3):[],riskFlags:Array.isArray(j.riskFlags)?j.riskFlags.slice(0,5):[]}});}
-    catch(e){out.push({...s,ai:{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:[e.name==="AbortError"?"Qwen timeout":e.message],riskFlags:["AI_UNAVAILABLE"]}});}
+async function scanUniverse(signals){
+  const all=signals||[],map=new Map(),errors=[];
+  for(let i=0;i<all.length;i+=BATCH_SIZE){
+    const batch=all.slice(i,i+BATCH_SIZE);
+    try{
+      const scores=await scanBatch(batch,Math.floor(i/BATCH_SIZE)+1,Math.ceil(all.length/BATCH_SIZE));
+      for(const x of scores){
+        const symbol=String(x.symbol||"").toUpperCase();
+        if(symbol)map.set(symbol,{provider:"Qwen3-local",model:MODEL,verdict:String(x.verdict||"CAUTION").toUpperCase(),score:Math.max(0,Math.min(100,Number(x.score)||0)),confidence:Math.max(0,Math.min(100,Number(x.confidence)||0)),reasons:Array.isArray(x.reasons)?x.reasons.slice(0,3):[],riskFlags:Array.isArray(x.riskFlags)?x.riskFlags.slice(0,5):[]});
+      }
+    }catch(e){
+      errors.push({batch:Math.floor(i/BATCH_SIZE)+1,error:e.message});
+      for(const s of batch)map.set(s.symbol,{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:[e.name==="AbortError"?"Qwen timeout":e.message],riskFlags:["AI_UNAVAILABLE"]});
+    }
   }
-  return {candidates:out,available:out.some(x=>x.ai?.verdict!=="UNAVAILABLE")};
+  return {candidates:all.map(s=>({...s,ai:map.get(s.symbol)||{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:["Qwen did not score symbol"],riskFlags:["AI_NO_SCORE"]}})),available:map.size>0,errors};
 }
-module.exports={validateSignals,ask,extractJson,BASE,MODEL};
+module.exports={scanUniverse,ask,extractJson,BASE,MODEL,BATCH_SIZE};
