@@ -5,8 +5,8 @@
  */
 const BASE=String(process.env.QWEN_BASE_URL||process.env.QWEN_URL||"http://127.0.0.1:11434/v1").replace(/\/$/,"");
 const MODEL=process.env.QWEN_MODEL||"default";
-const TIMEOUT=Number(process.env.QWEN_TIMEOUT_MS||20000);
-const BATCH_SIZE=Math.max(10,Number(process.env.QWEN_SCAN_BATCH_SIZE||50));
+const TIMEOUT=Number(process.env.QWEN_TIMEOUT_MS||45000);
+const BATCH_SIZE=Math.max(5,Number(process.env.QWEN_SCAN_BATCH_SIZE||10));
 
 async function ask(messages,maxTokens=900){
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
@@ -31,10 +31,10 @@ function compact(s){
 }
 async function scanBatch(batch,index,total){
   const messages=[
-    {role:"system",content:"You are Qwen, the AI scanner of a crypto-futures signal system. Scan EVERY supplied symbol in this batch. Rank market opportunity and risk using ONLY the supplied live quantitative metrics. Detect trend/momentum/volume conflicts, weak setups, overextended RSI, poor historical fill/reach probability, and conflicting components. Do not invent news, order flow, price or indicators. Do not calculate or alter Entry/SL/TP. Return JSON only: {scores:[{symbol,score,confidence,verdict,reasons,riskFlags}]}. score and confidence are 0-100; verdict is VALID, CAUTION or REJECT. Include EVERY supplied symbol exactly once."},
-    {role:"user",content:JSON.stringify({batch:index,total,symbols:batch.map(compact)})}
+    {role:"system",content:"Fast classifier. No deep reasoning, no analysis text, no explanations. Evaluate EVERY symbol using only the supplied quantitative metrics. Do not invent data. Do not alter Entry/SL/TP. Return JSON only, compact: {scores:[{symbol,score,confidence,verdict}]}. score/confidence 0-100. verdict VALID, CAUTION or REJECT. Include every symbol exactly once."},
+    {role:"user",content:JSON.stringify(batch.map(compact))}
   ];
-  const parsed=extractJson(await ask(messages,Math.min(1800,Math.max(700,batch.length*28))));
+  const parsed=extractJson(await ask(messages,220));
   if(!Array.isArray(parsed.scores))throw new Error("Qwen scores array missing");
   return parsed.scores;
 }
@@ -46,10 +46,10 @@ async function scanUniverse(signals){
       const scores=await scanBatch(batch,Math.floor(i/BATCH_SIZE)+1,Math.ceil(all.length/BATCH_SIZE));
       for(const x of scores){
         const symbol=String(x.symbol||"").toUpperCase();
-        if(symbol)map.set(symbol,{provider:"Qwen3-local",model:MODEL,verdict:String(x.verdict||"CAUTION").toUpperCase(),score:Math.max(0,Math.min(100,Number(x.score)||0)),confidence:Math.max(0,Math.min(100,Number(x.confidence)||0)),reasons:Array.isArray(x.reasons)?x.reasons.slice(0,3):[],riskFlags:Array.isArray(x.riskFlags)?x.riskFlags.slice(0,5):[]});
+        if(symbol)map.set(symbol,{provider:"Qwen3-local",model:MODEL,verdict:String(x.verdict||"CAUTION").toUpperCase(),score:Math.max(0,Math.min(100,Number(x.score)||0)),confidence:Math.max(0,Math.min(100,Number(x.confidence)||0)),reasons:Array.isArray(x.reasons)?x.reasons.slice(0,2):[],riskFlags:Array.isArray(x.riskFlags)?x.riskFlags.slice(0,3):[]});
       }
     }catch(e){
-      errors.push({batch:Math.floor(i/BATCH_SIZE)+1,error:e.message});
+      errors.push({batch:Math.floor(i/BATCH_SIZE)+1,error:e.message}); console.warn(`Qwen batch ${Math.floor(i/BATCH_SIZE)+1} unavailable: ${e.message}`);
       for(const s of batch)map.set(s.symbol,{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:[e.name==="AbortError"?"Qwen timeout":e.message],riskFlags:["AI_UNAVAILABLE"]});
     }
   }
