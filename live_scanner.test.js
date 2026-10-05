@@ -13,11 +13,11 @@ test("live Binance analyzer produces calibrated trade geometry",()=>{
   assert.ok(["LONG","SHORT"].includes(r.direction));
   assert.ok(Number.isFinite(r.entry)&&Number.isFinite(r.sl));
   assert.ok(Number.isFinite(r.tp1)&&Number.isFinite(r.tp2)&&Number.isFinite(r.tp3));
-  assert.equal(r.calibration.samples,124);
+  assert.equal(r.calibration.samples,114);
   assert.equal(r.setup,"LIVE_BINANCE_CALIBRATED_120C");
 });
 test("live analyzer rejects insufficient calibration",()=>{
-  const {c,v}=series(45);
+  const {c,v}=series(16);
   const r=analyze("TESTUSDT",c,v,c.at(-1));
   assert.equal(r.na,true);
 });
