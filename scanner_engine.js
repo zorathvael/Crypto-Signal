@@ -105,13 +105,6 @@ function isCryptoFuturesSymbol(symbol){
   if(/^(USD|USDT|USDC|EUR|GBP|JPY|CHF|CAD|AUD|CNY|HKD|SGD|TRY|RUB|BRL|INR|MXN|ZAR)$/.test(base))return false;
   return true;
 }
-async function discoverBinanceUniverse(){
-  const info=await getBinanceJson("/fapi/v1/exchangeInfo");
-  const tickers=await getBinanceJson("/fapi/v1/ticker/24hr");
-  const volume=new Map((Array.isArray(tickers)?tickers:[]).map(t=>[t.symbol,Number(t.quoteVolume)||0]));
-  return (info.symbols||[]).filter(s=>s.status==="TRADING"&&s.contractType==="PERPETUAL"&&s.quoteAsset==="USDT"&&isCryptoFuturesSymbol(s.symbol))
-    .map(s=>({symbol:s.symbol,volume:volume.get(s.symbol)||0})).filter(x=>x.volume>=CFG.minVolume).sort((a,b)=>b.volume-a.volume).slice(0,CFG.universe).map(x=>x.symbol);
-}
 async function discoverBitgetUniverse(){
   const [contracts,tickers]=await Promise.all([
     getBitgetJson(`/api/v2/mix/market/contracts?productType=${BITGET_PRODUCT_TYPE}`),
@@ -152,4 +145,4 @@ async function runLiveScanner(){
   for(const s of valid.slice(0,Math.max(CFG.candidates,20)))console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
   return valid;
 }
-module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BITGET_BASE,isCryptoFuturesSymbol,discoverBinanceUniverse,discoverBitgetUniverse};
+module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BITGET_BASE,isCryptoFuturesSymbol,discoverBitgetUniverse};
