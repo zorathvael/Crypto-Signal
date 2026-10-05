@@ -2035,6 +2035,669 @@
         "advP80": 2.0115630238174496,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ENAUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "ENAUSDT",
+      "instId": "ENAUSDT",
+      "action": "SHORT",
+      "fingerprint": "ENAUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.46|-1.46|-2.36|-3.82",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.23846905747802158,
+      "sl": 0.2419500558648911,
+      "tp1": 0.23498805909115206,
+      "tp2": 0.2328368020880667,
+      "tp3": 0.22935580370119718,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4418602898079535,
+        "advMedian": 0.883720579615907,
+        "advP80": 2.310782975440331,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "PONSUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "PONSUSDT",
+      "instId": "PONSUSDT",
+      "action": "SHORT",
+      "fingerprint": "PONSUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|2.87|-2.87|-4.65|-7.52",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.38183809521047524,
+      "sl": 0.39281162645655265,
+      "tp1": 0.3708645639643978,
+      "tp2": 0.364082921654322,
+      "tp3": 0.3531093904082446,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.27668307975482315,
+        "advMedian": 0.5533661595096463,
+        "advP80": 1.7521190768204957,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "PAXGUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "PAXGUSDT",
+      "instId": "PAXGUSDT",
+      "action": "SHORT",
+      "fingerprint": "PAXGUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|0.35|-0.35|-0.57|-0.93",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 4151.250522505515,
+      "sl": 4165.974885217181,
+      "tp1": 4136.526159793849,
+      "tp2": 4127.426503638039,
+      "tp3": 4112.702140926373,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3613769312280023,
+        "advMedian": 0.7227538624560046,
+        "advP80": 2.9438335194380367,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "INTWUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "INTWUSDT",
+      "instId": "INTWUSDT",
+      "action": "SHORT",
+      "fingerprint": "INTWUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.14|-1.14|-1.85|-2.99",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 29.74827582554569,
+      "sl": 30.08777951482502,
+      "tp1": 29.40877213626636,
+      "tp2": 29.198958856291735,
+      "tp3": 28.859455167012406,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6555205675784949,
+        "advMedian": 1.3110411351569897,
+        "advP80": 4.407226684516329,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SPKUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "SPKUSDT",
+      "instId": "SPKUSDT",
+      "action": "SHORT",
+      "fingerprint": "SPKUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.42|-1.42|-2.30|-3.71",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.024443648404800757,
+      "sl": 0.024790412715866416,
+      "tp1": 0.0240968840937351,
+      "tp2": 0.023882583749496523,
+      "tp3": 0.023535819438430864,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3670989359035118,
+        "advMedian": 0.7341978718070236,
+        "advP80": 3.199058950394566,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "TRXUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "TRXUSDT",
+      "instId": "TRXUSDT",
+      "action": "SHORT",
+      "fingerprint": "TRXUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|0.14|-0.14|-0.23|-0.37",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.3348426730576381,
+      "sl": 0.3353119297032587,
+      "tp1": 0.3343734164120175,
+      "tp2": 0.334083415805024,
+      "tp3": 0.3336141591594034,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.522839937518051,
+        "advMedian": 1.045679875036102,
+        "advP80": 3.044486908636642,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SOONUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "SOONUSDT",
+      "instId": "SOONUSDT",
+      "action": "SHORT",
+      "fingerprint": "SOONUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.10|-1.10|-1.78|-2.87",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.34912914600752637,
+      "sl": 0.35296094341516693,
+      "tp1": 0.3452973485998858,
+      "tp2": 0.34292929780196396,
+      "tp3": 0.3390975003943234,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.27618683935180405,
+        "advMedian": 0.5523736787036081,
+        "advP80": 1.342950072657856,
+        "slMinK": 1.266763233306052
+      }
+    },
+    {
+      "id": "RIVERUSDT_LONG_1791179865093",
+      "ts": 1791179865093,
+      "base": "RIVERUSDT",
+      "instId": "RIVERUSDT",
+      "action": "LONG",
+      "fingerprint": "RIVERUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-0.76|0.76|1.23|1.99",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 1.224888511502834,
+      "sl": 1.215568082484747,
+      "tp1": 1.2342089405209211,
+      "tp2": 1.2399689656540989,
+      "tp3": 1.249289394672186,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4530882630120569,
+        "advMedian": 0.9061765260241138,
+        "advP80": 1.8616996064307678,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "WLFIUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "WLFIUSDT",
+      "instId": "WLFIUSDT",
+      "action": "SHORT",
+      "fingerprint": "WLFIUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|0.37|-0.37|-0.59|-0.96",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.05503387012786491,
+      "sl": 0.05523583391712888,
+      "tp1": 0.054831906338600946,
+      "tp2": 0.05470709271683581,
+      "tp3": 0.054505128927571846,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5486389030488413,
+        "advMedian": 1.0972778060976827,
+        "advP80": 2.2209140811801102,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ACEUSDT_LONG_1791179865093",
+      "ts": 1791179865093,
+      "base": "ACEUSDT",
+      "instId": "ACEUSDT",
+      "action": "LONG",
+      "fingerprint": "ACEUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-1.26|1.26|2.04|3.31",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.19024922914253561,
+      "sl": 0.1878471132319062,
+      "tp1": 0.19265134505316503,
+      "tp2": 0.194135852685934,
+      "tp3": 0.19653796859656342,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4585714244905485,
+        "advMedian": 0.917142848981097,
+        "advP80": 2.2575675472185117,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SPXUSDT_LONG_1791179865093",
+      "ts": 1791179865093,
+      "base": "SPXUSDT",
+      "instId": "SPXUSDT",
+      "action": "LONG",
+      "fingerprint": "SPXUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-1.27|1.27|2.06|3.33",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.44666113902603005,
+      "sl": 0.44098578394768206,
+      "tp1": 0.45233649410437804,
+      "tp2": 0.4558438635427971,
+      "tp3": 0.4615192186211451,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.24814155969335797,
+        "advMedian": 0.49628311938671593,
+        "advP80": 2.346261053608813,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "TRBUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "TRBUSDT",
+      "instId": "TRBUSDT",
+      "action": "SHORT",
+      "fingerprint": "TRBUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|0.94|-0.94|-1.53|-2.47",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 19.899096030607083,
+      "sl": 20.08673445116841,
+      "tp1": 19.711457610045755,
+      "tp2": 19.595497066138854,
+      "tp3": 19.407858645577527,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.40680168348890416,
+        "advMedian": 0.8136033669778083,
+        "advP80": 1.9741499710809385,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "CHZUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "CHZUSDT",
+      "instId": "CHZUSDT",
+      "action": "SHORT",
+      "fingerprint": "CHZUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.10|-1.10|-1.78|-2.88",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.01681890210059422,
+      "sl": 0.017004083993464425,
+      "tp1": 0.016633720207724016,
+      "tp2": 0.01651927779793023,
+      "tp3": 0.016334095905060027,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4201501560574959,
+        "advMedian": 0.8403003121149918,
+        "advP80": 3.2239912330661373,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "DYDXUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "DYDXUSDT",
+      "instId": "DYDXUSDT",
+      "action": "SHORT",
+      "fingerprint": "DYDXUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.01|-1.01|-1.64|-2.65",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.14551206291117671,
+      "sl": 0.14698749410738185,
+      "tp1": 0.14403663171497158,
+      "tp2": 0.1431248152357168,
+      "tp3": 0.14164938403951166,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5585660818837934,
+        "advMedian": 1.1171321637675868,
+        "advP80": 2.795301129948076,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "XVGUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "XVGUSDT",
+      "instId": "XVGUSDT",
+      "action": "SHORT",
+      "fingerprint": "XVGUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.51|-1.51|-2.44|-3.94",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.0031506568079943923,
+      "sl": 0.003198112084111456,
+      "tp1": 0.0031032015318773285,
+      "tp2": 0.0030738741712369832,
+      "tp3": 0.0030264188951199195,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4912755313292095,
+        "advMedian": 0.982551062658419,
+        "advP80": 2.8366474343739547,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "AXONUSDT_SHORT_1791179865093",
+      "ts": 1791179865093,
+      "base": "AXONUSDT",
+      "instId": "AXONUSDT",
+      "action": "SHORT",
+      "fingerprint": "AXONUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|0.14|-0.14|-0.22|-0.36",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 414.60948745689393,
+      "sl": 415.18279842262444,
+      "tp1": 414.0361764911634,
+      "tp2": 413.68187031434195,
+      "tp3": 413.10855934861144,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.41683297210839126,
+        "advMedian": 0.8336659442167825,
+        "advP80": 2.6279704694782575,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "KAIAUSDT_LONG_1791179865093",
+      "ts": 1791179865093,
+      "base": "KAIAUSDT",
+      "instId": "KAIAUSDT",
+      "action": "LONG",
+      "fingerprint": "KAIAUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-0.85|0.85|1.38|2.23",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.03774693395486254,
+      "sl": 0.03742537394274874,
+      "tp1": 0.03806849396697634,
+      "tp2": 0.03826721805446267,
+      "tp3": 0.03858877806657647,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T06:12:45.093Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned empty response"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2678569692441481,
+        "advMedian": 0.5357139384882962,
+        "advP80": 1.3933234823422456,
+        "slMinK": 1.3254665130980974
+      }
     }
   ],
   "closed": [
