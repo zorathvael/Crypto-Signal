@@ -11,7 +11,7 @@ const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const BINANCE_SQUARE_KEY = process.env.BINANCE_SQUARE_OPENAPI_KEY;
-const MIN_PROB_VALID = 76;
+const MIN_PROB_VALID = 90;
 const MIN_PROB_SNIPER = 82;
 const SQUARE_POST_COUNT = 3;
 function resolvePlan(s){
@@ -206,12 +206,12 @@ function buildSquareCardSvg(coins) {
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#ffffff"/>
   <rect x="0" y="0" width="${W}" height="${headerH}" fill="#0f172a"/>
-  <text x="${pad}" y="48" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">CRYPTO-SIGNAL v4.1</text>
+  <text x="${pad}" y="48" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">CRYPTO-SIGNAL v5.1</text>
   <text x="${pad}" y="84" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#94a3b8">Regime · OB Quality · 1H+15M lock</text>
   <text x="${pad}" y="110" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">${esc(now)} WIB</text>
   <text x="${W - pad}" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600" fill="#38bdf8">Top ${rows.length}</text>
   ${cards}
-  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 20x sizing · Live Binance calibration · NFA</text>
+  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 20x sizing · Live Binance/Bitget calibration + Qwen · NFA</text>
 </svg>`;
 }
 
@@ -271,29 +271,21 @@ async function sendBinanceSquare(signals) {
   }
   const ranked = [...signals]
     .filter((s) => s.probability >= MIN_PROB_VALID)
-    .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base));
+    .sort((a, b) => b.probability - a.probability || a.base.localeCompare(b.base))
+    .slice(0, SQUARE_POST_COUNT);
   if (!ranked.length) {
     console.log("Binance Square: no new Valid signals this run");
     return;
   }
 
-  // Square is the only channel with a per-post capacity. Never truncate the
-  // shared delivery list: Telegram/Discord receive every new signal. Square
-  // publishes the same complete set in sequential batches of up to 3 coins.
-  const fullCount = Math.floor(ranked.length / SQUARE_POST_COUNT) * SQUARE_POST_COUNT;
-  const batches = [];
-  for (let i = 0; i < fullCount; i += SQUARE_POST_COUNT) {
-    batches.push(ranked.slice(i, i + SQUARE_POST_COUNT));
-  }
-  const remainder = ranked.length - fullCount;
-  console.log(
-    `Binance Square: ${batches.length} full batch(es) · ${ranked.length} eligible coin(s) · ${SQUARE_POST_COUNT}/post` +
-    (remainder ? ` · ${remainder} remainder held for next full batch` : "")
-  );
-  if (!batches.length) {
-    console.log("Binance Square: fewer than 3 eligible coins; no Square post created.");
+  // Square publishes exactly one post per scanner run, containing the top 3 eligible coins.
+  // Telegram/Discord still receive every score >= 90 signal.
+  if (ranked.length < SQUARE_POST_COUNT) {
+    console.log(`Binance Square: only ${ranked.length} eligible coin(s); requires exactly 3, so no post created.`);
     return;
   }
+  const batches = [ranked];
+  console.log(`Binance Square: exactly ${ranked.length} coin(s) in this run`);
 
   for (let index = 0; index < batches.length; index++) {
     const batch = batches[index];
