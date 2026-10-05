@@ -49,7 +49,9 @@ The supplied scanner methodology is preserved:
 
 The original source explicitly describes the calibration as using a 120-candle pullback history and derives Entry/SL/TP from those historical distributions. fileciteturn14file0L156-L218
 
-### Qwen3 local intelligence
+#**Fallback Qwen:** jika Qwen tidak menghasilkan skor yang usable, semua kandidat deterministic dengan score/probability >= 90 diteruskan ke dedupe dan delivery. Telegram/Discord dapat mengirim seluruh sinyal valid; Binance Square tetap membatasi batch publik maksimal 3 koin.
+
+## Qwen3 local intelligence
 
 The scanner now has a second-stage **Qwen3-0.6B Q4_K_M** validator.
 
