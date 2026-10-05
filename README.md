@@ -1,4 +1,4 @@
-# Crypto-Signal v5.1.0
+# Crypto-Signal v5.2.0
 
 ## Live Binance scanner + Bitget fallback + local Qwen3 intelligence
 
@@ -13,6 +13,10 @@ The scanner uses Binance Futures public read-only market data:
 - configurable watchlist
 - default timeframe: **1H**
 - fallback provider: **Bitget USDT-Futures**
+- broad crypto-perpetual universe discovery
+- publish gate: **combined score >= 90**
+- Binance Square: **exactly 3 coins in one post per scanner run**
+- Telegram/Discord: every new signal with score >= 90
 - provider mode: `auto` (Binance first), `binance`, or `bitget`
 - default history: **150 candles**
 - no Binance API key or secret required
@@ -20,6 +24,12 @@ The scanner uses Binance Futures public read-only market data:
 There is **no mock market data**. Provider order is Binance → Bitget. If Binance is blocked, unavailable, times out, or returns invalid market data for a symbol, that symbol is automatically retried against Bitget USDT-Futures.
 
 Binance documents public REST data endpoints and the Futures kline interval family. citeturn1search0turn1search3
+
+### Crypto futures universe + AI scoring
+
+Each scan dynamically discovers active perpetual USDT futures, ranks the universe by live 24h liquidity, excludes configured TradFi/RWA-style symbols, and evaluates up to the configured universe size. Binance is primary and Bitget is the fallback.
+
+Qwen3 is an active second-stage scanner, not merely a formatter: it independently scores the deterministic candidates and flags conflicts. The publish gate uses a combined score: **60% deterministic technical/calibration score + 40% Qwen AI score**. Only **combined score >= 90** and a non-rejected Qwen verdict can reach Telegram/Discord.
 
 ### Deterministic calibration (unchanged across providers)
 
