@@ -8,14 +8,17 @@ const BINANCE_BASES = String(process.env.BINANCE_FAPI_URLS || "https://fapi.bina
 const BITGET_BASE = String(process.env.BITGET_API_BASE || "https://api.bitget.com").replace(/\/$/,"");
 const BITGET_PRODUCT_TYPE = "USDT-FUTURES";
 const BITGET_INTERVALS = { "1m":"1m","3m":"3m","5m":"5m","15m":"15m","30m":"30m","1h":"1H","2h":"2H","4h":"4H","6h":"6H","12h":"12H","1d":"1D" };
-const DEFAULT_SYMBOLS = "NEARUSDT,PUMPUSDT,SOLUSDT,FARTCOINUSDT,PENGUUSDT,WIFUSDT,DOGEUSDT,1000PEPEUSDT,1000BONKUSDT,WLDUSDT,ENAUSDT,ONDOUSDT,SEIUSDT,GRASSUSDT,VIRTUALUSDT,TRUMPUSDT";
+const DEFAULT_SYMBOLS = "";
+const TRADFI_BASE_DENYLIST = new Set(String(process.env.SCANNER_TRADFI_DENYLIST || "AAPL,AMZN,GOOG,GOOGL,META,MSFT,NVDA,TSLA,COIN,HOOD,MSTR,PLTR,NFLX,AMD,INTC,IBM,ORCL,BA,DIS,NKE,XOM,CVX,JPM,BAC,WMT,QQQ,SPY,USO,GLD,SLV,XAU,XAG,EUR,GBP,JPY,CHF,CAD,AUD").split(",").map(x=>x.trim().toUpperCase()).filter(Boolean));
 const CFG = {
   symbols: (process.env.SCANNER_SYMBOLS || DEFAULT_SYMBOLS).split(",").map(s=>s.trim().toUpperCase()).filter(Boolean),
   interval: process.env.SCANNER_INTERVAL || "1h",
   limit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 150), 120), 500),
   candidates: Math.min(Math.max(Number(process.env.SCANNER_CANDIDATES || 10), 1), 20),
   concurrency: Math.min(Math.max(Number(process.env.SCANNER_CONCURRENCY || 4), 1), 8),
-  provider: String(process.env.SCANNER_PROVIDER || "auto").toLowerCase()
+  provider: String(process.env.SCANNER_PROVIDER || "auto").toLowerCase(),
+  universe: Math.min(Math.max(Number(process.env.SCANNER_UNIVERSE || 100), 10), 300),
+  minVolume: Math.max(Number(process.env.SCANNER_MIN_VOLUME || 0), 0)
 };
 async function getJson(url,retries=2){
   let err;
@@ -97,6 +100,35 @@ function normalizeBitgetCandles(rows){
     .filter(k=>Number.isFinite(k.ts)&&Number.isFinite(k.close)&&Number.isFinite(k.volume))
     .sort((a,b)=>a.ts-b.ts);
 }
+
+function isCryptoFuturesSymbol(symbol){
+  const base=String(symbol).replace(/USDT$/,"").replace(/^\d+/,"").toUpperCase();
+  if(!base || TRADFI_BASE_DENYLIST.has(base))return false;
+  if(/^(USD|USDT|USDC|EUR|GBP|JPY|CHF|CAD|AUD|CNY|HKD|SGD|TRY|RUB|BRL|INR|MXN|ZAR)$/.test(base))return false;
+  return true;
+}
+async function discoverBinanceUniverse(){
+  const info=await getBinanceJson("/fapi/v1/exchangeInfo");
+  const tickers=await getBinanceJson("/fapi/v1/ticker/24hr");
+  const volume=new Map((Array.isArray(tickers)?tickers:[]).map(t=>[t.symbol,Number(t.quoteVolume)||0]));
+  return (info.symbols||[]).filter(s=>s.status==="TRADING"&&s.contractType==="PERPETUAL"&&s.quoteAsset==="USDT"&&isCryptoFuturesSymbol(s.symbol))
+    .map(s=>({symbol:s.symbol,volume:volume.get(s.symbol)||0})).filter(x=>x.volume>=CFG.minVolume).sort((a,b)=>b.volume-a.volume).slice(0,CFG.universe).map(x=>x.symbol);
+}
+async function discoverBitgetUniverse(){
+  const [contracts,tickers]=await Promise.all([
+    getBitgetJson(`/api/v2/mix/market/contracts?productType=${BITGET_PRODUCT_TYPE}`),
+    getBitgetJson(`/api/v2/mix/market/tickers?productType=${BITGET_PRODUCT_TYPE}`)
+  ]);
+  const volume=new Map((Array.isArray(tickers)?tickers:[]).map(t=>[t.symbol,Number(t.usdtVolume||t.quoteVolume)||0]));
+  return (Array.isArray(contracts)?contracts:[]).filter(s=>s.symbolStatus==="normal"&&s.symbolType==="perpetual"&&String(s.quoteCoin).toUpperCase()==="USDT"&&isCryptoFuturesSymbol(s.symbol))
+    .map(s=>({symbol:s.symbol,volume:volume.get(s.symbol)||0})).filter(x=>x.volume>=CFG.minVolume).sort((a,b)=>b.volume-a.volume).slice(0,CFG.universe).map(x=>x.symbol);
+}
+async function discoverUniverse(){
+  if(CFG.symbols.length)return CFG.symbols.filter(isCryptoFuturesSymbol).slice(0,CFG.universe);
+  if(CFG.provider==="bitget")return discoverBitgetUniverse();
+  if(CFG.provider==="binance")return discoverBinanceUniverse();
+  try{return await discoverBinanceUniverse();}catch(e){console.log("Universe Binance unavailable -> Bitget:",e.message);return discoverBitgetUniverse();}
+}
 async function fetchBinanceSymbol(symbol){
   const rows=await getBinanceJson(`/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(CFG.interval)}&limit=${CFG.limit}`);
   if(!Array.isArray(rows)||rows.length<40)throw new Error("data tidak cukup");
@@ -130,12 +162,14 @@ async function mapLimit(items,limit,fn){
 }
 async function runLiveScanner(){
   console.log(`=== Crypto-Signal v5.1 | LIVE BINANCE -> BITGET FALLBACK | ${CFG.interval} ===`);
-  console.log("Symbols:",CFG.symbols.join(", "));
-  const results=await mapLimit(CFG.symbols,CFG.concurrency,fetchSymbol);
+  const universe=await discoverUniverse();
+  console.log("Universe:",universe.length,"crypto perpetuals");
+  console.log("Symbols:",universe.join(", "));
+  const results=await mapLimit(universe,CFG.concurrency,fetchSymbol);
   const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Math.abs(b.strength)-Math.abs(a.strength));
-  const candidates=valid.slice(0,CFG.candidates);
+  const candidates=valid.slice(0,Math.max(CFG.candidates,Number(process.env.QWEN_MAX_CANDIDATES||20)));
   console.log("LIVE VALID:",candidates.length);
   for(const s of candidates)console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
   return candidates;
 }
-module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BINANCE_BASES,BITGET_BASE};
+module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BINANCE_BASES,BITGET_BASE,isCryptoFuturesSymbol,discoverBinanceUniverse,discoverBitgetUniverse};
