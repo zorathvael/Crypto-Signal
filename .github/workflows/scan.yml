@@ -79,7 +79,8 @@ jobs:
           QWEN_BASE_URL: "http://127.0.0.1:11434/v1"
           QWEN_MODEL: "qwen3-0.6b"
           SCANNER_PROVIDER: "bitget"
-          QWEN_SCAN_BATCH_SIZE: "30"
+          QWEN_SCAN_BATCH_SIZE: "10"
+          QWEN_TIMEOUT_MS: "45000"
         run: node scanner.js
 
       - name: Commit signals-log.json
