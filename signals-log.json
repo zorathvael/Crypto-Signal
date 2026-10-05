@@ -840,6 +840,45 @@
         "advP80": 2.0551045762754243,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ARKUSDT_SHORT_1791166900225",
+      "ts": 1791166900225,
+      "base": "ARKUSDT",
+      "instId": "ARKUSDT",
+      "action": "SHORT",
+      "fingerprint": "ARKUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|1.31|-1.31|-2.13|-3.44",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.21600502514352188,
+      "sl": 0.2188450535278481,
+      "tp1": 0.21316499675919565,
+      "tp2": 0.21140985921768204,
+      "tp3": 0.2085698308333558,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T02:36:40.225Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence indicates reliable data.",
+          "Live price aligns with the entry point, suggesting a valid position.",
+          "Other metrics (rsi, volume, historical TP) are within scanner ranges."
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.35564795500570023,
+        "advMedian": 0.7112959100114005,
+        "advP80": 1.7053811254943543,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
