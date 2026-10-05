@@ -160,7 +160,7 @@ Qwen3 is now an active scanner rather than a second-stage validator. Every quant
 
 - Qwen AI layer uses compact fast classification without deep reasoning; Qwen timeout no longer discards a valid calibrated scanner result.
 
-- Qwen now validates the top calibrated candidates rather than changing the deterministic score. If Qwen is unavailable, fallback is capped at the top 3 calibrated candidates to prevent signal flooding.
+- Qwen validates the top calibrated candidates without changing the deterministic score. If Qwen is unavailable, all deterministic candidates with score >= 90 remain eligible; deduplication and destination-specific limits control distribution.
 
 ### Posting eligibility
 
