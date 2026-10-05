@@ -30,8 +30,8 @@ async function main(){
   if(ai.available){
     signals=signals.filter(s=>s.probability>=90 && s.ai?.verdict==="VALID");
   }else{
-    signals=signals.filter(s=>s.probability>=90).slice(0,3);
-    console.warn("Qwen unavailable: deterministic fallback limited to top 3 calibrated candidates");
+    signals=signals.filter(s=>s.probability>=90);
+    console.warn("Qwen unavailable: deterministic fallback keeps all calibrated candidates with score >= 90; delivery/dedupe controls distribution");
   }
   console.log("SCORE >= 90:",signals.length);
   signals=filterNewSignals(signals,log);
