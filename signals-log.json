@@ -802,6 +802,44 @@
         "advP80": 2.0161240956664233,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "DOGEUSDT_LONG_1791165511344",
+      "ts": 1791165511344,
+      "base": "DOGEUSDT",
+      "instId": "DOGEUSDT",
+      "action": "LONG",
+      "fingerprint": "DOGEUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-0.76|0.76|1.23|1.99",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 58,
+      "entry": 0.09595858576714937,
+      "sl": 0.09522777985914611,
+      "tp1": 0.09668939167515263,
+      "tp2": 0.09714102972629864,
+      "tp3": 0.09787183563430189,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T02:13:31.344Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen unavailable"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2775408127931818,
+        "advMedian": 0.5550816255863636,
+        "advP80": 2.0551045762754243,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
