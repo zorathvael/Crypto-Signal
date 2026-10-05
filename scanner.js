@@ -19,8 +19,16 @@ async function main(){
   signals=signals.map(s=>({...s,base:s.symbol,instId:s.symbol,action:s.direction,probability:Math.abs(Number(s.strength)||0),rr:1,riskR:1,marginUsdt:5,leverage:20,geometry:"LIVE_BINANCE_CALIBRATED_120C",riskMarginPercent:(Math.abs(s.entry-s.sl)/s.entry)*20*100,m5:{rsi:s.rsi,volume:{side:s.relativeVolume>1.3?"BUY":s.relativeVolume<.7?"SELL":"BALANCED",spike:s.relativeVolume>1.3}}}));
   const ai=await validateSignals(signals);
   const aiBySymbol=new Map(ai.candidates.map(x=>[x.symbol,x.ai]));
-  signals=signals.map(s=>({...s,ai:aiBySymbol.get(s.symbol)||{provider:"Qwen3-local",verdict:"UNAVAILABLE",score:0,confidence:0,reasons:["Qwen unavailable"],riskFlags:["AI_UNAVAILABLE"]}}));
+  signals=signals.map(s=>{
+    const aiScore=Number(aiBySymbol.get(s.symbol)?.score);
+    const technicalScore=Math.max(0,Math.min(100,Math.abs(Number(s.strength)||0)));
+    const ai=aiBySymbol.get(s.symbol)||{provider:"Qwen3-local",verdict:"UNAVAILABLE",score:0,confidence:0,reasons:["Qwen unavailable"],riskFlags:["AI_UNAVAILABLE"]};
+    const finalScore=ai.verdict==="UNAVAILABLE"?0:Math.round(technicalScore*0.6+Math.max(0,Math.min(100,aiScore||0))*0.4);
+    return {...s,ai,technicalScore,probability:finalScore,score:finalScore};
+  });
   for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · ${s.ai.reasons.join(" | ")}`);
+  signals=signals.filter(s=>s.ai.verdict!=="UNAVAILABLE"&&s.ai.verdict!=="REJECT"&&s.probability>=90);
+  console.log("SCORE >= 90:",signals.length);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
   for(const s of signals)console.log(`  ${s.base} [${s.source||"UNKNOWN"}] ${s.action} strength=${s.strength} confidence=${s.confidence}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
