@@ -879,6 +879,134 @@
         "advP80": 1.7053811254943543,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "CTUSDT_SHORT_1791168015344",
+      "ts": 1791168015344,
+      "base": "CTUSDT",
+      "instId": "CTUSDT",
+      "action": "SHORT",
+      "fingerprint": "CTUSDT|SHORT|LIVE_BINANCE_CALIBRATED_120C|2.25|-2.25|-3.64|-5.89",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.4837191957457748,
+      "sl": 0.49460166783477455,
+      "tp1": 0.4728367236567751,
+      "tp2": 0.46611135590577324,
+      "tp3": 0.4552288838167735,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T02:55:15.344Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence indicates no significant signal conflict.",
+          "Live price is within the scanner's defined range (0.48254 < entry price).",
+          "Fill probability suggests a valid short position with low risk."
+        ],
+        "riskFlags": [
+          "sl and tp within scanner defined ranges",
+          "historical tp1 reach within scanner limits",
+          "rsi and atr metrics within scanner parameters"
+        ]
+      },
+      "calibration": {
+        "samples": 66,
+        "entryK": 0.18392978892518658,
+        "advMedian": 0.36785957785037315,
+        "advP80": 2.2539287229546527,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "KASUSDT_LONG_1791168015344",
+      "ts": 1791168015344,
+      "base": "KASUSDT",
+      "instId": "KASUSDT",
+      "action": "LONG",
+      "fingerprint": "KASUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-1.23|1.23|1.99|3.22",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.043320458753388046,
+      "sl": 0.04278718810941533,
+      "tp1": 0.04385372939736076,
+      "tp2": 0.044183290655335904,
+      "tp3": 0.04471656129930862,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T02:55:15.344Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence indicates reliable data entry and sl/tp values.",
+          "Live price and candle close values are consistent with market conditions.",
+          "Strong strength and technical indicators suggest valid market analysis."
+        ],
+        "riskFlags": [
+          "Potential for overexposure due to high fill probability.",
+          "Market volatility in the scanner data.",
+          "Uncertainty in historical tp1 reach."
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4858367812895559,
+        "advMedian": 0.9716735625791117,
+        "advP80": 2.9687781389941663,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ACEUSDT_LONG_1791168015344",
+      "ts": 1791168015344,
+      "base": "ACEUSDT",
+      "instId": "ACEUSDT",
+      "action": "LONG",
+      "fingerprint": "ACEUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-0.91|0.91|1.48|2.39",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.1885697508512337,
+      "sl": 0.1868473819532539,
+      "tp1": 0.1902921197492135,
+      "tp2": 0.19135654372816502,
+      "tp3": 0.19307891262614482,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T02:55:15.344Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence and consistent metrics (live price, sl, tp, fill probability, historical TP1 reach, rsi, components).",
+          "No apparent discrepancies in the data (no conflicting values or unrealistic parameters).",
+          "All parameters are correctly calculated and aligned with the live price."
+        ],
+        "riskFlags": [
+          "No significant market risks detected.",
+          "No false signals or indicators."
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4996016234047803,
+        "advMedian": 0.9992032468095606,
+        "advP80": 2.2919915638040074,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
