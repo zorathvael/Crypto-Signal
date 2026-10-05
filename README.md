@@ -15,7 +15,7 @@ The scanner uses Binance Futures public read-only market data:
 - fallback provider: **Bitget USDT-Futures**
 - broad crypto-perpetual universe discovery
 - publish gate: **combined score >= 90**
-- Binance Square: **exactly 3 coins in one post per scanner run**
+- Binance Square: **1–3 coins in one post per scanner run** (3 maximum)
 - Telegram/Discord: every new signal with score >= 90
 - provider mode: `auto` (Binance first), `binance`, or `bitget`
 - default history: **150 candles**
@@ -105,8 +105,8 @@ Existing distribution remains:
 
 - Telegram: every new valid signal
 - Discord: every new valid signal
-- Binance Square: complete 3-coin batches only
-- same three coins in Square text and visual
+- Binance Square: every run with 1–3 eligible coins is posted (3 maximum)
+- the exact same eligible coins appear in Square text and visual
 - `#PintarPakaiBinanceEarn`
 - duplicate suppression via `signals-log.json`
 
