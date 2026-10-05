@@ -3,7 +3,7 @@ const fs=require("fs"),path=require("path");
 const {runLiveScanner}=require("./scanner_engine");
 const {scanUniverse}=require("./qwen_ai");
 const {sendDiscord,sendTelegram,sendBinanceSquare,sendWatchDiscord}=require("./delivery");
-const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_MS=15*60*1000;
+const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_MS=15*60*1000,MIN_POST_SCORE=90;
 function loadOutcomeLog(){try{if(!fs.existsSync(OUTCOME_FILE))return{open:[],closed:[],stats:{}};const r=JSON.parse(fs.readFileSync(OUTCOME_FILE,"utf8"));return{open:Array.isArray(r.open)?r.open:[],closed:Array.isArray(r.closed)?r.closed:[],stats:r.stats&&typeof r.stats==="object"?r.stats:{}};}catch{return{open:[],closed:[],stats:{}};}}
 function saveOutcomeLog(log){try{fs.writeFileSync(OUTCOME_FILE,JSON.stringify(log,null,2));}catch(e){console.warn("Outcome log save failed:",e.message);}}
 function signalFingerprint(s){const entry=Number(s?.entry),rel=v=>{const n=Number(v);return Number.isFinite(n)&&Number.isFinite(entry)&&entry!==0?((n-entry)/entry*100).toFixed(2):"na";};return[String(s?.base||s?.symbol||"").toUpperCase(),String(s?.action||s?.direction||"").toUpperCase(),String(s?.setup||"").toUpperCase(),rel(s?.sl),rel(s?.tp1),rel(s?.tp2),rel(s?.tp3)].join("|");}
@@ -28,12 +28,14 @@ async function main(){
   });
   for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · ${s.ai.reasons.join(" | ")}`);
   if(ai.available){
-    signals=signals.filter(s=>s.probability>=90 && s.ai?.verdict==="VALID");
+    // Deterministic score is the hard posting floor. Qwen validates scored symbols;
+    // an unavailable Qwen batch must not discard an otherwise eligible deterministic signal.
+    signals=signals.filter(s=>s.probability>=MIN_POST_SCORE && (s.ai?.verdict==="VALID" || s.ai?.verdict==="UNAVAILABLE"));
   }else{
-    signals=signals.filter(s=>s.probability>=90);
+    signals=signals.filter(s=>s.probability>=MIN_POST_SCORE);
     console.warn("Qwen unavailable: deterministic fallback keeps all calibrated candidates with score >= 90; delivery/dedupe controls distribution");
   }
-  console.log("SCORE >= 90:",signals.length);
+  console.log(`POST ELIGIBLE (score >= ${MIN_POST_SCORE}):`,signals.length);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
   for(const s of signals)console.log(`  ${s.base} [${s.source||"UNKNOWN"}] ${s.action} strength=${s.strength} confidence=${s.confidence}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
