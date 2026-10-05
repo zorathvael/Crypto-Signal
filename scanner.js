@@ -22,11 +22,11 @@ async function main(){
   signals=ai.candidates.map(s=>{
     const aiScore=Number(s.ai?.score)||0;
     const technicalScore=Math.max(0,Math.min(100,Math.abs(Number(s.strength)||0)));
-    const finalScore=s.ai?.verdict==="UNAVAILABLE"?0:Math.round(technicalScore*0.6+aiScore*0.4);
+    const finalScore=s.ai?.verdict==="UNAVAILABLE"?technicalScore:Math.round(technicalScore*0.6+aiScore*0.4);
     return {...s,technicalScore,probability:finalScore,score:finalScore};
   });
   for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · ${s.ai.reasons.join(" | ")}`);
-  signals=signals.filter(s=>s.ai.verdict!=="UNAVAILABLE"&&s.ai.verdict!=="REJECT"&&s.probability>=90);
+  signals=signals.filter(s=>(s.ai.verdict==="UNAVAILABLE"||s.ai.verdict!=="REJECT")&&s.probability>=90);
   console.log("SCORE >= 90:",signals.length);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
