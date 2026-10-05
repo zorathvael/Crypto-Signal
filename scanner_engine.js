@@ -1,10 +1,9 @@
 /**
- * Crypto-Signal v5.1 — Live Binance Futures scanner with Bitget fallback.
- * The deterministic calibration method remains the supplied live-Binance scanner method.
- * Binance is primary; Bitget USDT-Futures is the read-only market-data fallback.
- * No mock market data.
+ * Crypto-Signal v5.3 — Live Bitget USDT-Futures scanner.
+ * The deterministic calibration method remains the supplied live scanner method.
+ * Bitget is the sole market-data provider for discovery, candles and live prices.
+ * No Binance market-data dependency and no mock market data.
  */
-const BINANCE_BASES = String(process.env.BINANCE_FAPI_URLS || "https://fapi.binance.com,https://fapi1.binance.com,https://fapi2.binance.com,https://fapi3.binance.com,https://fapi4.binance.com").split(",").map(s=>s.trim().replace(/\/$/,"")).filter(Boolean);
 const BITGET_BASE = String(process.env.BITGET_API_BASE || "https://api.bitget.com").replace(/\/$/,"");
 const BITGET_PRODUCT_TYPE = "USDT-FUTURES";
 const BITGET_INTERVALS = { "1m":"1m","3m":"3m","5m":"5m","15m":"15m","30m":"30m","1h":"1H","2h":"2H","4h":"4H","6h":"6H","12h":"12H","1d":"1D" };
@@ -16,7 +15,7 @@ const CFG = {
   limit: Math.min(Math.max(Number(process.env.SCANNER_CANDLES || 150), 120), 500),
   candidates: Math.min(Math.max(Number(process.env.SCANNER_CANDIDATES || 10), 1), 20),
   concurrency: Math.min(Math.max(Number(process.env.SCANNER_CONCURRENCY || 4), 1), 8),
-  provider: String(process.env.SCANNER_PROVIDER || "auto").toLowerCase(),
+  provider: "bitget",
   universe: Math.min(Math.max(Number(process.env.SCANNER_UNIVERSE || 100), 10), 300),
   minVolume: Math.max(Number(process.env.SCANNER_MIN_VOLUME || 0), 0)
 };
@@ -91,7 +90,6 @@ function analyze(symbol,closes,vols,livePrice=null){
   const sigs=[trendS,macdS,rsiS,volS],pos=sigs.filter(v=>v>0).length,neg=sigs.filter(v=>v<0).length;
   return{symbol,na:false,strength,confidence:Math.round(Math.max(pos,neg)/sigs.length*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BINANCE_CALIBRATED_120C"};
 }
-async function getBinanceJson(path){let last;for(const base of BINANCE_BASES){try{return await getJson(base+path,0);}catch(e){last=e;console.log("Binance endpoint failed",base,e.message);}}throw last||new Error("Binance unavailable");}
 async function getBitgetJson(path){const r=await getJson(BITGET_BASE+path,1);if(!r||r.code!=="00000")throw new Error(`Bitget API ${r?.code||"invalid"}: ${r?.msg||"request failed"}`);return r.data;}
 function bitgetInterval(interval){const key=String(interval||"1h").toLowerCase();return BITGET_INTERVALS[key]||"1H";}
 function normalizeBitgetCandles(rows){
@@ -125,16 +123,7 @@ async function discoverBitgetUniverse(){
 }
 async function discoverUniverse(){
   if(CFG.symbols.length)return CFG.symbols.filter(isCryptoFuturesSymbol).slice(0,CFG.universe);
-  if(CFG.provider==="bitget")return discoverBitgetUniverse();
-  if(CFG.provider==="binance")return discoverBinanceUniverse();
-  try{return await discoverBinanceUniverse();}catch(e){console.log("Universe Binance unavailable -> Bitget:",e.message);return discoverBitgetUniverse();}
-}
-async function fetchBinanceSymbol(symbol){
-  const rows=await getBinanceJson(`/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(CFG.interval)}&limit=${CFG.limit}`);
-  if(!Array.isArray(rows)||rows.length<40)throw new Error("data tidak cukup");
-  const ticker=await getBinanceJson(`/fapi/v1/ticker/price?symbol=${encodeURIComponent(symbol)}`).catch(()=>null);
-  const r=analyze(symbol,rows.map(k=>+k[4]),rows.map(k=>+k[5]),ticker?.price);
-  return {...r,source:"BINANCE_FUTURES"};
+  return discoverBitgetUniverse();
 }
 async function fetchBitgetSymbol(symbol){
   const rows=await getBitgetJson(`/api/v2/mix/market/candles?symbol=${encodeURIComponent(symbol)}&productType=${encodeURIComponent(BITGET_PRODUCT_TYPE)}&granularity=${encodeURIComponent(bitgetInterval(CFG.interval))}&limit=${CFG.limit}`);
@@ -145,23 +134,14 @@ async function fetchBitgetSymbol(symbol){
   const r=analyze(symbol,candles.map(k=>k.close),candles.map(k=>k.volume),last);
   return {...r,source:"BITGET_USDT_FUTURES"};
 }
-async function fetchSymbol(symbol){
-  if(CFG.provider==="bitget")return fetchBitgetSymbol(symbol);
-  if(CFG.provider==="binance")return fetchBinanceSymbol(symbol);
-  try{return await fetchBinanceSymbol(symbol);}
-  catch(binanceError){
-    console.log(`Fallback Binance -> Bitget: ${symbol} (${binanceError.message})`);
-    try{return await fetchBitgetSymbol(symbol);}
-    catch(bitgetError){throw new Error(`Binance: ${binanceError.message}; Bitget: ${bitgetError.message}`);}
-  }
-}
+async function fetchSymbol(symbol){return fetchBitgetSymbol(symbol);}
 async function mapLimit(items,limit,fn){
   const out=new Array(items.length);let idx=0;
   async function worker(){while(true){const i=idx++;if(i>=items.length)return;try{out[i]=await fn(items[i]);}catch(e){out[i]={symbol:items[i],na:true,reason:"Gagal: "+e.message};}}}
   await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
 }
 async function runLiveScanner(){
-  console.log(`=== Crypto-Signal v5.1 | LIVE BINANCE -> BITGET FALLBACK | ${CFG.interval} ===`);
+  console.log(`=== Crypto-Signal v5.1 | LIVE BITGET USDT-FUTURES | ${CFG.interval} ===`);
   const universe=await discoverUniverse();
   console.log("Universe:",universe.length,"crypto perpetuals");
   console.log("Symbols:",universe.join(", "));
@@ -172,4 +152,4 @@ async function runLiveScanner(){
   for(const s of valid.slice(0,Math.max(CFG.candidates,20)))console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
   return valid;
 }
-module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BINANCE_BASES,BITGET_BASE,isCryptoFuturesSymbol,discoverBinanceUniverse,discoverBitgetUniverse};
+module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BITGET_BASE,isCryptoFuturesSymbol,discoverBinanceUniverse,discoverBitgetUniverse};
