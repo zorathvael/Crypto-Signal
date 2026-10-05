@@ -1,4 +1,4 @@
-/** Crypto-Signal v5.0 — Live Binance scanner + local Qwen intelligence + existing delivery. */
+/** Crypto-Signal v5.1 — Live Binance scanner + local Qwen intelligence + existing delivery. */
 const fs=require("fs"),path=require("path");
 const {runLiveScanner}=require("./scanner_engine");
 const {validateSignals}=require("./qwen_ai");
@@ -12,7 +12,7 @@ function filterNewSignals(signals,log){const now=Date.now();return signals.filte
 function registerSignals(log,signals){const now=Date.now();for(const s of signals){if(isDuplicateSignal(log,s,now))continue;log.open.push({id:s.base+"_"+s.action+"_"+now,ts:now,base:s.base,instId:s.instId,action:s.action,fingerprint:signalFingerprint(s),setup:s.setup,probability:s.probability,entry:s.entry,sl:s.sl,tp1:s.tp1,tp2:s.tp2,tp3:s.tp3,rr:s.rr,leverage:s.leverage,marginUsdt:s.marginUsdt,validUntil:new Date(now+SIGNAL_VALID_MS).toISOString(),ai:s.ai||null,calibration:s.calibration||null});}return log;}
 async function safeDelivery(name,fn){try{await fn();console.log(name+" delivery completed");}catch(e){console.error(name+" delivery error (scanner continues):",e.message);}}
 async function main(){
-  console.log("=== Crypto-Signal v5.0 | LIVE BINANCE + QWEN3 ===");
+  console.log("=== Crypto-Signal v5.1 | LIVE BINANCE -> BITGET + QWEN3 ===");
   console.log(new Date().toISOString());
   const log=loadOutcomeLog();
   let signals=await runLiveScanner();
@@ -23,7 +23,7 @@ async function main(){
   for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · ${s.ai.reasons.join(" | ")}`);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
-  for(const s of signals)console.log(`  ${s.base} ${s.action} strength=${s.strength} confidence=${s.confidence}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
+  for(const s of signals)console.log(`  ${s.base} [${s.source||"UNKNOWN"}] ${s.action} strength=${s.strength} confidence=${s.confidence}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
   const dry=String(process.env.TRADERSPY_DRY_RUN||process.env.SCANNER_DRY_RUN||"false").toLowerCase()==="true";
   if(dry){console.log("Delivery dry-run: no external posts and no outcome registration.");return;}
   await safeDelivery("Discord",()=>sendDiscord(signals));
