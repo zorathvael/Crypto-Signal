@@ -157,3 +157,5 @@ Qwen3 is now an active scanner rather than a second-stage validator. Every quant
 - The deterministic calibration/Entry-SL-TP method is preserved; only the market-data source is changed.
 
 - Qwen AI layer uses compact fast classification without deep reasoning; Qwen timeout no longer discards a valid calibrated scanner result.
+
+- Qwen now validates the top calibrated candidates rather than changing the deterministic score. If Qwen is unavailable, fallback is capped at the top 3 calibrated candidates to prevent signal flooding.
