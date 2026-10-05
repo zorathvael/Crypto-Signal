@@ -53,6 +53,6 @@ async function scanUniverse(signals){
       for(const s of batch)map.set(s.symbol,{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:[e.name==="AbortError"?"Qwen timeout":e.message],riskFlags:["AI_UNAVAILABLE"]});
     }
   }
-  return {candidates:all.map(s=>({...s,ai:map.get(s.symbol)||{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:["Qwen did not score symbol"],riskFlags:["AI_NO_SCORE"]}})),available:map.size>0,errors};
+  return {candidates:all.map(s=>({...s,ai:map.get(s.symbol)||{provider:"Qwen3-local",model:MODEL,verdict:"UNAVAILABLE",score:0,confidence:0,reasons:["Qwen did not score symbol"],riskFlags:["AI_NO_SCORE"]}})),available:Array.from(map.values()).some(x=>x.verdict!=="UNAVAILABLE"),errors};
 }
 module.exports={scanUniverse,ask,extractJson,BASE,MODEL,BATCH_SIZE};
