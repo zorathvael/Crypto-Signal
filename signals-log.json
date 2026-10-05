@@ -1007,6 +1007,176 @@
         "advP80": 2.2919915638040074,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "KAITOUSDT_LONG_1791168883633",
+      "ts": 1791168883633,
+      "base": "KAITOUSDT",
+      "instId": "KAITOUSDT",
+      "action": "LONG",
+      "fingerprint": "KAITOUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-1.39|1.39|2.24|3.63",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.3516878480015368,
+      "sl": 0.34681268355058026,
+      "tp1": 0.35656301245249333,
+      "tp2": 0.3595758640831845,
+      "tp3": 0.364451028534141,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T03:09:43.633Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence (100%) and strong alignment with live price and scanner parameters.",
+          "Valid fill probability and historical TP values within expected ranges.",
+          "Strong rsi and atr indicators, indicating strong momentum and volatility."
+        ],
+        "riskFlags": [
+          "conflict: no apparent conflict in data alignment",
+          "conflict: no conflicting scanner parameters"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3331793241574914,
+        "advMedian": 0.6663586483149828,
+        "advP80": 1.8910837832412704,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "APEUSDT_LONG_1791168883633",
+      "ts": 1791168883633,
+      "base": "APEUSDT",
+      "instId": "APEUSDT",
+      "action": "LONG",
+      "fingerprint": "APEUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-1.25|1.25|2.02|3.27",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.16869071953190476,
+      "sl": 0.16658391446679643,
+      "tp1": 0.17079752459701308,
+      "tp2": 0.17209953012725002,
+      "tp3": 0.17420633519235834,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T03:09:43.633Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "Strong scanner confidence and alignment with market metrics (strength 92, live price 0.169, TP values in line with strength).",
+          "Positive fill probability and historical TP1 reach indicate strong position likelihood.",
+          "No conflicting scanner data or signal anomalies detected."
+        ],
+        "riskFlags": [
+          "No historical data conflicts or signal anomalies detected.",
+          "Strong scanner confidence and alignment with market metrics."
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2936014092783241,
+        "advMedian": 0.5872028185566482,
+        "advP80": 1.998922094885064,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "BEATUSDT_LONG_1791168883633",
+      "ts": 1791168883633,
+      "base": "BEATUSDT",
+      "instId": "BEATUSDT",
+      "action": "LONG",
+      "fingerprint": "BEATUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-0.84|0.84|1.36|2.19",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.08839252094937324,
+      "sl": 0.0876522301041827,
+      "tp1": 0.08913281179456377,
+      "tp2": 0.08959031153689152,
+      "tp3": 0.09033060238208206,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T03:09:43.633Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence and strong TP values indicate a valid position.",
+          "Live price and candle close match the entry price, confirming market alignment.",
+          "Strong strength and fill probability suggest a well-validated trade."
+        ],
+        "riskFlags": [
+          "High TP potential for overtrading",
+          "Lack of historical volatility indicators",
+          "Uncertain trend direction"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4794846560099735,
+        "advMedian": 0.958969312019947,
+        "advP80": 1.8990452436713743,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "KAIAUSDT_LONG_1791168883633",
+      "ts": 1791168883633,
+      "base": "KAIAUSDT",
+      "instId": "KAIAUSDT",
+      "action": "LONG",
+      "fingerprint": "KAIAUSDT|LONG|LIVE_BINANCE_CALIBRATED_120C|-0.69|0.69|1.11|1.79",
+      "setup": "LIVE_BINANCE_CALIBRATED_120C",
+      "probability": 95,
+      "entry": 0.037833675334812356,
+      "sl": 0.03757440259483776,
+      "tp1": 0.03809294807478695,
+      "tp2": 0.038253178628091244,
+      "tp3": 0.03851245136806584,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-05T03:09:43.633Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [
+          "High scanner confidence and reliable entry/slot parameters",
+          "Live price and fill probability align with the analysis",
+          "No apparent conflict in data and clear signal interpretation"
+        ],
+        "riskFlags": [
+          "Potential overexposure due to high fill probability",
+          "Low risk of scanner bias",
+          "No conflicting scanner data"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2802042759389322,
+        "advMedian": 0.5604085518778644,
+        "advP80": 1.3933234823422456,
+        "slMinK": 1.3131192064033133
+      }
     }
   ],
   "closed": [
