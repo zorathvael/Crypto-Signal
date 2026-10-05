@@ -141,8 +141,9 @@ async function runLiveScanner(){
   const results=await mapLimit(universe,CFG.concurrency,fetchSymbol);
   const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Math.abs(b.strength)-Math.abs(a.strength));
   console.log("LIVE VALID:",valid.length);
-  console.log("QWEN INPUT UNIVERSE:",valid.length);
-  for(const s of valid.slice(0,Math.max(CFG.candidates,20)))console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
-  return valid;
+  const qwenCandidates=valid.slice(0,Math.max(CFG.candidates,20));
+  console.log("QWEN INPUT CANDIDATES:",qwenCandidates.length);
+  for(const s of qwenCandidates)console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
+  return qwenCandidates;
 }
 module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BITGET_BASE,isCryptoFuturesSymbol,discoverBitgetUniverse};
