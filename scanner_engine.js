@@ -8,7 +8,7 @@ const BITGET_BASE = String(process.env.BITGET_API_BASE || "https://api.bitget.co
 const BITGET_PRODUCT_TYPE = "USDT-FUTURES";
 const BITGET_INTERVALS = { "1m":"1m","3m":"3m","5m":"5m","15m":"15m","30m":"30m","1h":"1H","2h":"2H","4h":"4H","6h":"6H","12h":"12H","1d":"1D" };
 const DEFAULT_SYMBOLS = "";
-const TRADFI_BASE_DENYLIST = new Set(String(process.env.SCANNER_TRADFI_DENYLIST || "AAPL,AMZN,GOOG,GOOGL,META,MSFT,NVDA,TSLA,COIN,HOOD,MSTR,PLTR,NFLX,AMD,INTC,IBM,ORCL,BA,DIS,NKE,XOM,CVX,JPM,BAC,WMT,QQQ,SPY,USO,GLD,SLV,XAU,XAG,EUR,GBP,JPY,CHF,CAD,AUD").split(",").map(x=>x.trim().toUpperCase()).filter(Boolean));
+const TRADFI_BASE_DENYLIST = new Set(String(process.env.SCANNER_TRADFI_DENYLIST || "AAPL,AMZN,GOOG,GOOGL,META,MSFT,NVDA,TSLA,COIN,HOOD,MSTR,PLTR,NFLX,AMD,INTC,IBM,ORCL,BA,DIS,NKE,XOM,CVX,JPM,BAC,WMT,QQQ,SPY,USO,GLD,SLV,XAU,XAG,EUR,GBP,JPY,CHF,CAD,AUD,SOXL,SOXS,SPX,SPY,TQQQ,SQQQ,EWY,EWZ,MRVL,MU,SMCI,AVGO,QCOM,ARM,DELL,MRNA,TSM,BABA,ASML,CRWV,IREN,OPENAI,ANTHROPIC,SAMSUNG,SKHYNIX,WDC,AAOI,NBIS,PLTR,CPUS,APLD,OKLO,RKLB,IONQ,GME,AMC,CVNA,BA,GLW,GLGR,USDBRL,NATGAS").split(",").map(x=>x.trim().toUpperCase()).filter(Boolean));
 const CFG = {
   symbols: (process.env.SCANNER_SYMBOLS || DEFAULT_SYMBOLS).split(",").map(s=>s.trim().toUpperCase()).filter(Boolean),
   interval: process.env.SCANNER_INTERVAL || "1h",
@@ -88,7 +88,10 @@ function analyze(symbol,closes,vols,livePrice=null){
   const sl=s===1?Math.max(Math.min(slStruct,slNear),slFar):Math.min(Math.max(slStruct,slNear),slFar),r=Math.abs(entry-sl);
   const tp1=entry+s*r,tp2=entry+s*1.618*r,tp3=entry+s*2.618*r,dTp1=s*(tp1-close)/atrNow,reachP=favArr.filter(v=>v>=dTp1).length/favArr.length;
   const sigs=[trendS,macdS,rsiS,volS],pos=sigs.filter(v=>v>0).length,neg=sigs.filter(v=>v<0).length;
-  return{symbol,na:false,strength,confidence:Math.round(Math.max(pos,neg)/sigs.length*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BINANCE_CALIBRATED_120C"};
+  const consensus=Math.max(pos,neg)/sigs.length;
+  const calibrationQuality=clamp(50+(reachP*0.70)+(fillP*0.30),0,100);
+  const calibratedScore=Math.round(clamp(35+(consensus*35)+(calibrationQuality*0.30),0,100));
+  return{symbol,na:false,strength,calibratedScore,confidence:Math.round(consensus*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BITGET_CALIBRATED_120C"};
 }
 async function getBitgetJson(path){const r=await getJson(BITGET_BASE+path,1);if(!r||r.code!=="00000")throw new Error(`Bitget API ${r?.code||"invalid"}: ${r?.msg||"request failed"}`);return r.data;}
 function bitgetInterval(interval){const key=String(interval||"1h").toLowerCase();return BITGET_INTERVALS[key]||"1H";}
@@ -139,11 +142,11 @@ async function runLiveScanner(){
   console.log("Universe:",universe.length,"crypto perpetuals");
   console.log("Symbols:",universe.join(", "));
   const results=await mapLimit(universe,CFG.concurrency,fetchSymbol);
-  const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Math.abs(b.strength)-Math.abs(a.strength));
+  const valid=results.filter(x=>x&&!x.na).sort((a,b)=>Number(b.calibratedScore||0)-Number(a.calibratedScore||0)||Math.abs(Number(b.strength)||0)-Math.abs(Number(a.strength)||0));
   console.log("LIVE VALID:",valid.length);
   const qwenCandidates=valid.slice(0,Math.max(CFG.candidates,20));
   console.log("QWEN INPUT CANDIDATES:",qwenCandidates.length);
-  for(const s of qwenCandidates)console.log(` ${s.symbol} [${s.source}] ${s.direction} strength=${s.strength} conf=${s.confidence} entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
+  for(const s of qwenCandidates)console.log(` ${s.symbol} [${s.source}] ${s.direction} score=${s.calibratedScore} raw=${s.strength} conf=${s.confidence} fill=${s.fillP.toFixed(1)}% reach=${s.reachP.toFixed(1)}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2}`);
   return qwenCandidates;
 }
 module.exports={runLiveScanner,analyze,ema,rsiArr,macdHistArr,volAtr,percentile,normalizeBitgetCandles,bitgetInterval,CFG,BITGET_BASE,isCryptoFuturesSymbol,discoverBitgetUniverse};
