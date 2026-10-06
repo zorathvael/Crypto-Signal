@@ -27,11 +27,11 @@ async function main(){
   console.log(new Date().toISOString());
   const log=loadOutcomeLog();
   let signals=await runLiveScanner();
-  signals=signals.map(s=>({...s,base:s.symbol,instId:s.symbol,action:s.direction,probability:Math.abs(Number(s.strength)||0),rr:1,riskR:1,marginUsdt:5,leverage:20,geometry:"LIVE_BITGET_CALIBRATED_120C",riskMarginPercent:(Math.abs(s.entry-s.sl)/s.entry)*20*100,m5:{rsi:s.rsi,volume:{side:s.relativeVolume>1.3?"BUY":s.relativeVolume<.7?"SELL":"BALANCED",spike:s.relativeVolume>1.3}}}));
+  signals=signals.map(s=>({...s,base:s.symbol,instId:s.symbol,action:s.direction,probability:Number(s.calibratedScore)||Math.abs(Number(s.strength)||0),rr:1,riskR:1,marginUsdt:5,leverage:20,geometry:"LIVE_BITGET_CALIBRATED_120C",riskMarginPercent:(Math.abs(s.entry-s.sl)/s.entry)*20*100,m5:{rsi:s.rsi,volume:{side:s.relativeVolume>1.3?"BUY":s.relativeVolume<.7?"SELL":"BALANCED",spike:s.relativeVolume>1.3}}}));
   // Qwen is the active scanner: it scores the entire quantitative universe, not only preselected candidates.
   const ai=await scanUniverse(signals);
   signals=ai.candidates.map(s=>{
-    const technicalScore=Math.max(0,Math.min(100,Math.abs(Number(s.strength)||0)));
+    const technicalScore=Math.max(0,Math.min(100,Number(s.calibratedScore)||Math.abs(Number(s.strength)||0)));
     const aiScore=Number(s.ai?.score)||0;
     const aiGate=s.ai?.verdict==="VALID" || s.ai?.verdict==="UNAVAILABLE";
     const finalScore=technicalScore;
@@ -49,7 +49,7 @@ async function main(){
   console.log(`POST ELIGIBLE (score >= ${MIN_POST_SCORE}):`,signals.length);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
-  for(const s of signals)console.log(`  ${s.base} [${s.source||"UNKNOWN"}] ${s.action} strength=${s.strength} confidence=${s.confidence}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
+  for(const s of signals)console.log(`  ${s.base} [${s.source||"UNKNOWN"}] ${s.action} score=${s.probability} raw=${s.strength} confidence=${s.confidence}% fill=${Number(s.fillP||0).toFixed(1)}% reach=${Number(s.reachP||0).toFixed(1)}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
   const dry=String(process.env.TRADERSPY_DRY_RUN||process.env.SCANNER_DRY_RUN||"false").toLowerCase()==="true";
   if(dry){console.log("Delivery dry-run: no external posts and no outcome registration.");return;}
   await safeDelivery("Discord",()=>sendDiscord(signals));
