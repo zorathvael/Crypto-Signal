@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-06T07:21:18.960Z",
+    "generatedAt": "2026-10-06T10:57:44.749Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -15,21 +15,6 @@
   },
   "results": [
     {
-      "id": "SOL_SHORT_1790591753466",
-      "base": "SOL",
-      "action": "SHORT",
-      "entry": 118.429,
-      "sl": 119.02114499999999,
-      "tp1": 116.652565,
-      "entryCandleAt": 1790594460000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.027,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
-    },
-    {
       "id": "BTC_SHORT_1790591753466",
       "base": "BTC",
       "action": "SHORT",
@@ -40,6 +25,21 @@
       "slCandleAt": null,
       "tp1CandleAt": null,
       "mfeBeforeSlPct": 0.0326,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
+    },
+    {
+      "id": "SOL_SHORT_1790591753466",
+      "base": "SOL",
+      "action": "SHORT",
+      "entry": 118.429,
+      "sl": 119.02114499999999,
+      "tp1": 116.652565,
+      "entryCandleAt": 1790594460000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.027,
       "slBeforeTp1": false,
       "directSl": false,
       "sameCandleAmbiguous": false
@@ -60,21 +60,6 @@
       "sameCandleAmbiguous": false
     },
     {
-      "id": "WLD_SHORT_1790591753466",
-      "base": "WLD",
-      "action": "SHORT",
-      "entry": 0.5113,
-      "sl": 0.5138564999999999,
-      "tp1": 0.5036305,
-      "entryCandleAt": 1790591760000,
-      "slCandleAt": 1790593200000,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.2543,
-      "slBeforeTp1": true,
-      "directSl": false,
-      "sameCandleAmbiguous": false
-    },
-    {
       "id": "SUI_SHORT_1790591753466",
       "base": "SUI",
       "action": "SHORT",
@@ -90,17 +75,17 @@
       "sameCandleAmbiguous": false
     },
     {
-      "id": "ONDO_SHORT_1790591753466",
-      "base": "ONDO",
+      "id": "WLD_SHORT_1790591753466",
+      "base": "WLD",
       "action": "SHORT",
-      "entry": 0.5158,
-      "sl": 0.518379,
-      "tp1": 0.508063,
+      "entry": 0.5113,
+      "sl": 0.5138564999999999,
+      "tp1": 0.5036305,
       "entryCandleAt": 1790591760000,
-      "slCandleAt": null,
+      "slCandleAt": 1790593200000,
       "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.1163,
-      "slBeforeTp1": false,
+      "mfeBeforeSlPct": 0.2543,
+      "slBeforeTp1": true,
       "directSl": false,
       "sameCandleAmbiguous": false
     },
@@ -116,6 +101,21 @@
       "tp1CandleAt": null,
       "mfeBeforeSlPct": 0.1793,
       "slBeforeTp1": true,
+      "directSl": false,
+      "sameCandleAmbiguous": false
+    },
+    {
+      "id": "ONDO_SHORT_1790591753466",
+      "base": "ONDO",
+      "action": "SHORT",
+      "entry": 0.5158,
+      "sl": 0.518379,
+      "tp1": 0.508063,
+      "entryCandleAt": 1790591760000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.1163,
+      "slBeforeTp1": false,
       "directSl": false,
       "sameCandleAmbiguous": false
     },
@@ -184,7 +184,19 @@
       "sameCandleAmbiguous": false
     },
     {
+      "id": "GRT_LONG_1790554234040",
+      "status": "ENTRY_NOT_FOUND"
+    },
+    {
       "id": "NEAR_LONG_1790554234040",
+      "status": "ENTRY_NOT_FOUND"
+    },
+    {
+      "id": "ONDO_LONG_1790554234040",
+      "status": "ENTRY_NOT_FOUND"
+    },
+    {
+      "id": "PUMP_LONG_1790554234040",
       "status": "ENTRY_NOT_FOUND"
     },
     {
@@ -201,18 +213,6 @@
       "slBeforeTp1": false,
       "directSl": false,
       "sameCandleAmbiguous": false
-    },
-    {
-      "id": "GRT_LONG_1790554234040",
-      "status": "ENTRY_NOT_FOUND"
-    },
-    {
-      "id": "PUMP_LONG_1790554234040",
-      "status": "ENTRY_NOT_FOUND"
-    },
-    {
-      "id": "ONDO_LONG_1790554234040",
-      "status": "ENTRY_NOT_FOUND"
     },
     {
       "id": "NEAR_LONG_1790495511887",
@@ -478,21 +478,6 @@
       "sameCandleAmbiguous": false
     },
     {
-      "id": "DOGE_SHORT_1789526125328",
-      "base": "DOGE",
-      "action": "SHORT",
-      "entry": 0.08025,
-      "sl": 0.08050166775849772,
-      "tp1": 0.0798425,
-      "entryCandleAt": 1789526220000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.4984,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
-    },
-    {
       "id": "ADA_SHORT_1789526125328",
       "base": "ADA",
       "action": "SHORT",
@@ -503,6 +488,21 @@
       "slCandleAt": null,
       "tp1CandleAt": null,
       "mfeBeforeSlPct": 0.4627,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
+    },
+    {
+      "id": "DOGE_SHORT_1789526125328",
+      "base": "DOGE",
+      "action": "SHORT",
+      "entry": 0.08025,
+      "sl": 0.08050166775849772,
+      "tp1": 0.0798425,
+      "entryCandleAt": 1789526220000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.4984,
       "slBeforeTp1": false,
       "directSl": false,
       "sameCandleAmbiguous": false
@@ -583,6 +583,21 @@
       "sameCandleAmbiguous": false
     },
     {
+      "id": "ADA_SHORT_1789489908187",
+      "base": "ADA",
+      "action": "SHORT",
+      "entry": 0.2017,
+      "sl": 0.20356758026563562,
+      "tp1": 0.19927914349129033,
+      "entryCandleAt": 1789489920000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.4462,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
+    },
+    {
       "id": "ETH_SHORT_1789489908187",
       "base": "ETH",
       "action": "SHORT",
@@ -598,16 +613,16 @@
       "sameCandleAmbiguous": false
     },
     {
-      "id": "ZEC_SHORT_1789489908187",
-      "base": "ZEC",
+      "id": "PEPE_SHORT_1789489908187",
+      "base": "PEPE",
       "action": "SHORT",
-      "entry": 1120.11,
-      "sl": 1138.7224096100672,
-      "tp1": 1092.9403552038018,
+      "entry": 0.0000033993,
+      "sl": 0.000003436968189678566,
+      "tp1": 0.0000033466520249943312,
       "entryCandleAt": 1789489920000,
       "slCandleAt": null,
       "tp1CandleAt": null,
-      "mfeBeforeSlPct": 1.0142,
+      "mfeBeforeSlPct": 0.4266,
       "slBeforeTp1": false,
       "directSl": false,
       "sameCandleAmbiguous": false
@@ -628,31 +643,16 @@
       "sameCandleAmbiguous": false
     },
     {
-      "id": "ADA_SHORT_1789489908187",
-      "base": "ADA",
+      "id": "ZEC_SHORT_1789489908187",
+      "base": "ZEC",
       "action": "SHORT",
-      "entry": 0.2017,
-      "sl": 0.20356758026563562,
-      "tp1": 0.19927914349129033,
+      "entry": 1120.11,
+      "sl": 1138.7224096100672,
+      "tp1": 1092.9403552038018,
       "entryCandleAt": 1789489920000,
       "slCandleAt": null,
       "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.4462,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
-    },
-    {
-      "id": "PEPE_SHORT_1789489908187",
-      "base": "PEPE",
-      "action": "SHORT",
-      "entry": 0.0000033993,
-      "sl": 0.000003436968189678566,
-      "tp1": 0.0000033466520249943312,
-      "entryCandleAt": 1789489920000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.4266,
+      "mfeBeforeSlPct": 1.0142,
       "slBeforeTp1": false,
       "directSl": false,
       "sameCandleAmbiguous": false
@@ -745,7 +745,7 @@
     {
       "id": "ETH_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "BNB_LONG_1789218326337",
