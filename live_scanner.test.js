@@ -14,7 +14,8 @@ test("live Binance analyzer produces calibrated trade geometry",()=>{
   assert.ok(Number.isFinite(r.entry)&&Number.isFinite(r.sl));
   assert.ok(Number.isFinite(r.tp1)&&Number.isFinite(r.tp2)&&Number.isFinite(r.tp3));
   assert.equal(r.calibration.samples,114);
-  assert.equal(r.setup,"LIVE_BINANCE_CALIBRATED_120C");
+  assert.equal(r.setup,"LIVE_BITGET_CALIBRATED_120C");
+  assert.ok(Number.isInteger(r.calibratedScore)&&r.calibratedScore>=0&&r.calibratedScore<=100);
 });
 test("live analyzer rejects insufficient calibration",()=>{
   const {c,v}=series(16);
@@ -35,6 +36,8 @@ test("universe excludes common TradFi symbols and keeps crypto futures",()=>{
   assert.equal(isCryptoFuturesSymbol("BTCUSDT"),true);
   assert.equal(isCryptoFuturesSymbol("1000PEPEUSDT"),true);
   assert.equal(isCryptoFuturesSymbol("TSLAUSDT"),false);
+  assert.equal(isCryptoFuturesSymbol("SOXLUSDT"),false);
+  assert.equal(isCryptoFuturesSymbol("NATGASUSDT"),false);
   assert.equal(isCryptoFuturesSymbol("AAPLUSDT"),false);
   assert.equal(isCryptoFuturesSymbol("EURUSDT"),false);
 });
