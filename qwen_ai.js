@@ -44,6 +44,19 @@ async function scanBatch(batch,index,total){
   ];
   const parsed=extractJson(await ask(messages,512));
   if(!Array.isArray(parsed.scores))throw new Error("Qwen scores array missing");
+  const expected=new Set(batch.map(s=>String(s.symbol||"").toUpperCase()));
+  const seen=new Set();
+  if(parsed.scores.length!==batch.length)throw new Error("Qwen returned incomplete score set");
+  for(const x of parsed.scores){
+    const symbol=String(x?.symbol||"").toUpperCase();
+    const score=Number(x?.score),confidence=Number(x?.confidence);
+    const verdict=String(x?.verdict||"").toUpperCase();
+    if(!expected.has(symbol)||seen.has(symbol))throw new Error("Qwen returned invalid/duplicate symbol");
+    if(!Number.isFinite(score)||score<0||score>100||!Number.isFinite(confidence)||confidence<0||confidence>100)throw new Error("Qwen returned invalid score/confidence");
+    if(!["VALID","CAUTION","REJECT"].includes(verdict))throw new Error("Qwen returned invalid verdict");
+    seen.add(symbol);
+  }
+  if(seen.size!==expected.size)throw new Error("Qwen omitted one or more symbols");
   return parsed.scores;
 }
 async function scanUniverse(signals){
