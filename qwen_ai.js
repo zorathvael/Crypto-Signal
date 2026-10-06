@@ -7,17 +7,25 @@ const BASE=String(process.env.QWEN_BASE_URL||process.env.QWEN_URL||"http://127.0
 const MODEL=process.env.QWEN_MODEL||"default";
 const TIMEOUT=Number(process.env.QWEN_TIMEOUT_MS||45000);
 const BATCH_SIZE=Math.max(5,Number(process.env.QWEN_SCAN_BATCH_SIZE||10));
+const RETRIES=Math.max(0,Math.min(2,Number(process.env.QWEN_RETRIES||1)));
 
 async function ask(messages,maxTokens=900){
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
-  try{
-    const r=await fetch(BASE+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(process.env.QWEN_API_KEY||"sk-no-key-required")},
-      body:JSON.stringify({model:MODEL,messages,temperature:.1,max_tokens:maxTokens}),signal:ctl.signal});
-    if(!r.ok)throw new Error("Qwen HTTP "+r.status);
-    const j=await r.json(),text=j?.choices?.[0]?.message?.content||"";
-    if(!text)throw new Error("Qwen returned empty response");
-    return text;
-  }finally{clearTimeout(timer);}
+  let lastError;
+  for(let attempt=0;attempt<=RETRIES;attempt++){
+    const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
+    try{
+      const r=await fetch(BASE+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(process.env.QWEN_API_KEY||"sk-no-key-required")},
+        body:JSON.stringify({model:MODEL,messages,temperature:.1,max_tokens:maxTokens,response_format:{type:"json_object"}}),signal:ctl.signal});
+      if(!r.ok)throw new Error("Qwen HTTP "+r.status);
+      const j=await r.json(),text=j?.choices?.[0]?.message?.content||"";
+      if(!text)throw new Error("Qwen returned empty response");
+      return text;
+    }catch(e){
+      lastError=e;
+      if(attempt<RETRIES)await new Promise(r=>setTimeout(r,500));
+    }finally{clearTimeout(timer);}
+  }
+  throw lastError;
 }
 function extractJson(text){
   const fenced=text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -31,10 +39,10 @@ function compact(s){
 }
 async function scanBatch(batch,index,total){
   const messages=[
-    {role:"system",content:"Fast classifier. No deep reasoning, no analysis text, no explanations. Evaluate EVERY symbol using only the supplied quantitative metrics. Do not invent data. Do not alter Entry/SL/TP. Return JSON only, compact: {scores:[{symbol,score,confidence,verdict}]}. score/confidence 0-100. verdict VALID, CAUTION or REJECT. Include every symbol exactly once."},
+    {role:"system",content:"/no_think\nFast market classifier. Do not show reasoning or explanations. Evaluate EVERY symbol using only supplied quantitative metrics. Do not invent data. Do not alter Entry/SL/TP. Return compact JSON only: {scores:[{symbol,score,confidence,verdict}]}. score/confidence 0-100. verdict VALID, CAUTION or REJECT. Include every symbol exactly once."},
     {role:"user",content:JSON.stringify(batch.map(compact))}
   ];
-  const parsed=extractJson(await ask(messages,220));
+  const parsed=extractJson(await ask(messages,180));
   if(!Array.isArray(parsed.scores))throw new Error("Qwen scores array missing");
   return parsed.scores;
 }
