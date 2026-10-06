@@ -19,7 +19,7 @@ if ! docker image inspect ghcr.io/ggml-org/llama.cpp:server >/dev/null 2>&1; the
   docker pull ghcr.io/ggml-org/llama.cpp:server || { echo "llama.cpp image unavailable; continuing without Qwen."; exit 0; }
 fi
 docker rm -f crypto-signal-qwen >/dev/null 2>&1 || true
-docker run -d --name crypto-signal-qwen -p 11434:8080 -v "$(pwd)/$MODEL_DIR:/models:ro" ghcr.io/ggml-org/llama.cpp:server -m "/models/$(basename "$MODEL_PATH")" --alias qwen3-0.6b --host 0.0.0.0 --port 8080 -c 4096 >/tmp/crypto-signal-qwen.log 2>&1 || { echo "Qwen server failed to start; continuing without Qwen."; exit 0; }
+docker run -d --name crypto-signal-qwen -p 11434:8080 -v "$(pwd)/$MODEL_DIR:/models:ro" ghcr.io/ggml-org/llama.cpp:server -m "/models/$(basename "$MODEL_PATH")" --alias qwen3-0.6b --host 0.0.0.0 --port 8080 -c 4096 --threads 4 --threads-batch 4 --parallel 1 >/tmp/crypto-signal-qwen.log 2>&1 || { echo "Qwen server failed to start; continuing without Qwen."; exit 0; }
 for i in $(seq 1 30); do
   if curl -fsS http://127.0.0.1:11434/health >/dev/null 2>&1; then echo "Qwen3 local server ready."; exit 0; fi
   sleep 2
