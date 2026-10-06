@@ -61,7 +61,7 @@ function formatTelegramMessage(s) {
     `\n\n` +
     `1H ${s.trends ? s.trends.h1 : s.h1?.bias || "—"} · 15M ${s.trends ? s.trends.m15 : s.m15?.bias || "—"} · 4H ${s.trends ? s.trends.h4 : "—"}\n` +
     `Vol ${s.m5?.volume?.side || "—"}${bookTxt} · RSI ${Number(s.m5?.rsi || 0).toFixed(0)}\n\n` +
-    `<i>Crypto-Signal v5.1 · Live Binance -> Bitget + Qwen3 · information only · NFA</i>`
+    `<i>Crypto-Signal v5.4 · Live Bitget + Qwen3 · information only · NFA</i>`
   );
 }
 
@@ -136,7 +136,7 @@ function formatSquareBatchMessage(coins) {
     lines.push(formatSquareCoinBlock(s));
   });
   lines.push("");
-  lines.push("Crypto-Signal v5.1 · Live Binance + Qwen3 · NFA");
+  lines.push("Crypto-Signal v5.4 · Live Bitget + Qwen3 · NFA");
   lines.push("");
   lines.push(fo);
   lines.push("");
@@ -211,7 +211,7 @@ function buildSquareCardSvg(coins) {
   <text x="${pad}" y="110" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#64748b">${esc(now)} WIB</text>
   <text x="${W - pad}" y="52" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600" fill="#38bdf8">Top ${rows.length}</text>
   ${cards}
-  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 20x sizing · Live Binance/Bitget calibration + Qwen · NFA</text>
+  <text x="${pad}" y="${H - 22}" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#64748b">Margin 5 USDT · Leverage 20x sizing · Live Bitget calibration + Qwen · NFA</text>
 </svg>`;
 }
 
