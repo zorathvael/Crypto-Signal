@@ -6,7 +6,7 @@ function series(n=150){
   for(let i=0;i<n;i++){seed=(seed*9301+49297)%233280;const noise=(seed/233280-.5)*1.5;p*=1+(.0008+noise/100);c.push(p);v.push(1000+(seed%400));}
   return {c,v};
 }
-test("live Binance analyzer produces calibrated trade geometry",()=>{
+test("live Bitget analyzer produces calibrated trade geometry",()=>{
   const {c,v}=series();
   const r=analyze("TESTUSDT",c,v,c.at(-1));
   assert.equal(r.na,false);
