@@ -96,12 +96,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -f signals-log.json ]; then
+            # Scanner state is generated during the run. Rebase after committing it
+            # causes JSON conflicts whenever main advances during the scan. Instead,
+            # refresh main first, then merge the generated state by signal id.
+            cp signals-log.json /tmp/signals-log.scan.json
+            cp entry-outcome-research.json /tmp/entry-outcome-research.scan.json
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/entry-outcome-research.scan.json entry-outcome-research.json
+
+            node <<'NODE'
+          const fs = require("fs");
+          const local = JSON.parse(fs.readFileSync("/tmp/signals-log.scan.json", "utf8"));
+          const remote = fs.existsSync("signals-log.json")
+            ? JSON.parse(fs.readFileSync("signals-log.json", "utf8"))
+            : {};
+          for (const key of ["open", "closed"]) {
+            const merged = new Map();
+            for (const item of Array.isArray(remote[key]) ? remote[key] : []) {
+              if (item && item.id) merged.set(item.id, item);
+            }
+            for (const item of Array.isArray(local[key]) ? local[key] : []) {
+              if (item && item.id) merged.set(item.id, item);
+            }
+            remote[key] = Array.from(merged.values()).sort((a, b) =>
+              Number(a.ts || 0) - Number(b.ts || 0) ||
+              String(a.id).localeCompare(String(b.id))
+            );
+          }
+          fs.writeFileSync("signals-log.json", JSON.stringify(remote, null, 2) + "\n");
+          NODE
+
             git add signals-log.json entry-outcome-research.json
             if git diff --staged --quiet; then
               echo "No outcome log changes"
             else
               git commit -m "chore: update signals-log outcome tracker"
-              git pull --rebase origin main
-              git push
+              git push origin HEAD:main
             fi
           fi
