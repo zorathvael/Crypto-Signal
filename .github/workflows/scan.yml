@@ -84,13 +84,19 @@ jobs:
           QWEN_RETRIES: "1"
         run: node scanner.js
 
+      - name: Research entry → TP1/SL outcomes
+        env:
+          BITGET_API_BASE: https://api.bitget.com
+          RESEARCH_MAX_SIGNALS: "100"
+        run: node entry_outcome_research.js
+
       - name: Commit signals-log.json
         if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -f signals-log.json ]; then
-            git add signals-log.json
+            git add signals-log.json entry-outcome-research.json
             if git diff --staged --quiet; then
               echo "No outcome log changes"
             else
