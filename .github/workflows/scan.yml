@@ -1,4 +1,4 @@
-name: Strict Crypto Scanner
+name: Crypto-Signal Live Scanner
 
 on:
   push:
@@ -9,15 +9,12 @@ on:
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: write
 
 concurrency:
-  group: crypto-signal-scan
+  group: crypto-signal-live-scan
   cancel-in-progress: false
 
 jobs:
