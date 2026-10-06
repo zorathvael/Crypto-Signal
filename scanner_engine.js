@@ -90,7 +90,7 @@ function analyze(symbol,closes,vols,livePrice=null){
   const sigs=[trendS,macdS,rsiS,volS],pos=sigs.filter(v=>v>0).length,neg=sigs.filter(v=>v<0).length;
   const consensus=Math.max(pos,neg)/sigs.length;
   const calibrationQuality=clamp(50+(reachP*70)+(fillP*30),0,100);
-  const calibratedScore=Math.round(clamp(25+(consensus*25)+(calibrationQuality*0.50),0,100));
+  const calibratedScore=Math.round(clamp(20+(Math.abs(strength)*0.50)+(reachP*25)+(fillP*25),0,100));
   return{symbol,na:false,strength,calibratedScore,confidence:Math.round(consensus*100),bias:s===1?"long":"short",direction:s===1?"LONG":"SHORT",entry,sl,tp1,tp2,tp3,fillP:fillP*100,reachP:reachP*100,atr:atrNow,rsi:rsi[last],relativeVolume:rv,livePrice:Number(livePrice)||close,candleClose:close,components:{trend:trendS,macd:macdS,rsi:rsiS,volume:volS},calibration:{samples:fwdUp.length,entryK,advMedian:advMed,advP80:adv80,slMinK},setup:"LIVE_BITGET_CALIBRATED_120C"};
 }
 async function getBitgetJson(path){const r=await getJson(BITGET_BASE+path,1);if(!r||r.code!=="00000")throw new Error(`Bitget API ${r?.code||"invalid"}: ${r?.msg||"request failed"}`);return r.data;}
