@@ -1,35 +1,33 @@
-# Crypto-Signal v5.3.0
+# Crypto-Signal v5.4.0
 
-## Live Binance scanner + Bitget fallback + local Qwen3 intelligence
+## Live Bitget calibrated scanner + local Qwen3 intelligence
 
 Production scanner v5 is based on the supplied **Radar Sinyal — Live Binance Futures** implementation. The deterministic market method is ported directly rather than replaced with a new scoring model.
 
-### Live Binance data
+### Live Bitget futures data
 
-The scanner uses Binance Futures public read-only market data:
+The scanner uses Bitget USDT-Futures public market data:
 
-- `/fapi/v1/klines`
-- `/fapi/v1/ticker/price`
+- Bitget USDT-Futures contracts/tickers/candles/live ticker
 - configurable watchlist
 - default timeframe: **1H**
-- fallback provider: **Bitget USDT-Futures**
 - broad crypto-perpetual universe discovery
-- publish gate: **combined score >= 90**
+- publish gate: **deterministic score >= 90**
 - Binance Square: **1–3 coins in one post per scanner run** (3 maximum)
-- Telegram/Discord: every new signal with score >= 90
-- provider mode: `auto` (Binance first), `binance`, or `bitget`
+- Telegram/Discord: every new non-duplicate signal with score >= 90
+- provider mode: `bitget`
 - default history: **150 candles**
-- no Binance API key or secret required
+- no exchange API key or secret required for market data
 
-There is **no mock market data**. Provider order is Binance → Bitget. If Binance is blocked, unavailable, times out, or returns invalid market data for a symbol, that symbol is automatically retried against Bitget USDT-Futures.
+There is **no mock market data**. If Bitget market data is unavailable or invalid, that symbol is rejected rather than replaced with fabricated data.
 
 Binance documents public REST data endpoints and the Futures kline interval family. citeturn1search0turn1search3
 
 ### Crypto futures universe + AI scoring
 
-Each scan dynamically discovers active perpetual USDT futures, ranks the universe by live 24h liquidity, excludes configured TradFi/RWA-style symbols, and evaluates up to the configured universe size. Binance is primary and Bitget is the fallback.
+Each scan dynamically discovers active perpetual USDT futures, ranks the universe by live 24h liquidity, excludes configured TradFi/RWA-style symbols, and evaluates up to the configured universe size. Bitget is the sole scanner market-data provider.
 
-Qwen3 is an active second-stage scanner, not merely a formatter: it independently scores the deterministic candidates and flags conflicts. The publish gate uses a combined score: **60% deterministic technical/calibration score + 40% Qwen AI score**. Only **combined score >= 90** and a non-rejected Qwen verdict can reach Telegram/Discord.
+Qwen3 is an active validation layer over deterministic candidates: it independently evaluates the supplied quantitative state and can reject conflicting setups. Qwen does **not** rewrite the deterministic score or Entry/SL/TP. The hard publication gate remains **deterministic score >= 90**; a usable Qwen result must be VALID, while an unavailable batch falls back to the deterministic gate.
 
 ### Deterministic calibration (unchanged across providers)
 
@@ -152,15 +150,15 @@ Crypto-Signal is an information/education tool. It does not automatically execut
 Qwen3 is now an active scanner rather than a second-stage validator. Every quantitative candidate in the discovered crypto-futures universe is sent to Qwen in batches. Qwen independently scores signal quality, detects indicator conflicts and risk flags, and returns a verdict. The final publication score combines 60% quantitative score and 40% Qwen AI score. Entry/SL/TP remain deterministic and are not invented or modified by the LLM.
 
 
-### v5.3.0 — Direct Bitget market data
+### v5.4.0 — Direct Bitget market data + delivery hardening
 - Bitget USDT-Futures is now the **sole live market-data provider** for scanner discovery, candles and live prices.
 - Binance market-data endpoints are removed from the scanner execution path.
 - Qwen remains the active AI scanner over the discovered Bitget crypto-perpetual universe.
 - The deterministic calibration/Entry-SL-TP method is preserved; only the market-data source is changed.
 
-- Qwen AI layer uses compact fast classification without deep reasoning; Qwen timeout no longer discards a valid calibrated scanner result.
+- Qwen AI layer uses compact `/no_think` JSON classification, one retry for transient/empty responses, and deterministic fallback when a batch remains unavailable.
 
-- Qwen validates the top calibrated candidates without changing the deterministic score. If Qwen is unavailable, all deterministic candidates with score >= 90 remain eligible; deduplication and destination-specific limits control distribution.
+- Qwen validates calibrated candidates without changing the deterministic score or calibrated Entry/SL/TP. If Qwen is unavailable, all deterministic candidates with score >= 90 remain eligible; deduplication and destination-specific limits control distribution.
 
 ### Posting eligibility
 
