@@ -1,4 +1,4 @@
-name: Crypto-Signal Live Scanner
+name: Strict Crypto Scanner
 
 on:
   push:
@@ -9,12 +9,15 @@ on:
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 concurrency:
-  group: crypto-signal-live-scan
+  group: crypto-signal-scan
   cancel-in-progress: false
 
 jobs:
@@ -81,43 +84,18 @@ jobs:
           QWEN_RETRIES: "1"
         run: node scanner.js
 
-      - name: Commit signals-log.json safely
+      - name: Commit signals-log.json
         if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -f signals-log.json ]; then
-            cp signals-log.json /tmp/signals-log-run.json
             git add signals-log.json
             if git diff --staged --quiet; then
               echo "No outcome log changes"
-              exit 0
+            else
+              git commit -m "chore: update signals-log outcome tracker"
+              git pull --rebase origin main
+              git push
             fi
-            git commit -m "chore: update signals-log outcome tracker"
-            if ! git pull --rebase origin main; then
-              echo "signals-log changed upstream; merging outcome state instead of failing the run"
-              git checkout --ours signals-log.json
-              node <<'NODE'
-const fs=require("fs");
-const remote=JSON.parse(fs.readFileSync("signals-log.json","utf8"));
-const run=JSON.parse(fs.readFileSync("/tmp/signals-log-run.json","utf8"));
-const merge=(a,b)=>{
-  const out=[],seen=new Set();
-  for(const x of [...(a||[]),...(b||[])]) {
-    const k=String(x?.fingerprint||x?.id||[x?.base,x?.action,x?.ts].join("|"));
-    if(!seen.has(k)){seen.add(k);out.push(x);}
-  }
-  return out;
-};
-const merged={
-  open:merge(remote.open,run.open),
-  closed:merge(remote.closed,run.closed),
-  stats:{...(remote.stats||{}),...(run.stats||{})}
-};
-fs.writeFileSync("signals-log.json",JSON.stringify(merged,null,2)+"\n");
-NODE
-              git add signals-log.json
-              GIT_EDITOR=true git rebase --continue
-            fi
-            git push
           fi
