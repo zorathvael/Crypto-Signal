@@ -15,7 +15,7 @@ const MIN_PROB_VALID = 90;
 const MIN_PROB_SNIPER = 82;
 const SQUARE_POST_COUNT = 3;
 function resolvePlan(s){
-  if(s&&s.geometry==="LIVE_BINANCE_CALIBRATED_120C"){
+  if(s&&(s.geometry==="LIVE_BITGET_CALIBRATED_120C"||s.geometry==="LIVE_BINANCE_CALIBRATED_120C")){
     const dist=Number(s.entry)>0?Math.abs(Number(s.entry)-Number(s.sl))/Number(s.entry)*100:null;
     return {tp1:s.tp1,tp2:s.tp2,tp3:s.tp3,marginUsdt:s.marginUsdt??5,leverage:s.leverage??20,riskMarginPercent:Number.isFinite(s.riskMarginPercent)?s.riskMarginPercent:null,slDistancePercent:dist,rewardRMultiples:[1,1.618,2.618],rewardMarginPcts:[10,16.18,26.18]};
   }
