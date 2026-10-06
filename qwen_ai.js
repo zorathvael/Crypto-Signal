@@ -15,7 +15,7 @@ async function ask(messages,maxTokens=512){
     const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
     try{
       const r=await fetch(BASE+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(process.env.QWEN_API_KEY||"sk-no-key-required")},
-        body:JSON.stringify({model:MODEL,messages,temperature:.1,max_tokens:maxTokens,response_format:{type:"json_object"}}),signal:ctl.signal});
+        body:JSON.stringify({model:MODEL,messages,temperature:.1,max_tokens:maxTokens}),signal:ctl.signal});
       if(!r.ok)throw new Error("Qwen HTTP "+r.status);
       const j=await r.json(),text=j?.choices?.[0]?.message?.content||"";
       if(!text)throw new Error("Qwen returned empty response");
