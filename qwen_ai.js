@@ -9,7 +9,7 @@ const TIMEOUT=Number(process.env.QWEN_TIMEOUT_MS||45000);
 const BATCH_SIZE=Math.max(5,Number(process.env.QWEN_SCAN_BATCH_SIZE||10));
 const RETRIES=Math.max(0,Math.min(2,Number(process.env.QWEN_RETRIES||1)));
 
-async function ask(messages,maxTokens=900){
+async function ask(messages,maxTokens=512){
   let lastError;
   for(let attempt=0;attempt<=RETRIES;attempt++){
     const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),TIMEOUT);
@@ -42,7 +42,7 @@ async function scanBatch(batch,index,total){
     {role:"system",content:"/no_think\nFast market classifier. Do not show reasoning or explanations. Evaluate EVERY symbol using only supplied quantitative metrics. Do not invent data. Do not alter Entry/SL/TP. Return compact JSON only: {scores:[{symbol,score,confidence,verdict}]}. score/confidence 0-100. verdict VALID, CAUTION or REJECT. Include every symbol exactly once."},
     {role:"user",content:JSON.stringify(batch.map(compact))}
   ];
-  const parsed=extractJson(await ask(messages,180));
+  const parsed=extractJson(await ask(messages,512));
   if(!Array.isArray(parsed.scores))throw new Error("Qwen scores array missing");
   return parsed.scores;
 }
