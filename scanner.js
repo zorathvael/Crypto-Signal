@@ -1,4 +1,4 @@
-/** Crypto-Signal v5.1 — Live Binance scanner + local Qwen intelligence + existing delivery. */
+/** Crypto-Signal v5.4 — Live Bitget calibrated scanner + local Qwen intelligence + existing delivery. */
 const fs=require("fs"),path=require("path");
 const {runLiveScanner}=require("./scanner_engine");
 const {scanUniverse}=require("./qwen_ai");
@@ -27,7 +27,7 @@ async function main(){
   console.log(new Date().toISOString());
   const log=loadOutcomeLog();
   let signals=await runLiveScanner();
-  signals=signals.map(s=>({...s,base:s.symbol,instId:s.symbol,action:s.direction,probability:Math.abs(Number(s.strength)||0),rr:1,riskR:1,marginUsdt:5,leverage:20,geometry:"LIVE_BINANCE_CALIBRATED_120C",riskMarginPercent:(Math.abs(s.entry-s.sl)/s.entry)*20*100,m5:{rsi:s.rsi,volume:{side:s.relativeVolume>1.3?"BUY":s.relativeVolume<.7?"SELL":"BALANCED",spike:s.relativeVolume>1.3}}}));
+  signals=signals.map(s=>({...s,base:s.symbol,instId:s.symbol,action:s.direction,probability:Math.abs(Number(s.strength)||0),rr:1,riskR:1,marginUsdt:5,leverage:20,geometry:"LIVE_BITGET_CALIBRATED_120C",riskMarginPercent:(Math.abs(s.entry-s.sl)/s.entry)*20*100,m5:{rsi:s.rsi,volume:{side:s.relativeVolume>1.3?"BUY":s.relativeVolume<.7?"SELL":"BALANCED",spike:s.relativeVolume>1.3}}}));
   // Qwen is the active scanner: it scores the entire quantitative universe, not only preselected candidates.
   const ai=await scanUniverse(signals);
   signals=ai.candidates.map(s=>{
