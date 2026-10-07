@@ -14103,6 +14103,146 @@
         "advP80": 2.2457232768319737,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "CTUSDT_SHORT_1791406745070",
+      "ts": 1791406745070,
+      "base": "CTUSDT",
+      "instId": "CTUSDT",
+      "action": "SHORT",
+      "fingerprint": "CTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.92|-1.92|-3.10|-5.02",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 0.3751071467152036,
+      "sl": 0.3822974695322023,
+      "tp1": 0.36791682389820496,
+      "tp2": 0.3634732043972998,
+      "tp3": 0.35628288158030114,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-07T21:14:05.070Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.18535447176841582,
+        "advMedian": 0.37070894353683165,
+        "advP80": 2.1293318914498047,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "FLUIDUSDT_LONG_1791406745070",
+      "ts": 1791406745070,
+      "base": "FLUIDUSDT",
+      "instId": "FLUIDUSDT",
+      "action": "LONG",
+      "fingerprint": "FLUIDUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.81|2.81|4.55|7.37",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 2.044311693228103,
+      "sl": 1.9867813605035802,
+      "tp1": 2.1018420259526254,
+      "tp2": 2.1373957715763807,
+      "tp3": 2.194926104300903,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-07T21:14:05.070Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2672783697849161,
+        "advMedian": 0.5345567395698322,
+        "advP80": 1.4760714809244309,
+        "slMinK": 1.4087931111395147
+      }
+    },
+    {
+      "id": "OGNUSDT_LONG_1791406745070",
+      "ts": 1791406745070,
+      "base": "OGNUSDT",
+      "instId": "OGNUSDT",
+      "action": "LONG",
+      "fingerprint": "OGNUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.07|2.07|3.35|5.42",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 0.022843751964040385,
+      "sl": 0.02237047492476639,
+      "tp1": 0.02331702900331438,
+      "tp2": 0.02360951421358571,
+      "tp3": 0.024082791252859705,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-07T21:14:05.070Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3644716679766166,
+        "advMedian": 0.7289433359532332,
+        "advP80": 2.0273688667379357,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "XMRUSDT_SHORT_1791406745070",
+      "ts": 1791406745070,
+      "base": "XMRUSDT",
+      "instId": "XMRUSDT",
+      "action": "SHORT",
+      "fingerprint": "XMRUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.20|-1.20|-1.94|-3.14",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 550.5078152257644,
+      "sl": 557.1071984796838,
+      "tp1": 543.908431971845,
+      "tp2": 539.8300131209228,
+      "tp3": 533.2306298670034,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-07T21:14:05.070Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6834946444390627,
+        "advMedian": 1.3669892888781254,
+        "advP80": 3.150995304410467,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
