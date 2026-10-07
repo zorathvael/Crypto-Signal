@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-07T03:38:59.707Z",
+    "generatedAt": "2026-10-07T07:59:06.841Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -765,7 +765,7 @@
     {
       "id": "BTC_SHORT_1789193213150",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "SKHY_LONG_1789193213150",
