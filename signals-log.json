@@ -15376,6 +15376,162 @@
         "advP80": 3.2207172675390145,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "METISUSDT_LONG_1791467970920",
+      "ts": 1791467970920,
+      "base": "METISUSDT",
+      "instId": "METISUSDT",
+      "action": "LONG",
+      "fingerprint": "METISUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.93|1.93|3.12|5.05",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 3.3855552767000443,
+      "sl": 3.3201899274105773,
+      "tp1": 3.4509206259895113,
+      "tp2": 3.491316411850402,
+      "tp3": 3.556681761139869,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-08T14:14:30.920Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected non-whitespace character after JSON at position 67 (line 1 column 68)"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4761917260775862,
+        "advMedian": 0.9523834521551724,
+        "advP80": 2.473911683099584,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "NOWUSDT_LONG_1791467970920",
+      "ts": 1791467970920,
+      "base": "NOWUSDT",
+      "instId": "NOWUSDT",
+      "action": "LONG",
+      "fingerprint": "NOWUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.67|0.67|1.08|1.75",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 139.50827445618336,
+      "sl": 138.5756682283708,
+      "tp1": 140.4408806839959,
+      "tp2": 141.01723133278406,
+      "tp3": 141.94983756059662,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-08T14:14:30.920Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected non-whitespace character after JSON at position 67 (line 1 column 68)"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.21815325864861668,
+        "advMedian": 0.43630651729723335,
+        "advP80": 2.4369665518849692,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "TIAUSDT_LONG_1791467970920",
+      "ts": 1791467970920,
+      "base": "TIAUSDT",
+      "instId": "TIAUSDT",
+      "action": "LONG",
+      "fingerprint": "TIAUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.70|2.70|4.38|7.08",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 0.4899794960784039,
+      "sl": 0.47673066009729903,
+      "tp1": 0.5032283320595088,
+      "tp2": 0.5114161126958316,
+      "tp3": 0.5246649486769365,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-08T14:14:30.920Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected non-whitespace character after JSON at position 67 (line 1 column 68)"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.41067817964929554,
+        "advMedian": 0.8213563592985911,
+        "advP80": 2.2245598198262075,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "XMRUSDT_SHORT_1791467970920",
+      "ts": 1791467970920,
+      "base": "XMRUSDT",
+      "instId": "XMRUSDT",
+      "action": "SHORT",
+      "fingerprint": "XMRUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.79|-0.79|-1.28|-2.08",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 548.2472168137458,
+      "sl": 552.6001604761686,
+      "tp1": 543.894273151323,
+      "tp2": 541.2041539679457,
+      "tp3": 536.8512103055228,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-08T14:14:30.920Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected non-whitespace character after JSON at position 67 (line 1 column 68)"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5638560518666298,
+        "advMedian": 1.1277121037332596,
+        "advP80": 2.6826784509784503,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
