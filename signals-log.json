@@ -14243,6 +14243,84 @@
         "advP80": 3.150995304410467,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "AVAXUSDT_SHORT_1791419849190",
+      "ts": 1791419849190,
+      "base": "AVAXUSDT",
+      "instId": "AVAXUSDT",
+      "action": "SHORT",
+      "fingerprint": "AVAXUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.40|-1.40|-2.26|-3.66",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 11.102184746379615,
+      "sl": 11.257425932159833,
+      "tp1": 10.946943560599397,
+      "tp2": 10.851004507787222,
+      "tp3": 10.695763322007004,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-08T00:52:29.190Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned incomplete score set"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6153995359593412,
+        "advMedian": 1.2307990719186823,
+        "advP80": 2.893954308580714,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "HOMEUSDT_LONG_1791419849190",
+      "ts": 1791419849190,
+      "base": "HOMEUSDT",
+      "instId": "HOMEUSDT",
+      "action": "LONG",
+      "fingerprint": "HOMEUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.81|1.81|2.92|4.73",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 0.0058900006550638715,
+      "sl": 0.005783587528312489,
+      "tp1": 0.005996413781815254,
+      "tp2": 0.006062177094147608,
+      "tp3": 0.006168590220898991,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-08T00:52:29.190Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen returned incomplete score set"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.7141852907848193,
+        "advMedian": 1.4283705815696386,
+        "advP80": 2.4770416534926274,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
