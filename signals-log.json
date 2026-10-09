@@ -17322,6 +17322,357 @@
         "advP80": 2.7411892632119415,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "BICOUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "BICOUSDT",
+      "instId": "BICOUSDT",
+      "action": "SHORT",
+      "fingerprint": "BICOUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.83|-1.83|-2.97|-4.80",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.019531522596233752,
+      "sl": 0.019889620011036384,
+      "tp1": 0.01917342518143112,
+      "tp2": 0.018952120979083095,
+      "tp3": 0.018594023564280464,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.39945888061309165,
+        "advMedian": 0.7989177612261833,
+        "advP80": 1.9419587097840851,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "CCUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "CCUSDT",
+      "instId": "CCUSDT",
+      "action": "SHORT",
+      "fingerprint": "CCUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.50|-1.50|-2.43|-3.93",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 0.11757003884619463,
+      "sl": 0.11933617405507628,
+      "tp1": 0.11580390363731298,
+      "tp2": 0.11471243207822412,
+      "tp3": 0.11294629686934247,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4303621198235218,
+        "advMedian": 0.8607242396470436,
+        "advP80": 3.036746902603124,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "DDOGUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "DDOGUSDT",
+      "instId": "DDOGUSDT",
+      "action": "SHORT",
+      "fingerprint": "DDOGUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.84|-0.84|-1.37|-2.21",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 273.512901064117,
+      "sl": 275.8227634113959,
+      "tp1": 271.2030387168381,
+      "tp2": 269.7755437862197,
+      "tp3": 267.4656814389408,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.21742870300846034,
+        "advMedian": 0.4348574060169207,
+        "advP80": 3.7966161749671765,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ERAUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "ERAUSDT",
+      "instId": "ERAUSDT",
+      "action": "SHORT",
+      "fingerprint": "ERAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.44|-2.44|-3.95|-6.39",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.062268456678698104,
+      "sl": 0.06378927875383276,
+      "tp1": 0.060747634603563444,
+      "tp2": 0.059807766561130224,
+      "tp3": 0.058286944485995563,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5639604677546258,
+        "advMedian": 1.1279209355092517,
+        "advP80": 5.011707722973355,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "IDUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "IDUSDT",
+      "instId": "IDUSDT",
+      "action": "SHORT",
+      "fingerprint": "IDUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.93|-1.93|-3.12|-5.05",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 0.036778350680861785,
+      "sl": 0.03748727805894691,
+      "tp1": 0.03606942330277666,
+      "tp2": 0.035631306183120055,
+      "tp3": 0.03492237880503493,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6442145921309529,
+        "advMedian": 1.2884291842619058,
+        "advP80": 3.305568440489016,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SENTUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "SENTUSDT",
+      "instId": "SENTUSDT",
+      "action": "SHORT",
+      "fingerprint": "SENTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.50|-2.50|-4.05|-6.55",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92,
+      "entry": 0.02387993802563693,
+      "sl": 0.024477272450707948,
+      "tp1": 0.023282603600565912,
+      "tp2": 0.022913450925872023,
+      "tp3": 0.022316116500801005,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6694341301797835,
+        "advMedian": 1.338868260359567,
+        "advP80": 3.528639226101118,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "WLFIUSDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "WLFIUSDT",
+      "instId": "WLFIUSDT",
+      "action": "SHORT",
+      "fingerprint": "WLFIUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.79|-0.79|-1.27|-2.06",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 0.054165838661251325,
+      "sl": 0.05459149074738529,
+      "tp1": 0.05374018657511736,
+      "tp2": 0.053477133585886565,
+      "tp3": 0.0530514814997526,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.30935434546702023,
+        "advMedian": 0.6187086909340405,
+        "advP80": 2.786192222163883,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "牛来USDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "牛来USDT",
+      "instId": "牛来USDT",
+      "action": "SHORT",
+      "fingerprint": "牛来USDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.78|-2.78|-4.50|-7.28",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 0.07350034709317174,
+      "sl": 0.07554316791768462,
+      "tp1": 0.07145752626865887,
+      "tp2": 0.07019506299910991,
+      "tp3": 0.06815224217459703,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.44090709059530664,
+        "advMedian": 0.8818141811906133,
+        "advP80": 2.431067900017641,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "龙虾USDT_SHORT_1791538722982",
+      "ts": 1791538722982,
+      "base": "龙虾USDT",
+      "instId": "龙虾USDT",
+      "action": "SHORT",
+      "fingerprint": "龙虾USDT|SHORT|LIVE_BITGET_CALIBRATED_120C|13.15|-13.15|-21.27|-34.41",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 0.04460474806034529,
+      "sl": 0.05046820636877589,
+      "tp1": 0.03874128975191469,
+      "tp2": 0.03511767251730458,
+      "tp3": 0.029254214208873974,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T09:53:42.982Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.7335846260555658,
+        "advMedian": 1.4671692521111317,
+        "advP80": 4.580776461226873,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
