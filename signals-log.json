@@ -17673,6 +17673,146 @@
         "advP80": 4.580776461226873,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ARPAUSDT_SHORT_1791551717847",
+      "ts": 1791551717847,
+      "base": "ARPAUSDT",
+      "instId": "ARPAUSDT",
+      "action": "SHORT",
+      "fingerprint": "ARPAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.09|-1.09|-1.76|-2.85",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90,
+      "entry": 0.0111191491644887,
+      "sl": 0.011240399765099727,
+      "tp1": 0.010997898563877674,
+      "tp2": 0.01092296569270006,
+      "tp3": 0.010801715092089034,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T13:30:17.847Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5646641647185091,
+        "advMedian": 1.1293283294370182,
+        "advP80": 3.6566248210236565,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "LITUSDT_SHORT_1791551717847",
+      "ts": 1791551717847,
+      "base": "LITUSDT",
+      "instId": "LITUSDT",
+      "action": "SHORT",
+      "fingerprint": "LITUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.79|-1.79|-2.89|-4.68",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 3.589183277925729,
+      "sl": 3.6533194667954074,
+      "tp1": 3.5250470890560504,
+      "tp2": 3.485410924334589,
+      "tp3": 3.4212747354649107,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T13:30:17.847Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5046535570927764,
+        "advMedian": 1.0093071141855527,
+        "advP80": 3.9325967987482366,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "LSKUSDT_SHORT_1791551717847",
+      "ts": 1791551717847,
+      "base": "LSKUSDT",
+      "instId": "LSKUSDT",
+      "action": "SHORT",
+      "fingerprint": "LSKUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.00|-2.00|-3.24|-5.24",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90,
+      "entry": 0.23687193161098663,
+      "sl": 0.24160981865572792,
+      "tp1": 0.23213404456624534,
+      "tp2": 0.2292060303725952,
+      "tp3": 0.22446814332785392,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T13:30:17.847Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.49470643766713945,
+        "advMedian": 0.9894128753342789,
+        "advP80": 2.4003441921511106,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "PYTHUSDT_LONG_1791551717847",
+      "ts": 1791551717847,
+      "base": "PYTHUSDT",
+      "instId": "PYTHUSDT",
+      "action": "LONG",
+      "fingerprint": "PYTHUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.62|2.62|4.25|6.87",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 96,
+      "entry": 0.08516822736262088,
+      "sl": 0.08293299284442951,
+      "tp1": 0.08740346188081224,
+      "tp2": 0.0887848368130545,
+      "tp3": 0.09102007133124587,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-09T13:30:17.847Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5850209208145074,
+        "advMedian": 1.1700418416290148,
+        "advP80": 3.2826553155470175,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
