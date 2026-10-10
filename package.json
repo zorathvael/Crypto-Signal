@@ -5,7 +5,7 @@
   "main": "scanner.js",
   "scripts": {
     "scan": "node scanner.js",
-    "test": "node --test trade_plan.test.js live_scanner.test.js"
+    "test": "node --test trade_plan.test.js live_scanner.test.js qwen_ai.gemini.test.js"
   },
   "engines": {
     "node": ">=18"
