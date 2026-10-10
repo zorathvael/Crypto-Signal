@@ -66,6 +66,9 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: "gemini-3.5-flash-lite"
+          GEMINI_TIMEOUT_MS: "12000"
           SCANNER_DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
           AI_MAX_CANDIDATES: 3
           SCANNER_INTERVAL: "1h"
