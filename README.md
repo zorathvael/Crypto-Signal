@@ -29,6 +29,8 @@ Each scan dynamically discovers active perpetual USDT futures, ranks the univers
 
 Qwen3 is an active validation layer over deterministic candidates: it independently evaluates the supplied quantitative state and can reject conflicting setups. Qwen does **not** rewrite the deterministic score or Entry/SL/TP. The hard publication gate remains **deterministic score >= 90**; a usable Qwen result must be VALID, while an unavailable batch falls back to the deterministic gate.
 
+When local Qwen is unavailable for a batch, the scanner may use `GEMINI_API_KEY` as a secondary classifier (`GEMINI_MODEL`, default `gemini-3.5-flash-lite`). Gemini is not called when Qwen succeeds, which conserves quota. Gemini HTTP 429/quota exhaustion is treated as an optional-provider failure: no retry loop is started, the batch is marked AI-unavailable, and the existing deterministic score gate and delivery controls continue. The Gemini result cannot alter quantitative Entry/SL/TP or the hard score threshold. In GitHub Actions, configure `GEMINI_API_KEY` under repository Actions secrets; do not put the key in code or logs.
+
 ### Deterministic calibration (unchanged across providers)
 
 The supplied scanner methodology is preserved:
