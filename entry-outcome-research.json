@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-10T16:03:35.247Z",
+    "generatedAt": "2026-10-10T20:25:23.776Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 24,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -314,8 +314,18 @@
     },
     {
       "id": "TAO_LONG_1790011940054",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "TAO",
+      "action": "LONG",
+      "entry": 283.45,
+      "sl": 279.3128801841878,
+      "tp1": 288.9856591716071,
+      "entryCandleAt": 1790011980000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.5821,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "PUMP_LONG_1789994034931",
@@ -529,8 +539,18 @@
     },
     {
       "id": "MSTR_SHORT_1789516300813",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "MSTR",
+      "action": "SHORT",
+      "entry": 128.5,
+      "sl": 129.39125225401233,
+      "tp1": 127.38061774692514,
+      "entryCandleAt": 1789516320000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.249,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "SPCX_SHORT_1789516300813",
@@ -720,7 +740,7 @@
     {
       "id": "BNB_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ETH_LONG_1789227211769",
@@ -750,12 +770,12 @@
     {
       "id": "SKHY_LONG_1789193213150",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "RAY_LONG_1789180304858",
