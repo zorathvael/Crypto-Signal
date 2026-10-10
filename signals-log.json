@@ -20543,6 +20543,146 @@
         "advP80": 1.927551062737075,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "AKEUSDT_SHORT_1791648202699",
+      "ts": 1791648202699,
+      "base": "AKEUSDT",
+      "instId": "AKEUSDT",
+      "action": "SHORT",
+      "fingerprint": "AKEUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.01|-1.01|-1.63|-2.64",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 0.027187694648956352,
+      "sl": 0.02746202341746993,
+      "tp1": 0.026913365880442776,
+      "tp2": 0.026743830701501384,
+      "tp3": 0.026469501932987808,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-10T16:18:22.699Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3571965800147247,
+        "advMedian": 0.7143931600294494,
+        "advP80": 1.587325144954247,
+        "slMinK": 1.4301285649395221
+      }
+    },
+    {
+      "id": "CAKEUSDT_SHORT_1791648202699",
+      "ts": 1791648202699,
+      "base": "CAKEUSDT",
+      "instId": "CAKEUSDT",
+      "action": "SHORT",
+      "fingerprint": "CAKEUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.69|-0.69|-1.12|-1.81",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94,
+      "entry": 2.1941582270364197,
+      "sl": 2.2093541456634904,
+      "tp1": 2.178962308409349,
+      "tp2": 2.1695712306978194,
+      "tp3": 2.1543753120707487,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-10T16:18:22.699Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.34986065688512696,
+        "advMedian": 0.6997213137702539,
+        "advP80": 2.1802026274515183,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "CTUSDT_SHORT_1791648202699",
+      "ts": 1791648202699,
+      "base": "CTUSDT",
+      "instId": "CTUSDT",
+      "action": "SHORT",
+      "fingerprint": "CTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.40|-1.40|-2.27|-3.67",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 0.3068048680829531,
+      "sl": 0.31110142980890537,
+      "tp1": 0.3025083063570008,
+      "tp2": 0.29985303121036233,
+      "tp3": 0.29555646948441006,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-10T16:18:22.699Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.197771199415941,
+        "advMedian": 0.395542398831882,
+        "advP80": 1.4541720917130714,
+        "slMinK": 1.4564008922971303
+      }
+    },
+    {
+      "id": "DGAIUSDT_SHORT_1791648202699",
+      "ts": 1791648202699,
+      "base": "DGAIUSDT",
+      "instId": "DGAIUSDT",
+      "action": "SHORT",
+      "fingerprint": "DGAIUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.39|-0.39|-0.64|-1.03",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90,
+      "entry": 0.9598522153323141,
+      "sl": 0.963632268914603,
+      "tp1": 0.9560721617500253,
+      "tp2": 0.9537360886361708,
+      "tp3": 0.9499560350538819,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-10T16:18:22.699Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3979918887068807,
+        "advMedian": 0.7959837774137614,
+        "advP80": 2.5514277649191968,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
