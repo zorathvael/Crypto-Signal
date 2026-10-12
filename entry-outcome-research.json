@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-12T06:49:48.233Z",
+    "generatedAt": "2026-10-12T16:22:50.086Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -479,8 +479,18 @@
     },
     {
       "id": "ADA_SHORT_1789526125328",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "ADA",
+      "action": "SHORT",
+      "entry": 0.1945,
+      "sl": 0.19587159352800768,
+      "tp1": 0.19278254379013982,
+      "entryCandleAt": 1789526580000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.4627,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "DOGE_SHORT_1789526125328",
@@ -680,7 +690,7 @@
     {
       "id": "SOL_SHORT_1789308077899",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "XRP_SHORT_1789308077899",
@@ -765,7 +775,7 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "RAY_LONG_1789180304858",
