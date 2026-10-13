@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-13T04:40:17.954Z",
+    "generatedAt": "2026-10-13T12:23:22.276Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -705,12 +705,12 @@
     {
       "id": "ENA_SHORT_1789268597877",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "HYPE_SHORT_1789277468934",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "LINK_SHORT_1789249918753",
