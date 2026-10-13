@@ -26609,6 +26609,111 @@
         "advP80": 2.0721409059342495,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "BMNRUSDT_SHORT_1791934402646",
+      "ts": 1791934402646,
+      "base": "BMNRUSDT",
+      "instId": "BMNRUSDT",
+      "action": "SHORT",
+      "fingerprint": "BMNRUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.09|-1.09|-1.77|-2.86",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 23.591233356558302,
+      "sl": 23.849215749110826,
+      "tp1": 23.333250964005778,
+      "tp2": 23.17381784540832,
+      "tp3": 22.915835452855795,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-13T23:48:22.646Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.35067010667477344,
+        "advMedian": 0.7013402133495469,
+        "advP80": 2.243762764541141,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "MERLUSDT_SHORT_1791934402646",
+      "ts": 1791934402646,
+      "base": "MERLUSDT",
+      "instId": "MERLUSDT",
+      "action": "SHORT",
+      "fingerprint": "MERLUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.62|-1.62|-2.63|-4.25",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91,
+      "entry": 0.02988139903816842,
+      "sl": 0.03036633776022227,
+      "tp1": 0.029396460316114568,
+      "tp2": 0.02909676818588529,
+      "tp3": 0.028611829463831437,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-13T23:48:22.646Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.459435524952967,
+        "advMedian": 0.918871049905934,
+        "advP80": 3.0263463165981728,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "XAUTUSDT_SHORT_1791934402646",
+      "ts": 1791934402646,
+      "base": "XAUTUSDT",
+      "instId": "XAUTUSDT",
+      "action": "SHORT",
+      "fingerprint": "XAUTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.22|-0.22|-0.35|-0.57",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93,
+      "entry": 4157.418530349093,
+      "sl": 4166.51366108335,
+      "tp1": 4148.3233996148365,
+      "tp2": 4142.702608821066,
+      "tp3": 4133.607478086809,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-13T23:48:22.646Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.35929065992770304,
+        "advMedian": 0.7185813198554061,
+        "advP80": 3.818175718831137,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
