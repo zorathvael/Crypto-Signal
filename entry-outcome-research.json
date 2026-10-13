@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-13T12:23:22.276Z",
+    "generatedAt": "2026-10-13T19:42:02.268Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -710,7 +710,7 @@
     {
       "id": "HYPE_SHORT_1789277468934",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "LINK_SHORT_1789249918753",
@@ -775,7 +775,7 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "RAY_LONG_1789180304858",
