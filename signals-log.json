@@ -30426,6 +30426,76 @@
         "advP80": 1.789127332419775,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "1000RATSUSDT_SHORT_1792085523142",
+      "ts": 1792085523142,
+      "base": "1000RATSUSDT",
+      "instId": "1000RATSUSDT",
+      "action": "SHORT",
+      "fingerprint": "1000RATSUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|5.36|-5.36|-8.68|-14.04",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.015819940637535175,
+      "sl": 0.016668136582095813,
+      "tp1": 0.014971744692974537,
+      "tp2": 0.014447559599236064,
+      "tp3": 0.013599363654675426,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-15T17:47:03.142Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.21207514162724342,
+        "advMedian": 0.42415028325448684,
+        "advP80": 2.41128852770343,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "AXTIUSDT_SHORT_1792085523142",
+      "ts": 1792085523142,
+      "base": "AXTIUSDT",
+      "instId": "AXTIUSDT",
+      "action": "SHORT",
+      "fingerprint": "AXTIUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.84|-3.84|-6.22|-10.06",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 95.3,
+      "entry": 55.83427948577868,
+      "sl": 57.980548525521044,
+      "tp1": 53.688010446036316,
+      "tp2": 52.36161617947553,
+      "tp3": 50.21534713973317,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-15T17:47:03.142Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.32481875744315825,
+        "advMedian": 0.6496375148863165,
+        "advP80": 3.0637633108914173,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -34624,7 +34694,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-15T12:19:53.573Z",
+      "generatedAt": "2026-10-15T17:31:04.172Z",
       "overall": {
         "samples": 120,
         "wins": 49,
