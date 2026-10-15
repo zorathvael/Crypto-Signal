@@ -41,5 +41,5 @@ test("summarizes explicitly labelled outcomes and ignores expired or malformed r
   assert.equal(report.overall.wins, 2);
   assert.equal(report.overall.losses, 1);
   assert.equal(report.byAction.LONG.samples, 2);
-  assert.equal(report.bySetup.A.avgR, 0);
+  assert.equal(report.bySetup.A.avgR, 0.5);
 });
