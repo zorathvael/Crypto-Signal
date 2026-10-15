@@ -22,7 +22,8 @@ function normalizeOutcome(row) {
   const score = Number(row.probability ?? row.score);
   const rawOutcome = String(row.outcome ?? row.result ?? "").toUpperCase();
   const aliases = {
-    WIN: "WIN", TP1: "WIN", TP1_HIT: "WIN", TP2: "WIN", TP2_HIT: "WIN",
+    WIN: "WIN", WIN_TP1: "WIN", WIN_TP2: "WIN", WIN_TP3: "WIN",
+    TP1: "WIN", TP1_HIT: "WIN", TP2: "WIN", TP2_HIT: "WIN",
     TP3: "WIN", TP3_HIT: "WIN", LOSS: "LOSS", LOSS_SL: "LOSS", SL: "LOSS",
     SL_HIT: "LOSS", BREAKEVEN: "BREAKEVEN", BE: "BREAKEVEN"
   };
