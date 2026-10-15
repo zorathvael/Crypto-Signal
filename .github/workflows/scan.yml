@@ -42,6 +42,7 @@ jobs:
           node --check delivery.js
           node --check trade_plan.js
           node --check self_optimization.js
+          node --check edge_optimizer.js
           npm test
 
       - name: Cache Qwen3 model
