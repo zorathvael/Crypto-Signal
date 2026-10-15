@@ -4,6 +4,7 @@ const {runLiveScanner}=require("./scanner_engine");
 const {scanUniverse}=require("./qwen_ai");
 const {sendDiscord,sendTelegram,sendBinanceSquare,sendWatchDiscord}=require("./delivery");
 const {proposeCalibration}=require("./self_optimization");
+const {adjustScoreWithEdge}=require("./edge_optimizer");
 const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_MS=15*60*1000,SIGNAL_VALID_SCORE=90;
 function loadOutcomeLog(){try{if(!fs.existsSync(OUTCOME_FILE))return{open:[],closed:[],stats:{}};const r=JSON.parse(fs.readFileSync(OUTCOME_FILE,"utf8"));return{open:Array.isArray(r.open)?r.open:[],closed:Array.isArray(r.closed)?r.closed:[],stats:r.stats&&typeof r.stats==="object"?r.stats:{}};}catch{return{open:[],closed:[],stats:{}};}}
 function saveOutcomeLog(log){try{fs.writeFileSync(OUTCOME_FILE,JSON.stringify(log,null,2));}catch(e){console.warn("Outcome log save failed:",e.message);}}
@@ -53,10 +54,11 @@ async function main(){
     const technicalScore=Math.max(0,Math.min(100,Number(s.calibratedScore)||Math.abs(Number(s.strength)||0)));
     const aiScore=Number(s.ai?.score)||0;
     const aiGate=s.ai?.verdict==="VALID" || s.ai?.verdict==="UNAVAILABLE";
-    const finalScore=technicalScore;
-    return {...s,technicalScore,aiScore,aiGate,probability:finalScore,score:finalScore};
+    const edge=adjustScoreWithEdge(technicalScore,{action:s.action,setup:s.setup},log.stats);
+    const finalScore=edge.score;
+    return {...s,technicalScore,edgeAdjustment:edge.adjustment,edgeEvidence:edge.evidence,aiScore,aiGate,probability:finalScore,score:finalScore};
   });
-  for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · ${s.ai.reasons.join(" | ")}`);
+  for(const s of signals)console.log(`Qwen ${s.base}: ${s.ai.verdict} ${s.ai.score}/100 · edge ${s.edgeAdjustment>=0?"+":""}${s.edgeAdjustment} · ${s.ai.reasons.join(" | ")}`);
   if(ai.available){
     // Deterministic score is the hard posting floor. Qwen validates scored symbols;
     // an unavailable Qwen batch must not discard an otherwise eligible deterministic signal.
