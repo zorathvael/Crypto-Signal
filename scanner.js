@@ -4,7 +4,7 @@ const {runLiveScanner}=require("./scanner_engine");
 const {scanUniverse}=require("./qwen_ai");
 const {sendDiscord,sendTelegram,sendBinanceSquare,sendWatchDiscord}=require("./delivery");
 const {proposeCalibration}=require("./self_optimization");
-const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_SCORE=90;
+const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_MS=15*60*1000,SIGNAL_VALID_SCORE=90;
 function loadOutcomeLog(){try{if(!fs.existsSync(OUTCOME_FILE))return{open:[],closed:[],stats:{}};const r=JSON.parse(fs.readFileSync(OUTCOME_FILE,"utf8"));return{open:Array.isArray(r.open)?r.open:[],closed:Array.isArray(r.closed)?r.closed:[],stats:r.stats&&typeof r.stats==="object"?r.stats:{}};}catch{return{open:[],closed:[],stats:{}};}}
 function saveOutcomeLog(log){try{fs.writeFileSync(OUTCOME_FILE,JSON.stringify(log,null,2));}catch(e){console.warn("Outcome log save failed:",e.message);}}
 function signalFingerprint(s){const entry=Number(s?.entry),rel=v=>{const n=Number(v);return Number.isFinite(n)&&Number.isFinite(entry)&&entry!==0?((n-entry)/entry*100).toFixed(2):"na";};return[String(s?.base||s?.symbol||"").toUpperCase(),String(s?.action||s?.direction||"").toUpperCase(),String(s?.setup||"").toUpperCase(),rel(s?.sl),rel(s?.tp1),rel(s?.tp2),rel(s?.tp3)].join("|");}
