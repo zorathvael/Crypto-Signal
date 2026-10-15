@@ -20,9 +20,15 @@ function finite(n) { return typeof n === "number" && Number.isFinite(n); }
 function normalizeOutcome(row) {
   if (!row || typeof row !== "object") return null;
   const score = Number(row.probability ?? row.score);
-  const outcome = String(row.outcome ?? row.result ?? "").toUpperCase();
+  const rawOutcome = String(row.outcome ?? row.result ?? "").toUpperCase();
+  const aliases = {
+    WIN: "WIN", TP1: "WIN", TP1_HIT: "WIN", TP2: "WIN", TP2_HIT: "WIN",
+    TP3: "WIN", TP3_HIT: "WIN", LOSS: "LOSS", LOSS_SL: "LOSS", SL: "LOSS",
+    SL_HIT: "LOSS", BREAKEVEN: "BREAKEVEN", BE: "BREAKEVEN"
+  };
+  const outcome = aliases[rawOutcome];
   if (!finite(score) || score < 0 || score > 100) return null;
-  if (!["WIN", "LOSS", "BREAKEVEN"].includes(outcome)) return null;
+  if (!outcome) return null;
   return { score, outcome, pnlR: finite(Number(row.pnlR)) ? Number(row.pnlR) : null };
 }
 
