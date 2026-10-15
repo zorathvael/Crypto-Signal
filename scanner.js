@@ -31,8 +31,13 @@ async function main(){
     const stamp=x=>{const n=Number(x?.closedAt);if(Number.isFinite(n)&&n>0)return n;const d=Date.parse(x?.closedAt||"");return Number.isFinite(d)?d:Number(x?.ts)||0;};
     return stamp(a)-stamp(b);
   });
-  const calibration=proposeCalibration(closedForLearning,{minPublicationScore:SIGNAL_VALID_SCORE});
-  const minPostScore=calibration.accepted?Math.max(SIGNAL_VALID_SCORE,calibration.proposedThreshold):SIGNAL_VALID_SCORE;
+  const currentLearnedThreshold=Number(log.stats?.selfOptimizationThreshold)||SIGNAL_VALID_SCORE;
+  const calibration=proposeCalibration(closedForLearning,{minPublicationScore:currentLearnedThreshold});
+  const minPostScore=calibration.accepted
+    ?Math.max(SIGNAL_VALID_SCORE,calibration.proposedThreshold)
+    :Math.max(SIGNAL_VALID_SCORE,calibration.previousThreshold);
+  log.stats.selfOptimizationThreshold=minPostScore;
+  if(calibration.accepted)log.stats.selfOptimizationUpdatedAt=new Date().toISOString();
   console.log("SELF-OPTIMIZATION:",JSON.stringify({
     accepted:calibration.accepted,reason:calibration.reason,
     closedSamples:calibration.report.samples,
