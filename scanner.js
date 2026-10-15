@@ -4,7 +4,7 @@ const {runLiveScanner}=require("./scanner_engine");
 const {scanUniverse}=require("./qwen_ai");
 const {sendDiscord,sendTelegram,sendBinanceSquare,sendWatchDiscord}=require("./delivery");
 const {proposeCalibration}=require("./self_optimization");
-const {adjustScoreWithEdge}=require("./edge_optimizer");
+const {adjustScoreWithEdge,summarizePersonalEdge}=require("./edge_optimizer");
 const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_MS=15*60*1000,SIGNAL_VALID_SCORE=90;
 function loadOutcomeLog(){try{if(!fs.existsSync(OUTCOME_FILE))return{open:[],closed:[],stats:{}};const r=JSON.parse(fs.readFileSync(OUTCOME_FILE,"utf8"));return{open:Array.isArray(r.open)?r.open:[],closed:Array.isArray(r.closed)?r.closed:[],stats:r.stats&&typeof r.stats==="object"?r.stats:{}};}catch{return{open:[],closed:[],stats:{}};}}
 function saveOutcomeLog(log){try{fs.writeFileSync(OUTCOME_FILE,JSON.stringify(log,null,2));}catch(e){console.warn("Outcome log save failed:",e.message);}}
@@ -32,6 +32,10 @@ async function main(){
     const stamp=x=>{const n=Number(x?.closedAt);if(Number.isFinite(n)&&n>0)return n;const d=Date.parse(x?.closedAt||"");return Number.isFinite(d)?d:Number(x?.ts)||0;};
     return stamp(a)-stamp(b);
   });
+  const personalEdge=summarizePersonalEdge(log.closed||[]);
+  const personalEdgeStats={byAction:personalEdge.byAction,bySetup:personalEdge.bySetup};
+  log.stats.personalEdge={generatedAt:new Date().toISOString(),overall:personalEdge.overall,byAction:personalEdge.byAction,bySetup:personalEdge.bySetup};
+  console.log("PERSONAL EDGE:",JSON.stringify({samples:personalEdge.overall.samples,byAction:personalEdge.byAction,bySetup:personalEdge.bySetup}));
   const currentLearnedThreshold=Number(log.stats?.selfOptimizationThreshold)||SIGNAL_VALID_SCORE;
   const calibration=proposeCalibration(closedForLearning,{minPublicationScore:currentLearnedThreshold});
   const minPostScore=calibration.accepted
@@ -54,7 +58,7 @@ async function main(){
     const technicalScore=Math.max(0,Math.min(100,Number(s.calibratedScore)||Math.abs(Number(s.strength)||0)));
     const aiScore=Number(s.ai?.score)||0;
     const aiGate=s.ai?.verdict==="VALID" || s.ai?.verdict==="UNAVAILABLE";
-    const edge=adjustScoreWithEdge(technicalScore,{action:s.action,setup:s.setup},log.stats);
+    const edge=adjustScoreWithEdge(technicalScore,{action:s.action,setup:s.setup},personalEdgeStats);
     const finalScore=edge.score;
     return {...s,technicalScore,edgeAdjustment:edge.adjustment,edgeEvidence:edge.evidence,aiScore,aiGate,probability:finalScore,score:finalScore};
   });
