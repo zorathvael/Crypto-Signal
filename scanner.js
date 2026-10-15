@@ -3,7 +3,8 @@ const fs=require("fs"),path=require("path");
 const {runLiveScanner}=require("./scanner_engine");
 const {scanUniverse}=require("./qwen_ai");
 const {sendDiscord,sendTelegram,sendBinanceSquare,sendWatchDiscord}=require("./delivery");
-const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_MS=15*60*1000,MIN_POST_SCORE=90;
+const {proposeCalibration}=require("./self_optimization");
+const OUTCOME_FILE=path.join(__dirname,"signals-log.json"),DEDUP_WINDOW_MS=90*60*1000,SIGNAL_VALID_SCORE=90;
 function loadOutcomeLog(){try{if(!fs.existsSync(OUTCOME_FILE))return{open:[],closed:[],stats:{}};const r=JSON.parse(fs.readFileSync(OUTCOME_FILE,"utf8"));return{open:Array.isArray(r.open)?r.open:[],closed:Array.isArray(r.closed)?r.closed:[],stats:r.stats&&typeof r.stats==="object"?r.stats:{}};}catch{return{open:[],closed:[],stats:{}};}}
 function saveOutcomeLog(log){try{fs.writeFileSync(OUTCOME_FILE,JSON.stringify(log,null,2));}catch(e){console.warn("Outcome log save failed:",e.message);}}
 function signalFingerprint(s){const entry=Number(s?.entry),rel=v=>{const n=Number(v);return Number.isFinite(n)&&Number.isFinite(entry)&&entry!==0?((n-entry)/entry*100).toFixed(2):"na";};return[String(s?.base||s?.symbol||"").toUpperCase(),String(s?.action||s?.direction||"").toUpperCase(),String(s?.setup||"").toUpperCase(),rel(s?.sl),rel(s?.tp1),rel(s?.tp2),rel(s?.tp3)].join("|");}
@@ -26,6 +27,19 @@ async function main(){
   console.log("=== Crypto-Signal v5.4 | LIVE BITGET + QWEN3 ===");
   console.log(new Date().toISOString());
   const log=loadOutcomeLog();
+  const closedForLearning=[...(log.closed||[])].sort((a,b)=>{
+    const stamp=x=>{const n=Number(x?.closedAt);if(Number.isFinite(n)&&n>0)return n;const d=Date.parse(x?.closedAt||"");return Number.isFinite(d)?d:Number(x?.ts)||0;};
+    return stamp(a)-stamp(b);
+  });
+  const calibration=proposeCalibration(closedForLearning,{minPublicationScore:SIGNAL_VALID_SCORE});
+  const minPostScore=calibration.accepted?Math.max(SIGNAL_VALID_SCORE,calibration.proposedThreshold):SIGNAL_VALID_SCORE;
+  console.log("SELF-OPTIMIZATION:",JSON.stringify({
+    accepted:calibration.accepted,reason:calibration.reason,
+    closedSamples:calibration.report.samples,
+    previousThreshold:calibration.previousThreshold,
+    activeThreshold:minPostScore,
+    proposedThreshold:calibration.proposedThreshold
+  }));
   let signals=await runLiveScanner();
   signals=signals.map(s=>({...s,base:s.symbol,instId:s.symbol,action:s.direction,probability:Number(s.calibratedScore)||Math.abs(Number(s.strength)||0),rr:1,riskR:1,marginUsdt:5,leverage:20,geometry:"LIVE_BITGET_CALIBRATED_120C",riskMarginPercent:(Math.abs(s.entry-s.sl)/s.entry)*20*100,m5:{rsi:s.rsi,volume:{side:s.relativeVolume>1.3?"BUY":s.relativeVolume<.7?"SELL":"BALANCED",spike:s.relativeVolume>1.3}}}));
   // Qwen is the active scanner: it scores the entire quantitative universe, not only preselected candidates.
@@ -41,12 +55,12 @@ async function main(){
   if(ai.available){
     // Deterministic score is the hard posting floor. Qwen validates scored symbols;
     // an unavailable Qwen batch must not discard an otherwise eligible deterministic signal.
-    signals=signals.filter(s=>s.probability>=MIN_POST_SCORE && (s.ai?.verdict==="VALID" || s.ai?.verdict==="UNAVAILABLE"));
+    signals=signals.filter(s=>s.probability>=minPostScore && (s.ai?.verdict==="VALID" || s.ai?.verdict==="UNAVAILABLE"));
   }else{
-    signals=signals.filter(s=>s.probability>=MIN_POST_SCORE);
+    signals=signals.filter(s=>s.probability>=minPostScore);
     console.warn("Qwen unavailable: deterministic fallback keeps all calibrated candidates with score >= 90; delivery/dedupe controls distribution");
   }
-  console.log(`POST ELIGIBLE (score >= ${MIN_POST_SCORE}):`,signals.length);
+  console.log(`POST ELIGIBLE (score >= ${minPostScore}):`,signals.length);
   signals=filterNewSignals(signals,log);
   console.log("NEW VALID:",signals.length);
   for(const s of signals)console.log(`  ${s.base} [${s.source||"UNKNOWN"}] ${s.action} score=${s.probability} raw=${s.strength} confidence=${s.confidence}% fill=${Number(s.fillP||0).toFixed(1)}% reach=${Number(s.reachP||0).toFixed(1)}% entry=${s.entry} SL=${s.sl} TP1=${s.tp1} TP2=${s.tp2} TP3=${s.tp3}`);
