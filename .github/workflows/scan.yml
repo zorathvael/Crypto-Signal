@@ -115,6 +115,10 @@ jobs:
           const remote = fs.existsSync("signals-log.json")
             ? JSON.parse(fs.readFileSync("signals-log.json", "utf8"))
             : {};
+          remote.stats = {
+            ...(remote.stats && typeof remote.stats === "object" ? remote.stats : {}),
+            ...(local.stats && typeof local.stats === "object" ? local.stats : {})
+          };
           for (const key of ["open", "closed"]) {
             const merged = new Map();
             for (const item of Array.isArray(remote[key]) ? remote[key] : []) {
