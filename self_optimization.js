@@ -95,10 +95,12 @@ function proposeCalibration(closedRows, current = {}, options = {}) {
   if (!scored.length) return unchanged("NO_CANDIDATE_HAS_ENOUGH_SAMPLES");
 
   // Do not optimize on win rate alone if realized R-multiples are unavailable.
-  const rank = x => x.validation.avgR === null ? x.validation.winRate : x.validation.avgR;
-  scored.sort((a,b) => rank(b) - rank(a));
+  // Select the candidate using the training period only; the later holdout is
+  // used solely to decide whether the selected candidate beats the baseline.
+  const rank = x => x.avgR === null ? x.winRate : x.avgR;
+  scored.sort((a,b) => rank(b.train) - rank(a.train));
   const best = scored[0];
-  const improvement = rank(best) - rank({ validation: baseline });
+  const improvement = rank(best.validation) - rank(baseline);
   if (best.threshold === currentThreshold) return unchanged("CURRENT_THRESHOLD_BEST");
   if (!(improvement > 0)) return unchanged("NO_VALIDATION_IMPROVEMENT");
   return {
