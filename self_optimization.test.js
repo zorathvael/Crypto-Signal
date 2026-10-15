@@ -7,6 +7,9 @@ test("rejects unlabelled or invalid outcomes", () => {
   assert.equal(normalizeOutcome({ probability: 95 }), null);
   assert.equal(normalizeOutcome({ probability: 120, outcome: "WIN" }), null);
   assert.equal(normalizeOutcome({ probability: 95, outcome: "MAYBE" }), null);
+  assert.equal(normalizeOutcome({ probability: 95, outcome: "WIN_TP1" }).outcome, "WIN");
+  assert.equal(normalizeOutcome({ probability: 95, outcome: "LOSS_SL" }).outcome, "LOSS");
+  assert.equal(normalizeOutcome({ probability: 95, outcome: "EXPIRED" }), null);
 });
 
 test("summarizes only explicit closed outcomes", () => {
