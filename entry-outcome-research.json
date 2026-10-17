@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-17T02:14:54.558Z",
+    "generatedAt": "2026-10-17T07:22:02.129Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 22,
+    "errors": 23,
     "entryNotFound": 7
   },
   "results": [
@@ -539,18 +539,8 @@
     },
     {
       "id": "MSTR_SHORT_1789516300813",
-      "base": "MSTR",
-      "action": "SHORT",
-      "entry": 128.5,
-      "sl": 129.39125225401233,
-      "tp1": 127.38061774692514,
-      "entryCandleAt": 1789516320000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.249,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "SPCX_SHORT_1789516300813",
@@ -720,7 +710,7 @@
     {
       "id": "TRUMP_SHORT_1789268597877",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ALLO_SHORT_1789264585844",
