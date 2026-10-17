@@ -1,16 +1,16 @@
 {
   "summary": {
-    "generatedAt": "2026-10-17T17:40:58.328Z",
+    "generatedAt": "2026-10-17T19:54:33.840Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
-    "measuredSLBeforeTP1": 4,
-    "slBeforeTp1Pct": 5.63,
-    "priorRiseBeforeSL": 4,
+    "measuredSLBeforeTP1": 5,
+    "slBeforeTp1Pct": 7.04,
+    "priorRiseBeforeSL": 5,
     "priorRiseBeforeSLPct": 100,
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -464,8 +464,18 @@
     },
     {
       "id": "XAU_LONG_1789560927540",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "XAU",
+      "action": "LONG",
+      "entry": 4348.040281006073,
+      "sl": 4340.67042383881,
+      "tp1": 4353.386999999999,
+      "entryCandleAt": 1789560960000,
+      "slCandleAt": 1789561800000,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.0667,
+      "slBeforeTp1": true,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "ADA_SHORT_1789526125328",
@@ -745,7 +755,7 @@
     {
       "id": "CP_LONG_1789200724466",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "ARB_SHORT_1789185844930",
