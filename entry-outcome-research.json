@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-18T19:08:09.115Z",
+    "generatedAt": "2026-10-18T22:06:35.031Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -780,7 +780,7 @@
     {
       "id": "RAY_LONG_1789180304858",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     }
   ]
 }

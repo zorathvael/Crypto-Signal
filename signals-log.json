@@ -39484,6 +39484,41 @@
         "advP80": 1.9061012374176634,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ENSOUSDT_SHORT_1792361177403",
+      "ts": 1792361177403,
+      "base": "ENSOUSDT",
+      "instId": "ENSOUSDT",
+      "action": "SHORT",
+      "fingerprint": "ENSOUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.20|-3.20|-5.18|-8.38",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 95.3,
+      "entry": 0.6649343930799625,
+      "sl": 0.6862081833369413,
+      "tp1": 0.6436606028229837,
+      "tp2": 0.6305134004441707,
+      "tp3": 0.6092396101871919,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-18T22:21:17.403Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.17245568916527748,
+        "advMedian": 0.34491137833055496,
+        "advP80": 1.4623101320758871,
+        "slMinK": 1.4898544429106095
+      }
     }
   ],
   "closed": [
@@ -43682,7 +43717,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-18T19:06:39.258Z",
+      "generatedAt": "2026-10-18T22:05:03.784Z",
       "overall": {
         "samples": 120,
         "wins": 49,
