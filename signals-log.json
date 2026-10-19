@@ -39589,6 +39589,43 @@
         "advP80": 3.196469948980115,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "EPICUSDT_LONG_1792387914072",
+      "ts": 1792387914072,
+      "base": "EPICUSDT",
+      "instId": "EPICUSDT",
+      "action": "LONG",
+      "fingerprint": "EPICUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-5.79|5.79|9.36|15.15",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 95.1,
+      "entry": 0.28049496286793546,
+      "sl": 0.26426232698909674,
+      "tp1": 0.2967275987467742,
+      "tp2": 0.30675936771989654,
+      "tp3": 0.32299200359873526,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-19T05:46:54.072Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6914229867427822,
+        "advMedian": 1.3828459734855645,
+        "advP80": 3.7497086887518827,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -43787,7 +43824,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-19T00:37:50.973Z",
+      "generatedAt": "2026-10-19T05:30:54.090Z",
       "overall": {
         "samples": 120,
         "wins": 49,
