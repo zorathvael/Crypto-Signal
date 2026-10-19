@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-18T22:06:35.031Z",
+    "generatedAt": "2026-10-19T00:39:14.273Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,8 +10,8 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 22,
-    "entryNotFound": 7
+    "errors": 23,
+    "entryNotFound": 6
   },
   "results": [
     {
@@ -197,7 +197,8 @@
     },
     {
       "id": "PUMP_LONG_1790554234040",
-      "status": "ENTRY_NOT_FOUND"
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "SOON_LONG_1790554234040",
