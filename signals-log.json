@@ -41691,6 +41691,111 @@
         "advP80": 2.0787133274050005,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ARKMUSDT_LONG_1792499173025",
+      "ts": 1792499173025,
+      "base": "ARKMUSDT",
+      "instId": "ARKMUSDT",
+      "action": "LONG",
+      "fingerprint": "ARKMUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.13|1.13|1.83|2.95",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 0.11922068233141671,
+      "sl": 0.117875949452814,
+      "tp1": 0.12056541521001941,
+      "tp2": 0.12139646012899588,
+      "tp3": 0.12274119300759859,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-20T12:41:13.025Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5641531855418391,
+        "advMedian": 1.1283063710836783,
+        "advP80": 3.0952266943307922,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "DEXEUSDT_LONG_1792499173025",
+      "ts": 1792499173025,
+      "base": "DEXEUSDT",
+      "instId": "DEXEUSDT",
+      "action": "LONG",
+      "fingerprint": "DEXEUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.72|0.72|1.17|1.89",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 1.7582973370990467,
+      "sl": 1.7456203227248512,
+      "tp1": 1.7709743514732421,
+      "tp2": 1.778808746356495,
+      "tp3": 1.7914857607306904,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-20T12:41:13.025Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.43811533121988644,
+        "advMedian": 0.8762306624397729,
+        "advP80": 1.8549845792808866,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SKYUSDT_LONG_1792499173025",
+      "ts": 1792499173025,
+      "base": "SKYUSDT",
+      "instId": "SKYUSDT",
+      "action": "LONG",
+      "fingerprint": "SKYUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.94|0.94|1.52|2.46",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 0.07203200433982465,
+      "sl": 0.07135551504924056,
+      "tp1": 0.07270849363040874,
+      "tp2": 0.0731265640119897,
+      "tp3": 0.07380305330257379,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-20T12:41:13.025Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4140400002150418,
+        "advMedian": 0.8280800004300836,
+        "advP80": 3.132156014516119,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -45889,7 +45994,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-20T06:53:20.197Z",
+      "generatedAt": "2026-10-20T12:25:16.147Z",
       "overall": {
         "samples": 120,
         "wins": 49,
