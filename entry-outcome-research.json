@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-21T19:49:02.961Z",
+    "generatedAt": "2026-10-21T22:56:11.362Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 22,
+    "errors": 23,
     "entryNotFound": 7
   },
   "results": [
@@ -479,18 +479,8 @@
     },
     {
       "id": "ADA_SHORT_1789526125328",
-      "base": "ADA",
-      "action": "SHORT",
-      "entry": 0.1945,
-      "sl": 0.19587159352800768,
-      "tp1": 0.19278254379013982,
-      "entryCandleAt": 1789526580000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.4627,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "DOGE_SHORT_1789526125328",
@@ -770,7 +760,7 @@
     {
       "id": "SKHY_LONG_1789193213150",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "PONS_SHORT_1789185844930",
