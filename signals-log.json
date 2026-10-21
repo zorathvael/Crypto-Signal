@@ -42186,6 +42186,265 @@
         "advP80": 3.75548219866417,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "CSOPSK2LHKDUSDT_LONG_1792541793863",
+      "ts": 1792541793863,
+      "base": "CSOPSK2LHKDUSDT",
+      "instId": "CSOPSK2LHKDUSDT",
+      "action": "LONG",
+      "fingerprint": "CSOPSK2LHKDUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-3.22|3.22|5.21|8.43",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.1,
+      "entry": 19.43712051124716,
+      "sl": 18.810975737458232,
+      "tp1": 20.063265285036085,
+      "tp2": 20.45022275523764,
+      "tp3": 21.076367529026566,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.45637844388046933,
+        "advMedian": 0.9127568877609387,
+        "advP80": 3.194995640818294,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "DRAMUSDT_LONG_1792541793863",
+      "ts": 1792541793863,
+      "base": "DRAMUSDT",
+      "instId": "DRAMUSDT",
+      "action": "LONG",
+      "fingerprint": "DRAMUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.67|1.67|2.71|4.38",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 49.24503748437949,
+      "sl": 48.42093793120162,
+      "tp1": 50.069137037557354,
+      "tp2": 50.57843056142128,
+      "tp3": 51.402530114599145,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5944973873020498,
+        "advMedian": 1.1889947746040996,
+        "advP80": 3.660771054144787,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "EIGENUSDT_SHORT_1792541793863",
+      "ts": 1792541793863,
+      "base": "EIGENUSDT",
+      "instId": "EIGENUSDT",
+      "action": "SHORT",
+      "fingerprint": "EIGENUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.51|-2.51|-4.07|-6.58",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 95.3,
+      "entry": 0.2371522951926384,
+      "sl": 0.2431148272652329,
+      "tp1": 0.23118976312004388,
+      "tp2": 0.2275049182991805,
+      "tp3": 0.22154238622658598,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4156695106679977,
+        "advMedian": 0.8313390213359954,
+        "advP80": 2.9683674382095755,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "EWTUSDT_LONG_1792541793863",
+      "ts": 1792541793863,
+      "base": "EWTUSDT",
+      "instId": "EWTUSDT",
+      "action": "LONG",
+      "fingerprint": "EWTUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.92|0.92|1.48|2.40",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.1,
+      "entry": 108.81932678732728,
+      "sl": 107.82315398684014,
+      "tp1": 109.81549958781443,
+      "tp2": 110.43113437851548,
+      "tp3": 111.42730717900263,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4831957117380262,
+        "advMedian": 0.9663914234760524,
+        "advP80": 3.6074348730529526,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "KAIAUSDT_SHORT_1792541793863",
+      "ts": 1792541793863,
+      "base": "KAIAUSDT",
+      "instId": "KAIAUSDT",
+      "action": "SHORT",
+      "fingerprint": "KAIAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.62|-1.62|-2.62|-4.24",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.3,
+      "entry": 0.04167863984692545,
+      "sl": 0.04235421164043332,
+      "tp1": 0.04100306805341758,
+      "tp2": 0.04058556468502972,
+      "tp3": 0.03990999289152185,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4632516830863393,
+        "advMedian": 0.9265033661726786,
+        "advP80": 2.776770075022895,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "MUBARAKUSDT_SHORT_1792541793863",
+      "ts": 1792541793863,
+      "base": "MUBARAKUSDT",
+      "instId": "MUBARAKUSDT",
+      "action": "SHORT",
+      "fingerprint": "MUBARAKUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.77|-1.77|-2.86|-4.63",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 0.05355973179235725,
+      "sl": 0.054506868145271364,
+      "tp1": 0.05261259543944313,
+      "tp2": 0.05202726517334221,
+      "tp3": 0.051080128820428096,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.33215670327501023,
+        "advMedian": 0.6643134065500205,
+        "advP80": 1.8244722224531937,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "RAMUSDT_LONG_1792541793863",
+      "ts": 1792541793863,
+      "base": "RAMUSDT",
+      "instId": "RAMUSDT",
+      "action": "LONG",
+      "fingerprint": "RAMUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-3.37|3.37|5.46|8.83",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.1,
+      "entry": 8.863485079630701,
+      "sl": 8.564566215197047,
+      "tp1": 9.162403944064355,
+      "tp2": 9.347135802284352,
+      "tp3": 9.646054666718006,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-21T00:31:33.863Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5788521947800985,
+        "advMedian": 1.157704389560197,
+        "advP80": 3.6887468464087454,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -46384,7 +46643,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-20T21:01:40.252Z",
+      "generatedAt": "2026-10-21T00:15:29.088Z",
       "overall": {
         "samples": 120,
         "wins": 49,
