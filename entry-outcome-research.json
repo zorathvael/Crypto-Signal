@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-22T12:45:12.285Z",
+    "generatedAt": "2026-10-22T17:47:06.386Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -374,8 +374,18 @@
     },
     {
       "id": "INJ_LONG_1789872491630",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "INJ",
+      "action": "LONG",
+      "entry": 7.772,
+      "sl": 7.634359919309202,
+      "tp1": 8.000200000000001,
+      "entryCandleAt": 1789872540000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.7205,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "LSK_SHORT_1789862164324",
@@ -685,7 +695,7 @@
     {
       "id": "XRP_SHORT_1789308077899",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "ADA_SHORT_1789304391147",
@@ -715,7 +725,7 @@
     {
       "id": "ALLO_SHORT_1789264585844",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ADA_SHORT_1789256402185",
@@ -735,7 +745,7 @@
     {
       "id": "ETH_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "BNB_LONG_1789218326337",
