@@ -46528,6 +46528,76 @@
         "advP80": 2.1639387195602815,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "BTWUSDT_SHORT_1792742961758",
+      "ts": 1792742961758,
+      "base": "BTWUSDT",
+      "instId": "BTWUSDT",
+      "action": "SHORT",
+      "fingerprint": "BTWUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|20.88|-20.88|-33.78|-54.66",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 1.5851357290631725,
+      "sl": 1.9160967195723677,
+      "tp1": 1.2541747385539772,
+      "tp2": 1.0496408464192946,
+      "tp3": 0.7186798559100993,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-23T08:24:21.758Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3933740285404646,
+        "advMedian": 0.7867480570809292,
+        "advP80": 2.429665265031391,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "NETUSDT_LONG_1792742961758",
+      "ts": 1792742961758,
+      "base": "NETUSDT",
+      "instId": "NETUSDT",
+      "action": "LONG",
+      "fingerprint": "NETUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.37|1.37|2.22|3.59",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.1,
+      "entry": 308.75501402928097,
+      "sl": 304.52306276500417,
+      "tp1": 312.9869652935578,
+      "tp2": 315.6023111748808,
+      "tp3": 319.8342624391576,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-23T08:24:21.758Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3662546765417256,
+        "advMedian": 0.7325093530834512,
+        "advP80": 2.4127614617713324,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -50726,7 +50796,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-23T02:38:02.502Z",
+      "generatedAt": "2026-10-23T08:08:25.492Z",
       "overall": {
         "samples": 120,
         "wins": 49,
