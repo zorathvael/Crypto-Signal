@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-23T08:09:34.608Z",
+    "generatedAt": "2026-10-23T13:59:07.065Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -524,8 +524,18 @@
     },
     {
       "id": "CRCL_SHORT_1789516300813",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "CRCL",
+      "action": "SHORT",
+      "entry": 84.77,
+      "sl": 85.4422303735346,
+      "tp1": 83.90527206243873,
+      "entryCandleAt": 1789516320000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.7196,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "MSTR_SHORT_1789516300813",
@@ -705,7 +715,7 @@
     {
       "id": "LINK_SHORT_1789249918753",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "TRUMP_SHORT_1789268597877",
