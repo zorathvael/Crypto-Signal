@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-10-23T21:49:43.934Z",
+    "generatedAt": "2026-10-24T00:11:28.858Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -770,7 +770,7 @@
     {
       "id": "SKHY_LONG_1789193213150",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "PONS_SHORT_1789185844930",
