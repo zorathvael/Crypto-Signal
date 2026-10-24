@@ -50643,6 +50643,41 @@
         "advP80": 1.4676380635984487,
         "slMinK": 1.4598505370216366
       }
+    },
+    {
+      "id": "GWEIUSDT_SHORT_1792872033032",
+      "ts": 1792872033032,
+      "base": "GWEIUSDT",
+      "instId": "GWEIUSDT",
+      "action": "SHORT",
+      "fingerprint": "GWEIUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.38|-1.38|-2.23|-3.62",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 0.02104419115763162,
+      "sl": 0.02133486939839112,
+      "tp1": 0.020753512916872118,
+      "tp2": 0.020573873764082744,
+      "tp3": 0.020283195523323243,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-24T20:15:33.032Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3828519677174748,
+        "advMedian": 0.7657039354349496,
+        "advP80": 2.2129883237101278,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -54841,7 +54876,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-24T17:44:33.586Z",
+      "generatedAt": "2026-10-24T19:59:52.760Z",
       "overall": {
         "samples": 120,
         "wins": 49,
