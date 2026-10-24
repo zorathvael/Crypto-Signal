@@ -1,16 +1,16 @@
 {
   "summary": {
-    "generatedAt": "2026-10-24T20:00:45.067Z",
+    "generatedAt": "2026-10-24T22:19:21.474Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
-    "measuredSLBeforeTP1": 4,
-    "slBeforeTp1Pct": 5.63,
-    "priorRiseBeforeSL": 4,
+    "measuredSLBeforeTP1": 5,
+    "slBeforeTp1Pct": 7.04,
+    "priorRiseBeforeSL": 5,
     "priorRiseBeforeSLPct": 100,
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -91,8 +91,18 @@
     },
     {
       "id": "NEAR_SHORT_1790591753466",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "NEAR",
+      "action": "SHORT",
+      "entry": 5.0199,
+      "sl": 5.044999499999999,
+      "tp1": 4.9446015,
+      "entryCandleAt": 1790591760000,
+      "slCandleAt": 1790592000000,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.1793,
+      "slBeforeTp1": true,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "ONDO_SHORT_1790591753466",
@@ -695,7 +705,7 @@
     {
       "id": "ENA_SHORT_1789268597877",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "HYPE_SHORT_1789277468934",
@@ -770,7 +780,7 @@
     {
       "id": "RAY_LONG_1789180304858",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     }
   ]
 }
