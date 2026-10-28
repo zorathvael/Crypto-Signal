@@ -57345,6 +57345,41 @@
         "advP80": 1.356276639286284,
         "slMinK": 1.283862162410262
       }
+    },
+    {
+      "id": "UNHUSDT_SHORT_1793157024955",
+      "ts": 1793157024955,
+      "base": "UNHUSDT",
+      "instId": "UNHUSDT",
+      "action": "SHORT",
+      "fingerprint": "UNHUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.41|-0.41|-0.67|-1.08",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 409.7345806256332,
+      "sl": 411.4214206077779,
+      "tp1": 408.0477406434885,
+      "tp2": 407.0052735345231,
+      "tp3": 405.3184335523784,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-28T03:25:24.955Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.40422977026127455,
+        "advMedian": 0.8084595405225491,
+        "advP80": 3.805499761623072,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -61543,7 +61578,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-27T23:22:47.361Z",
+      "generatedAt": "2026-10-28T03:09:29.709Z",
       "overall": {
         "samples": 120,
         "wins": 49,
