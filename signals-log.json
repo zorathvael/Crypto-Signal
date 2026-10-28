@@ -57380,6 +57380,111 @@
         "advP80": 3.805499761623072,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "BZUSDT_LONG_1793182344693",
+      "ts": 1793182344693,
+      "base": "BZUSDT",
+      "instId": "BZUSDT",
+      "action": "LONG",
+      "fingerprint": "BZUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.58|0.58|0.94|1.52",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 111.00422161316393,
+      "sl": 110.3603091874669,
+      "tp1": 111.64813403886097,
+      "tp2": 112.04607191794175,
+      "tp3": 112.68998434363878,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-28T10:27:24.693Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4560675777241195,
+        "advMedian": 0.912135155448239,
+        "advP80": 3.304328896201657,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ENSUSDT_LONG_1793182344693",
+      "ts": 1793182344693,
+      "base": "ENSUSDT",
+      "instId": "ENSUSDT",
+      "action": "LONG",
+      "fingerprint": "ENSUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.25|1.25|2.03|3.28",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 96.1,
+      "entry": 5.304453140312896,
+      "sl": 5.238023995879437,
+      "tp1": 5.370882284746355,
+      "tp2": 5.411935496006233,
+      "tp3": 5.478364640439692,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-28T10:27:24.693Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.7349227503533209,
+        "advMedian": 1.4698455007066418,
+        "advP80": 3.2841835959511827,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "METISUSDT_SHORT_1793182344693",
+      "ts": 1793182344693,
+      "base": "METISUSDT",
+      "instId": "METISUSDT",
+      "action": "SHORT",
+      "fingerprint": "METISUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.86|-0.86|-1.39|-2.25",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 3.343401769594485,
+      "sl": 3.3721987024583275,
+      "tp1": 3.3146048367306427,
+      "tp2": 3.296808332220788,
+      "tp3": 3.2680113993569457,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-28T10:27:24.693Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3057110016054457,
+        "advMedian": 0.6114220032108914,
+        "advP80": 1.7096205510500513,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -61578,7 +61683,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-28T03:09:29.709Z",
+      "generatedAt": "2026-10-28T10:11:14.558Z",
       "overall": {
         "samples": 120,
         "wins": 49,
