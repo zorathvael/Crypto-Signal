@@ -60151,6 +60151,111 @@
         "advP80": 3.5221620309505433,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "AVAUSDT_SHORT_1793331574742",
+      "ts": 1793331574742,
+      "base": "AVAUSDT",
+      "instId": "AVAUSDT",
+      "action": "SHORT",
+      "fingerprint": "AVAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.59|-3.59|-5.81|-9.41",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 0.2900898194259121,
+      "sl": 0.30051217010172787,
+      "tp1": 0.27966746875009635,
+      "tp2": 0.2732264560324422,
+      "tp3": 0.26280410535662646,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-30T03:54:34.742Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.24751027211261378,
+        "advMedian": 0.49502054422522757,
+        "advP80": 2.560907922373157,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SKYUSDT_SHORT_1793331574742",
+      "ts": 1793331574742,
+      "base": "SKYUSDT",
+      "instId": "SKYUSDT",
+      "action": "SHORT",
+      "fingerprint": "SKYUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.48|-2.48|-4.01|-6.48",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.06416722044859977,
+      "sl": 0.06575644633473927,
+      "tp1": 0.06257799456246026,
+      "tp2": 0.06159585296482604,
+      "tp3": 0.06000662707868653,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-30T03:54:34.742Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.43696802528583795,
+        "advMedian": 0.8739360505716759,
+        "advP80": 2.636937261960367,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "XPDUSDT_SHORT_1793331574742",
+      "ts": 1793331574742,
+      "base": "XPDUSDT",
+      "instId": "XPDUSDT",
+      "action": "SHORT",
+      "fingerprint": "XPDUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.69|-0.69|-1.11|-1.80",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 993.8500298162487,
+      "sl": 1000.6847978414892,
+      "tp1": 987.0152617910082,
+      "tp2": 982.7913751514096,
+      "tp3": 975.9566071261692,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-30T03:54:34.742Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.35993315697220385,
+        "advMedian": 0.7198663139444077,
+        "advP80": 3.0794740333469903,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -64349,7 +64454,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-29T23:49:02.625Z",
+      "generatedAt": "2026-10-30T03:38:29.326Z",
       "overall": {
         "samples": 120,
         "wins": 49,
