@@ -62118,6 +62118,181 @@
         "advP80": 2.353154869027671,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ELSAUSDT_SHORT_1793473033279",
+      "ts": 1793473033279,
+      "base": "ELSAUSDT",
+      "instId": "ELSAUSDT",
+      "action": "SHORT",
+      "fingerprint": "ELSAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.40|-1.40|-2.27|-3.68",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.0671479935093612,
+      "sl": 0.06809127243431473,
+      "tp1": 0.06620471458440766,
+      "tp2": 0.06562176820878637,
+      "tp3": 0.06467848928383284,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-31T19:12:13.279Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3561905284154875,
+        "advMedian": 0.712381056830975,
+        "advP80": 2.39887584278768,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "JCTUSDT_SHORT_1793473033279",
+      "ts": 1793473033279,
+      "base": "JCTUSDT",
+      "instId": "JCTUSDT",
+      "action": "SHORT",
+      "fingerprint": "JCTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|7.47|-7.47|-12.08|-19.55",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.004936112487953839,
+      "sl": 0.005304689034172224,
+      "tp1": 0.0045675359417354545,
+      "tp2": 0.004339755636172493,
+      "tp3": 0.003971179089954108,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-31T19:12:13.279Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5920750469520606,
+        "advMedian": 1.1841500939041212,
+        "advP80": 2.6636095981756402,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "MERLUSDT_LONG_1793473033279",
+      "ts": 1793473033279,
+      "base": "MERLUSDT",
+      "instId": "MERLUSDT",
+      "action": "LONG",
+      "fingerprint": "MERLUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.14|2.14|3.46|5.60",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.1,
+      "entry": 0.030269839492253387,
+      "sl": 0.029621863925878986,
+      "tp1": 0.030917815058627788,
+      "tp2": 0.03131826395864717,
+      "tp3": 0.03196623952502157,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-31T19:12:13.279Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4865010009309091,
+        "advMedian": 0.9730020018618182,
+        "advP80": 2.4758152333416965,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "MUSDT_SHORT_1793473033279",
+      "ts": 1793473033279,
+      "base": "MUSDT",
+      "instId": "MUSDT",
+      "action": "SHORT",
+      "fingerprint": "MUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.00|-2.00|-3.23|-5.23",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.9120157977805996,
+      "sl": 0.9302329136867303,
+      "tp1": 0.8937986818744689,
+      "tp2": 0.88254050424448,
+      "tp3": 0.8643233883383493,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-31T19:12:13.279Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.33109497641002633,
+        "advMedian": 0.6621899528200527,
+        "advP80": 2.883057383541421,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ZORAUSDT_SHORT_1793473033279",
+      "ts": 1793473033279,
+      "base": "ZORAUSDT",
+      "instId": "ZORAUSDT",
+      "action": "SHORT",
+      "fingerprint": "ZORAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.02|-1.02|-1.66|-2.68",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 0.006042731979362184,
+      "sl": 0.006104658746685053,
+      "tp1": 0.005980805212039315,
+      "tp2": 0.005942534469833782,
+      "tp3": 0.0058806077025109135,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-10-31T19:12:13.279Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6372681867699412,
+        "advMedian": 1.2745363735398825,
+        "advP80": 2.353154869027671,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -66316,7 +66491,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-10-31T14:04:04.160Z",
+      "generatedAt": "2026-10-31T18:56:04.437Z",
       "overall": {
         "samples": 120,
         "wins": 49,
