@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-01T20:00:58.948Z",
+    "generatedAt": "2026-11-01T23:25:39.548Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -740,12 +740,12 @@
     {
       "id": "BNB_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ETH_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "BNB_LONG_1789218326337",
@@ -775,7 +775,7 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "RAY_LONG_1789180304858",

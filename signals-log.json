@@ -63886,6 +63886,41 @@
         "advP80": 2.4314042043010615,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "XPDUSDT_LONG_1793575526448",
+      "ts": 1793575526448,
+      "base": "XPDUSDT",
+      "instId": "XPDUSDT",
+      "action": "LONG",
+      "fingerprint": "XPDUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.27|0.27|0.44|0.71",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.1,
+      "entry": 994.3559583093238,
+      "sl": 991.6427870878779,
+      "tp1": 997.0691295307697,
+      "tp2": 998.7458693456233,
+      "tp3": 1001.4590405670692,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-01T23:40:26.448Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5632093431014543,
+        "advMedian": 1.1264186862029086,
+        "advP80": 3.341525724011082,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -68084,7 +68119,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-01T19:59:15.631Z",
+      "generatedAt": "2026-11-01T23:24:33.788Z",
       "overall": {
         "samples": 120,
         "wins": 49,
