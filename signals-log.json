@@ -67497,6 +67497,80 @@
         "advP80": 3.1337785174658364,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "LYNUSDT_LONG_1793894307799",
+      "ts": 1793894307799,
+      "base": "LYNUSDT",
+      "instId": "LYNUSDT",
+      "action": "LONG",
+      "fingerprint": "LYNUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-8.83|8.83|14.29|23.13",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 96.1,
+      "entry": 0.0200032489527419,
+      "sl": 0.01823613862072006,
+      "tp1": 0.02177035928476374,
+      "tp2": 0.022862433469953237,
+      "tp3": 0.024629543801975077,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-05T16:13:27.799Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4547298296654616,
+        "advMedian": 0.9094596593309232,
+        "advP80": 2.1527169285791987,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "PIEVERSEUSDT_LONG_1793894307799",
+      "ts": 1793894307799,
+      "base": "PIEVERSEUSDT",
+      "instId": "PIEVERSEUSDT",
+      "action": "LONG",
+      "fingerprint": "PIEVERSEUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.85|2.85|4.60|7.45",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.1,
+      "entry": 1.2586785930248563,
+      "sl": 1.2228663703218796,
+      "tp1": 1.294490815727833,
+      "tp2": 1.3166227693582726,
+      "tp3": 1.3524349920612493,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-05T16:13:27.799Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 75,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.282364782174634,
+        "advMedian": 0.564729564349268,
+        "advP80": 1.7443609468752233,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -71695,7 +71769,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-05T07:35:06.484Z",
+      "generatedAt": "2026-11-05T15:57:14.697Z",
       "overall": {
         "samples": 120,
         "wins": 49,
