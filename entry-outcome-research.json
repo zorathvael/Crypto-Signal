@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-06T16:31:50.764Z",
+    "generatedAt": "2026-11-06T21:55:44.486Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 22,
+    "errors": 23,
     "entryNotFound": 7
   },
   "results": [
@@ -299,18 +299,8 @@
     },
     {
       "id": "ETH_LONG_1790147038036",
-      "base": "ETH",
-      "action": "LONG",
-      "entry": 2750.5,
-      "sl": 2742.277054287205,
-      "tp1": 2758.8965,
-      "entryCandleAt": 1790147040000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.0909,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "TAO_LONG_1790011940054",
