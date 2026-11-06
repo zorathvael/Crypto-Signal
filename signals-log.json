@@ -67571,6 +67571,76 @@
         "advP80": 1.7443609468752233,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "APRUSDT_SHORT_1793930239030",
+      "ts": 1793930239030,
+      "base": "APRUSDT",
+      "instId": "APRUSDT",
+      "action": "SHORT",
+      "fingerprint": "APRUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.70|-2.70|-4.36|-7.06",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.04211270918907847,
+      "sl": 0.043247790594460336,
+      "tp1": 0.04097762778369661,
+      "tp2": 0.040276147475170616,
+      "tp3": 0.03914106606978875,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-06T02:12:19.030Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.30752312738333837,
+        "advMedian": 0.6150462547666767,
+        "advP80": 2.5789722224449165,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "GALAUSDT_SHORT_1793930239030",
+      "ts": 1793930239030,
+      "base": "GALAUSDT",
+      "instId": "GALAUSDT",
+      "action": "SHORT",
+      "fingerprint": "GALAUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.57|-2.57|-4.15|-6.72",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.001586687067567337,
+      "sl": 0.0016273893229820735,
+      "tp1": 0.0015459848121526004,
+      "tp2": 0.0015208308183062933,
+      "tp3": 0.0014801285628915568,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-06T02:12:19.030Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4675564328583923,
+        "advMedian": 0.9351128657167846,
+        "advP80": 2.363666976426714,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -71769,7 +71839,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-05T21:44:44.699Z",
+      "generatedAt": "2026-11-06T01:56:15.724Z",
       "overall": {
         "samples": 120,
         "wins": 49,
