@@ -76754,6 +76754,246 @@
         "advP80": 2.0730615599109323,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "H100USDT_SHORT_1794420890281",
+      "ts": 1794420890281,
+      "base": "H100USDT",
+      "instId": "H100USDT",
+      "action": "SHORT",
+      "fingerprint": "H100USDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.52|-0.52|-0.84|-1.36",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 2.935931413056574,
+      "sl": 2.9512215583029904,
+      "tp1": 2.9206412678101574,
+      "tp2": 2.9111919580478722,
+      "tp3": 2.8959018128014558,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-11T18:29:50.281Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.38568107037721927,
+        "advMedian": 0.7713621407544385,
+        "advP80": 2.5464875846917265,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "IRYSUSDT_SHORT_1794420890281",
+      "ts": 1794420890281,
+      "base": "IRYSUSDT",
+      "instId": "IRYSUSDT",
+      "action": "SHORT",
+      "fingerprint": "IRYSUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.36|-2.36|-3.81|-6.17",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.3,
+      "entry": 0.016907457200413308,
+      "sl": 0.017306009011257256,
+      "tp1": 0.01650890538956936,
+      "tp2": 0.0162626003704678,
+      "tp3": 0.015864048559623853,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-11T18:29:50.281Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2162474194696482,
+        "advMedian": 0.4324948389392964,
+        "advP80": 1.9778129564344002,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "MARSCOINUSDT_SHORT_1794420890281",
+      "ts": 1794420890281,
+      "base": "MARSCOINUSDT",
+      "instId": "MARSCOINUSDT",
+      "action": "SHORT",
+      "fingerprint": "MARSCOINUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.34|-1.34|-2.16|-3.50",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 0.04119372873133771,
+      "sl": 0.041744897287223845,
+      "tp1": 0.04064256017545158,
+      "tp2": 0.04030193800791395,
+      "tp3": 0.039750769452027816,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-11T18:29:50.281Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.30951166423545007,
+        "advMedian": 0.6190233284709001,
+        "advP80": 2.1255647209899142,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "PROMUSDT_SHORT_1794420890281",
+      "ts": 1794420890281,
+      "base": "PROMUSDT",
+      "instId": "PROMUSDT",
+      "action": "SHORT",
+      "fingerprint": "PROMUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.03|-3.03|-4.90|-7.93",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 4.702638357286995,
+      "sl": 4.84502464626115,
+      "tp1": 4.56025206831284,
+      "tp2": 4.472257341726812,
+      "tp3": 4.329871052752657,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-11T18:29:50.281Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3994535919418012,
+        "advMedian": 0.7989071838836024,
+        "advP80": 2.4614087382915733,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SOPHUSDT_SHORT_1794420890281",
+      "ts": 1794420890281,
+      "base": "SOPHUSDT",
+      "instId": "SOPHUSDT",
+      "action": "SHORT",
+      "fingerprint": "SOPHUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.55|-1.55|-2.51|-4.06",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.0012587728767119537,
+      "sl": 0.0012783132746230982,
+      "tp1": 0.0012392324788008092,
+      "tp2": 0.0012271565128917218,
+      "tp3": 0.0012076161149805773,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-11T18:29:50.281Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.18145758546119392,
+        "advMedian": 0.36291517092238784,
+        "advP80": 3.0432074097146558,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "XPTUSDT_SHORT_1794420890281",
+      "ts": 1794420890281,
+      "base": "XPTUSDT",
+      "instId": "XPTUSDT",
+      "action": "SHORT",
+      "fingerprint": "XPTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|0.95|-0.95|-1.53|-2.48",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 1543.4221383341498,
+      "sl": 1558.01488534655,
+      "tp1": 1528.8293913217497,
+      "tp2": 1519.8110736680862,
+      "tp3": 1505.218326655686,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-11T18:29:50.281Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Unexpected token 'V', ...\"\"verdict\":VALID},\n  \"... is not valid JSON",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4827245111776296,
+        "advMedian": 0.9654490223552592,
+        "advP80": 2.43562630691047,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -80952,7 +81192,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-11T10:03:14.490Z",
+      "generatedAt": "2026-11-11T18:13:37.781Z",
       "overall": {
         "samples": 120,
         "wins": 49,
