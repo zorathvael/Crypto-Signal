@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-13T11:45:43.507Z",
+    "generatedAt": "2026-11-13T18:59:57.972Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -659,8 +659,18 @@
     },
     {
       "id": "BTC_SHORT_1789490748664",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "BTC",
+      "action": "SHORT",
+      "entry": 76341.2,
+      "sl": 76733.54176421648,
+      "tp1": 75869.80163421103,
+      "entryCandleAt": 1789490760000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.2478,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "NEAR_LONG_1789385627677",
