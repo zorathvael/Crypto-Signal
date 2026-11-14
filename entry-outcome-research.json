@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-14T07:15:22.443Z",
+    "generatedAt": "2026-11-14T14:40:46.625Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -329,8 +329,18 @@
     },
     {
       "id": "PUMP_LONG_1789994034931",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "PUMP",
+      "action": "LONG",
+      "entry": 0.004387,
+      "sl": 0.0043246782113862325,
+      "tp1": 0.004471589093881073,
+      "entryCandleAt": 1789994040000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.8434,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "BTC_SHORT_1789986842706",
@@ -680,7 +690,7 @@
     {
       "id": "SOL_SHORT_1789308077899",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "XRP_SHORT_1789308077899",
