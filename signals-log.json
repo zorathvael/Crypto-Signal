@@ -82739,6 +82739,43 @@
         "advP80": 1.7165825620048258,
         "slMinK": 1.4900986785967405
       }
+    },
+    {
+      "id": "SHELLUSDT_LONG_1794766581944",
+      "ts": 1794766581944,
+      "base": "SHELLUSDT",
+      "instId": "SHELLUSDT",
+      "action": "LONG",
+      "fingerprint": "SHELLUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-16.19|16.19|26.19|42.37",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.1,
+      "entry": 0.030110874834201384,
+      "sl": 0.02523727783218916,
+      "tp1": 0.03498447183621361,
+      "tp2": 0.03799635478345716,
+      "tp3": 0.04286995178546939,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-15T18:31:21.944Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5249203679625087,
+        "advMedian": 1.0498407359250175,
+        "advP80": 3.1295438520017047,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -86937,7 +86974,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-15T11:41:13.780Z",
+      "generatedAt": "2026-11-15T18:15:31.830Z",
       "overall": {
         "samples": 120,
         "wins": 49,
