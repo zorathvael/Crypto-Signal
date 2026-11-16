@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-16T12:19:25.028Z",
+    "generatedAt": "2026-11-16T22:42:04.790Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 22,
+    "errors": 23,
     "entryNotFound": 7
   },
   "results": [
@@ -629,18 +629,8 @@
     },
     {
       "id": "SUI_SHORT_1789489908187",
-      "base": "SUI",
-      "action": "SHORT",
-      "entry": 0.702,
-      "sl": 0.7077274200992857,
-      "tp1": 0.6947650045926071,
-      "entryCandleAt": 1789489920000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.5413,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ZEC_SHORT_1789489908187",
@@ -690,7 +680,7 @@
     {
       "id": "SOL_SHORT_1789308077899",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "XRP_SHORT_1789308077899",
@@ -735,7 +725,7 @@
     {
       "id": "SOL_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "BNB_LONG_1789227211769",
@@ -780,7 +770,7 @@
     {
       "id": "RAY_LONG_1789180304858",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     }
   ]
 }
