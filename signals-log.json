@@ -84978,6 +84978,41 @@
         "advP80": 1.5325763851937593,
         "slMinK": 1.4890523599370005
       }
+    },
+    {
+      "id": "HUSDT_SHORT_1794891268782",
+      "ts": 1794891268782,
+      "base": "HUSDT",
+      "instId": "HUSDT",
+      "action": "SHORT",
+      "fingerprint": "HUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.96|-2.96|-4.79|-7.74",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 0.015641308564523088,
+      "sl": 0.016104032002888482,
+      "tp1": 0.015178585126157693,
+      "tp2": 0.01489262204124788,
+      "tp3": 0.014429898602882485,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-17T05:09:28.782Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.13390902998889084,
+        "advMedian": 0.2678180599777817,
+        "advP80": 1.8531777999320187,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -89176,7 +89211,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-16T22:40:29.266Z",
+      "generatedAt": "2026-11-17T04:53:43.242Z",
       "overall": {
         "samples": 120,
         "wins": 49,
