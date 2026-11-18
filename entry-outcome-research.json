@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-18T03:59:57.347Z",
+    "generatedAt": "2026-11-18T12:41:18.447Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -725,7 +725,7 @@
     {
       "id": "ALLO_SHORT_1789264585844",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ADA_SHORT_1789256402185",
