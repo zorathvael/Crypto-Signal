@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-20T01:34:59.689Z",
+    "generatedAt": "2026-11-20T09:29:34.740Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,7 +10,7 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
+    "errors": 22,
     "entryNotFound": 7
   },
   "results": [
@@ -235,8 +235,18 @@
     },
     {
       "id": "ZHIPU_LONG_1790157651874",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "base": "ZHIPU",
+      "action": "LONG",
+      "entry": 84.1,
+      "sl": 83.51546627554042,
+      "tp1": 85.15216070402722,
+      "entryCandleAt": 1790157660000,
+      "slCandleAt": null,
+      "tp1CandleAt": null,
+      "mfeBeforeSlPct": 0.547,
+      "slBeforeTp1": false,
+      "directSl": false,
+      "sameCandleAmbiguous": false
     },
     {
       "id": "UNI_LONG_1790168402028",
@@ -715,7 +725,7 @@
     {
       "id": "ALLO_SHORT_1789264585844",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ADA_SHORT_1789256402185",
@@ -725,7 +735,7 @@
     {
       "id": "SOL_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "BNB_LONG_1789227211769",
@@ -765,7 +775,7 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "RAY_LONG_1789180304858",
