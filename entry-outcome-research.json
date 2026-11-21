@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-20T18:12:06.871Z",
+    "generatedAt": "2026-11-21T00:32:54.201Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -695,7 +695,7 @@
     {
       "id": "XRP_SHORT_1789308077899",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ADA_SHORT_1789304391147",
@@ -740,7 +740,7 @@
     {
       "id": "BNB_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "ETH_LONG_1789227211769",
@@ -775,7 +775,7 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "RAY_LONG_1789180304858",

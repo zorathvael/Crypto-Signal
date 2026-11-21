@@ -88907,6 +88907,146 @@
         "advP80": 3.0204645998568878,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ARXUSDT_SHORT_1795221161897",
+      "ts": 1795221161897,
+      "base": "ARXUSDT",
+      "instId": "ARXUSDT",
+      "action": "SHORT",
+      "fingerprint": "ARXUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.56|-3.56|-5.76|-9.32",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 0.170344180058908,
+      "sl": 0.1764061467594066,
+      "tp1": 0.1642822133584094,
+      "tp2": 0.16053591793750127,
+      "tp3": 0.15447395123700264,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-21T00:47:41.897Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4368813371406657,
+        "advMedian": 0.8737626742813314,
+        "advP80": 2.2315498402551057,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "CCJUSDT_SHORT_1795221161897",
+      "ts": 1795221161897,
+      "base": "CCJUSDT",
+      "instId": "CCJUSDT",
+      "action": "SHORT",
+      "fingerprint": "CCJUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.71|-1.71|-2.77|-4.48",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 59.40144880167676,
+      "sl": 60.41800942038859,
+      "tp1": 58.38488818296492,
+      "tp2": 57.75665372060101,
+      "tp3": 56.74009310188917,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-21T00:47:41.897Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 32,
+        "entryK": 0.19396108690988537,
+        "advMedian": 0.38792217381977073,
+        "advP80": 1.5859278334279343,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "MONUSDT_SHORT_1795221161897",
+      "ts": 1795221161897,
+      "base": "MONUSDT",
+      "instId": "MONUSDT",
+      "action": "SHORT",
+      "fingerprint": "MONUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.73|-3.73|-6.04|-9.77",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 97.3,
+      "entry": 0.013144426046899565,
+      "sl": 0.013635165283011655,
+      "tp1": 0.012653686810787474,
+      "tp2": 0.012350409962870203,
+      "tp3": 0.011859670726758111,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-21T00:47:41.897Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.44644704273702207,
+        "advMedian": 0.8928940854740441,
+        "advP80": 2.584265276672859,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "UNHUSDT_SHORT_1795221161897",
+      "ts": 1795221161897,
+      "base": "UNHUSDT",
+      "instId": "UNHUSDT",
+      "action": "SHORT",
+      "fingerprint": "UNHUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.53|-1.53|-2.48|-4.01",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 336.0987132849844,
+      "sl": 341.2424876284853,
+      "tp1": 330.9549389414835,
+      "tp2": 327.7760863971999,
+      "tp3": 322.63231205369897,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-21T00:47:41.897Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2016858634709679,
+        "advMedian": 0.4033717269419358,
+        "advP80": 1.9090875048461142,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -93105,7 +93245,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-20T18:10:34.071Z",
+      "generatedAt": "2026-11-21T00:31:42.140Z",
       "overall": {
         "samples": 120,
         "wins": 49,
