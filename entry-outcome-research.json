@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-21T15:50:01.706Z",
+    "generatedAt": "2026-11-21T21:23:04.281Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -775,12 +775,12 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "RAY_LONG_1789180304858",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     }
   ]
 }
