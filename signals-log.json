@@ -89156,6 +89156,86 @@
         "advP80": 2.3487792882753946,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "RESOLVUSDT_SHORT_1795276185687",
+      "ts": 1795276185687,
+      "base": "RESOLVUSDT",
+      "instId": "RESOLVUSDT",
+      "action": "SHORT",
+      "fingerprint": "RESOLVUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.25|-2.25|-3.64|-5.89",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.013502704225418891,
+      "sl": 0.013806471840728205,
+      "tp1": 0.013198936610109577,
+      "tp2": 0.01301120822384842,
+      "tp3": 0.012707440608539107,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-21T16:04:45.687Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen3 returned incomplete score set",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.41197111771733896,
+        "advMedian": 0.8239422354346779,
+        "advP80": 2.340655481912974,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "USUALUSDT_LONG_1795276185687",
+      "ts": 1795276185687,
+      "base": "USUALUSDT",
+      "instId": "USUALUSDT",
+      "action": "LONG",
+      "fingerprint": "USUALUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-4.02|4.02|6.50|10.51",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 96.1,
+      "entry": 0.011573257964258319,
+      "sl": 0.011108501436311105,
+      "tp1": 0.012038014492205533,
+      "tp2": 0.012325234026476912,
+      "tp3": 0.012789990554424126,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-21T16:04:45.687Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Qwen3 returned incomplete score set",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4593460417356584,
+        "advMedian": 0.9186920834713168,
+        "advP80": 2.7239936964908513,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -93354,7 +93434,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-21T07:52:49.742Z",
+      "generatedAt": "2026-11-21T15:48:40.865Z",
       "overall": {
         "samples": 120,
         "wins": 49,
