@@ -90872,6 +90872,361 @@
         "advP80": 3.1741852964605695,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "BTWUSDT_LONG_1795442063061",
+      "ts": 1795442063061,
+      "base": "BTWUSDT",
+      "instId": "BTWUSDT",
+      "action": "LONG",
+      "fingerprint": "BTWUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-7.01|7.01|11.34|18.35",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 0.7386399083667303,
+      "sl": 0.6868732820063193,
+      "tp1": 0.7904065347271414,
+      "tp2": 0.8223983098178754,
+      "tp3": 0.8741649361782865,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2947880582422829,
+        "advMedian": 0.5895761164845658,
+        "advP80": 1.9522409525375048,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "CRVUSDT_LONG_1795442063061",
+      "ts": 1795442063061,
+      "base": "CRVUSDT",
+      "instId": "CRVUSDT",
+      "action": "LONG",
+      "fingerprint": "CRVUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.18|1.18|1.91|3.09",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.1,
+      "entry": 0.181538064043002,
+      "sl": 0.17939441864254219,
+      "tp1": 0.1836817094434618,
+      "tp2": 0.18500648230094596,
+      "tp3": 0.18715012770140577,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.7430818246130424,
+        "advMedian": 1.4861636492260848,
+        "advP80": 3.141576870471799,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ENSOUSDT_SHORT_1795442063061",
+      "ts": 1795442063061,
+      "base": "ENSOUSDT",
+      "instId": "ENSOUSDT",
+      "action": "SHORT",
+      "fingerprint": "ENSOUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.17|-3.17|-5.13|-8.30",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.4338379177649023,
+      "sl": 0.44758396940370926,
+      "tp1": 0.4200918661260954,
+      "tp2": 0.4115968062133127,
+      "tp3": 0.3978507545745058,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5584029313650138,
+        "advMedian": 1.1168058627300277,
+        "advP80": 2.9133897904843877,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ICNTUSDT_SHORT_1795442063061",
+      "ts": 1795442063061,
+      "base": "ICNTUSDT",
+      "instId": "ICNTUSDT",
+      "action": "SHORT",
+      "fingerprint": "ICNTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|4.68|-4.68|-7.58|-12.26",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.3270725208156248,
+      "sl": 0.34238843038066796,
+      "tp1": 0.3117566112505817,
+      "tp2": 0.30229137913938503,
+      "tp3": 0.2869754695743419,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3751028697872518,
+        "advMedian": 0.7502057395745036,
+        "advP80": 2.7034138080804335,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "INXUSDT_LONG_1795442063061",
+      "ts": 1795442063061,
+      "base": "INXUSDT",
+      "instId": "INXUSDT",
+      "action": "LONG",
+      "fingerprint": "INXUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-7.76|7.76|12.55|20.31",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.1,
+      "entry": 0.0034632917315066533,
+      "sl": 0.0031945890598626967,
+      "tp1": 0.00373199440315061,
+      "tp2": 0.003898052654226575,
+      "tp3": 0.004166755325870531,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.49652106609299507,
+        "advMedian": 0.9930421321859901,
+        "advP80": 2.8439732191530864,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "KERNELUSDT_SHORT_1795442063061",
+      "ts": 1795442063061,
+      "base": "KERNELUSDT",
+      "instId": "KERNELUSDT",
+      "action": "SHORT",
+      "fingerprint": "KERNELUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.24|-2.24|-3.62|-5.86",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.041411597305033056,
+      "sl": 0.04233876665104956,
+      "tp1": 0.04048442795901655,
+      "tp2": 0.03991143730317835,
+      "tp3": 0.038984267957161846,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5211503293784597,
+        "advMedian": 1.0423006587569195,
+        "advP80": 2.739813741711871,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "LGELECTRONICSUSDT_SHORT_1795442063061",
+      "ts": 1795442063061,
+      "base": "LGELECTRONICSUSDT",
+      "instId": "LGELECTRONICSUSDT",
+      "action": "SHORT",
+      "fingerprint": "LGELECTRONICSUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.29|-1.29|-2.09|-3.38",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.3,
+      "entry": 91.93281531797253,
+      "sl": 93.11992846424008,
+      "tp1": 90.74570217170498,
+      "tp2": 90.01206624731164,
+      "tp3": 88.82495310104409,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2309998653632839,
+        "advMedian": 0.4619997307265678,
+        "advP80": 2.6824751068825092,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "TLTUSDT_LONG_1795442063061",
+      "ts": 1795442063061,
+      "base": "TLTUSDT",
+      "instId": "TLTUSDT",
+      "action": "LONG",
+      "fingerprint": "TLTUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.37|0.37|0.60|0.97",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.1,
+      "entry": 81.87561855387274,
+      "sl": 81.57146691515048,
+      "tp1": 82.179770192595,
+      "tp2": 82.36773590532536,
+      "tp3": 82.67188754404762,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.22608095272278478,
+        "advMedian": 0.45216190544556956,
+        "advP80": 2.5853194972793303,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "龙虾USDT_LONG_1795442063061",
+      "ts": 1795442063061,
+      "base": "龙虾USDT",
+      "instId": "龙虾USDT",
+      "action": "LONG",
+      "fingerprint": "龙虾USDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.21|2.21|3.58|5.80",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.1,
+      "entry": 0.015526020620977344,
+      "sl": 0.015182133512804851,
+      "tp1": 0.015869907729149837,
+      "tp2": 0.016082429962000436,
+      "tp3": 0.01642631707017293,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-23T14:09:23.061Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5058600741672956,
+        "advMedian": 1.0117201483345912,
+        "advP80": 1.9519342222006633,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -95070,7 +95425,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-23T03:34:30.234Z",
+      "generatedAt": "2026-11-23T13:53:11.877Z",
       "overall": {
         "samples": 120,
         "wins": 49,
