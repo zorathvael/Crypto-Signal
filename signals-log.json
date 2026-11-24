@@ -91297,6 +91297,576 @@
         "advP80": 2.714235879641741,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "ACEUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "ACEUSDT",
+      "instId": "ACEUSDT",
+      "action": "SHORT",
+      "fingerprint": "ACEUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|4.90|-4.90|-7.93|-12.83",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.07181028970818734,
+      "sl": 0.07532895697556254,
+      "tp1": 0.06829162244081215,
+      "tp2": 0.06611708606957428,
+      "tp3": 0.06259841880219909,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2900471510442101,
+        "advMedian": 0.5800943020884202,
+        "advP80": 1.755784706121178,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ACUUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "ACUUSDT",
+      "instId": "ACUUSDT",
+      "action": "SHORT",
+      "fingerprint": "ACUUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.16|-2.16|-3.50|-5.66",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.10606405944379317,
+      "sl": 0.10835536003588947,
+      "tp1": 0.10377275885169687,
+      "tp2": 0.10235673508578136,
+      "tp3": 0.10006543449368506,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5010773756820547,
+        "advMedian": 1.0021547513641094,
+        "advP80": 2.669881058719671,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ARBUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "ARBUSDT",
+      "instId": "ARBUSDT",
+      "action": "SHORT",
+      "fingerprint": "ARBUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.20|-2.20|-3.56|-5.75",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 0.11426274865039278,
+      "sl": 0.11677375808252492,
+      "tp1": 0.11175173921826063,
+      "tp2": 0.11019993538920297,
+      "tp3": 0.10768892595707083,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3685757962285667,
+        "advMedian": 0.7371515924571334,
+        "advP80": 2.6915345688185006,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "ARXUSDT_LONG_1795521139246",
+      "ts": 1795521139246,
+      "base": "ARXUSDT",
+      "instId": "ARXUSDT",
+      "action": "LONG",
+      "fingerprint": "ARXUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.85|1.85|2.99|4.84",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.1,
+      "entry": 0.1806007367089112,
+      "sl": 0.17726388928937084,
+      "tp1": 0.18393758412845154,
+      "tp2": 0.1859997558337275,
+      "tp3": 0.18933660325326784,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.5043583523947884,
+        "advMedian": 1.0087167047895769,
+        "advP80": 2.910120477606548,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "AXISUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "AXISUSDT",
+      "instId": "AXISUSDT",
+      "action": "SHORT",
+      "fingerprint": "AXISUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.42|-2.42|-3.91|-6.33",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 94.3,
+      "entry": 0.08493416304549899,
+      "sl": 0.08698903516747002,
+      "tp1": 0.08287929092352796,
+      "tp2": 0.08160937995214985,
+      "tp3": 0.07955450783017882,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.4854642425912295,
+        "advMedian": 0.970928485182459,
+        "advP80": 2.5217243032894645,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "BREVUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "BREVUSDT",
+      "instId": "BREVUSDT",
+      "action": "SHORT",
+      "fingerprint": "BREVUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.67|-3.67|-5.94|-9.61",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 0.06133922854295696,
+      "sl": 0.06359078675289216,
+      "tp1": 0.05908767033302176,
+      "tp2": 0.057696207359281805,
+      "tp3": 0.0554446491493466,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.46121707239529935,
+        "advMedian": 0.9224341447905987,
+        "advP80": 2.2870524768185083,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "CRVUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "CRVUSDT",
+      "instId": "CRVUSDT",
+      "action": "SHORT",
+      "fingerprint": "CRVUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.47|-1.47|-2.37|-3.84",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.3,
+      "entry": 0.17721123547824152,
+      "sl": 0.17980888749136187,
+      "tp1": 0.17461358346512118,
+      "tp2": 0.1730082345210128,
+      "tp3": 0.17041058250789246,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.39361352148737555,
+        "advMedian": 0.7872270429747511,
+        "advP80": 2.608969625160742,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "GWEIUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "GWEIUSDT",
+      "instId": "GWEIUSDT",
+      "action": "SHORT",
+      "fingerprint": "GWEIUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|3.02|-3.02|-4.89|-7.91",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.3,
+      "entry": 0.010450574604490977,
+      "sl": 0.010766182676346273,
+      "tp1": 0.01013496653263568,
+      "tp2": 0.009939920744229107,
+      "tp3": 0.009624312672373812,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.25712019500932803,
+        "advMedian": 0.5142403900186561,
+        "advP80": 2.060871690291108,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "JCTUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "JCTUSDT",
+      "instId": "JCTUSDT",
+      "action": "SHORT",
+      "fingerprint": "JCTUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.66|-1.66|-2.69|-4.35",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.0015050145090675137,
+      "sl": 0.001530025557708183,
+      "tp1": 0.0014800034604268444,
+      "tp2": 0.0014645466323669107,
+      "tp3": 0.0014395355837262414,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3210188525231048,
+        "advMedian": 0.6420377050462096,
+        "advP80": 1.772083910809911,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "LABUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "LABUSDT",
+      "instId": "LABUSDT",
+      "action": "SHORT",
+      "fingerprint": "LABUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.97|-1.97|-3.19|-5.16",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.03078356028243241,
+      "sl": 0.03139014528451655,
+      "tp1": 0.030176975280348267,
+      "tp2": 0.029802105749060268,
+      "tp3": 0.029195520746976126,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.2095676029378371,
+        "advMedian": 0.4191352058756742,
+        "advP80": 2.628047391417939,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "LISTAUSDT_LONG_1795521139246",
+      "ts": 1795521139246,
+      "base": "LISTAUSDT",
+      "instId": "LISTAUSDT",
+      "action": "LONG",
+      "fingerprint": "LISTAUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-7.73|7.73|12.50|20.23",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.1,
+      "entry": 0.10173766435236462,
+      "sl": 0.0938771224493891,
+      "tp1": 0.10959820625534013,
+      "tp2": 0.114456021151379,
+      "tp3": 0.12231656305435451,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.39164010693559514,
+        "advMedian": 0.7832802138711903,
+        "advP80": 2.5274810025599717,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "PLUMEUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "PLUMEUSDT",
+      "instId": "PLUMEUSDT",
+      "action": "SHORT",
+      "fingerprint": "PLUMEUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|2.17|-2.17|-3.52|-5.69",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.010763410895206745,
+      "sl": 0.010997251140500128,
+      "tp1": 0.010529570649913361,
+      "tp2": 0.01038505737832205,
+      "tp3": 0.010151217133028667,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.28575829763457533,
+        "advMedian": 0.5715165952691507,
+        "advP80": 2.716260635715778,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SOONUSDT_SHORT_1795521139246",
+      "ts": 1795521139246,
+      "base": "SOONUSDT",
+      "instId": "SOONUSDT",
+      "action": "SHORT",
+      "fingerprint": "SOONUSDT|SHORT|LIVE_BITGET_CALIBRATED_120C|1.38|-1.38|-2.24|-3.62",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 90.3,
+      "entry": 0.2533742155299193,
+      "sl": 0.2568814842696219,
+      "tp1": 0.2498669467902167,
+      "tp2": 0.2476994547090805,
+      "tp3": 0.24419218596937792,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.49851642106754684,
+        "advMedian": 0.9970328421350937,
+        "advP80": 2.550201589036967,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "SPACEUSDT_LONG_1795521139246",
+      "ts": 1795521139246,
+      "base": "SPACEUSDT",
+      "instId": "SPACEUSDT",
+      "action": "LONG",
+      "fingerprint": "SPACEUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.99|2.99|4.83|7.82",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.1,
+      "entry": 0.0033289057422035773,
+      "sl": 0.003229502105118811,
+      "tp1": 0.0034283093792883434,
+      "tp2": 0.003489740827006729,
+      "tp3": 0.003589144464091495,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "UNAVAILABLE",
+        "score": 0,
+        "confidence": 0,
+        "reasons": [
+          "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+          "Gemini fallback: Gemini HTTP 503"
+        ],
+        "riskFlags": [
+          "AI_UNAVAILABLE"
+        ]
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.6256160983306329,
+        "advMedian": 1.2512321966612658,
+        "advP80": 3.0449472615517674,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "VVVUSDT_LONG_1795521139246",
+      "ts": 1795521139246,
+      "base": "VVVUSDT",
+      "instId": "VVVUSDT",
+      "action": "LONG",
+      "fingerprint": "VVVUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-2.14|2.14|3.47|5.61",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 95.1,
+      "entry": 25.762582475164244,
+      "sl": 25.21048808693504,
+      "tp1": 26.314676863393448,
+      "tp2": 26.655871195319097,
+      "tp3": 27.2079655835483,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-24T12:07:19.246Z",
+      "ai": {
+        "provider": "Gemini",
+        "model": "gemini-3.5-flash-lite",
+        "verdict": "VALID",
+        "score": 92,
+        "confidence": 100,
+        "reasons": [
+          "Backup classifier after local Qwen failure"
+        ],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.42535308215090767,
+        "advMedian": 0.8507061643018153,
+        "advP80": 2.9110965578054855,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -95495,7 +96065,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-24T01:25:31.761Z",
+      "generatedAt": "2026-11-24T11:50:37.626Z",
       "overall": {
         "samples": 120,
         "wins": 49,
