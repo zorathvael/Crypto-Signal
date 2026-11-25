@@ -92567,6 +92567,111 @@
         "advP80": 3.3950656732171107,
         "slMinK": 1.5
       }
+    },
+    {
+      "id": "KWEBUSDT_LONG_1795650972912",
+      "ts": 1795650972912,
+      "base": "KWEBUSDT",
+      "instId": "KWEBUSDT",
+      "action": "LONG",
+      "fingerprint": "KWEBUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.85|0.85|1.37|2.22",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 92.1,
+      "entry": 21.307244888774363,
+      "sl": 21.1268800831791,
+      "tp1": 21.487609694369628,
+      "tp2": 21.599075144227502,
+      "tp3": 21.779439949822766,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-26T00:11:12.912Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.36320956427761925,
+        "advMedian": 0.7264191285552385,
+        "advP80": 2.9527502970682016,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "LGELECTRONICSUSDT_LONG_1795650972912",
+      "ts": 1795650972912,
+      "base": "LGELECTRONICSUSDT",
+      "instId": "LGELECTRONICSUSDT",
+      "action": "LONG",
+      "fingerprint": "LGELECTRONICSUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-1.52|1.52|2.46|3.97",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 93.1,
+      "entry": 103.6873903366374,
+      "sl": 102.11311504364112,
+      "tp1": 105.2616656296337,
+      "tp2": 106.2345677607054,
+      "tp3": 107.8088430537017,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-26T00:11:12.912Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.3717388752327749,
+        "advMedian": 0.7434777504655498,
+        "advP80": 2.0587975138688805,
+        "slMinK": 1.5
+      }
+    },
+    {
+      "id": "NAVERUSDT_LONG_1795650972912",
+      "ts": 1795650972912,
+      "base": "NAVERUSDT",
+      "instId": "NAVERUSDT",
+      "action": "LONG",
+      "fingerprint": "NAVERUSDT|LONG|LIVE_BITGET_CALIBRATED_120C|-0.88|0.88|1.43|2.32",
+      "setup": "LIVE_BITGET_CALIBRATED_120C",
+      "probability": 91.1,
+      "entry": 117.48629157012638,
+      "sl": 116.44682185336671,
+      "tp1": 118.52576128688605,
+      "tp2": 119.16815357184353,
+      "tp3": 120.2076232886032,
+      "rr": 1,
+      "leverage": 20,
+      "marginUsdt": 5,
+      "validUntil": "2026-11-26T00:11:12.912Z",
+      "ai": {
+        "provider": "Qwen3-local",
+        "model": "qwen3-0.6b",
+        "verdict": "VALID",
+        "score": 100,
+        "confidence": 100,
+        "reasons": [],
+        "riskFlags": []
+      },
+      "calibration": {
+        "samples": 114,
+        "entryK": 0.19954103174242124,
+        "advMedian": 0.3990820634848425,
+        "advP80": 1.6584158830737874,
+        "slMinK": 1.5
+      }
     }
   ],
   "closed": [
@@ -96765,7 +96870,7 @@
     "avgR": -0.13,
     "selfOptimizationThreshold": 90,
     "personalEdge": {
-      "generatedAt": "2026-11-25T15:11:10.074Z",
+      "generatedAt": "2026-11-25T23:55:14.239Z",
       "overall": {
         "samples": 120,
         "wins": 49,
