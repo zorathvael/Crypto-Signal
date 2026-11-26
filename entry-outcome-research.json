@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-25T23:56:25.848Z",
+    "generatedAt": "2026-11-26T06:03:01.300Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -10,8 +10,8 @@
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 23,
-    "entryNotFound": 6
+    "errors": 22,
+    "entryNotFound": 7
   },
   "results": [
     {
@@ -250,8 +250,7 @@
     },
     {
       "id": "UNI_LONG_1790168402028",
-      "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "status": "ENTRY_NOT_FOUND"
     },
     {
       "id": "DOGE_LONG_1790150243516",
@@ -746,7 +745,7 @@
     {
       "id": "ETH_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "BNB_LONG_1789218326337",
@@ -771,7 +770,7 @@
     {
       "id": "SKHY_LONG_1789193213150",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "PONS_SHORT_1789185844930",
