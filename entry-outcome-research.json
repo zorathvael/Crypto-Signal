@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-26T06:03:01.300Z",
+    "generatedAt": "2026-11-26T17:28:10.470Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
     "measuredSLBeforeTP1": 5,
@@ -740,7 +740,7 @@
     {
       "id": "BNB_LONG_1789227211769",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ETH_LONG_1789227211769",
