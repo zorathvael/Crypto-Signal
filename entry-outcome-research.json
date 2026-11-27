@@ -1,16 +1,16 @@
 {
   "summary": {
-    "generatedAt": "2026-11-27T10:20:39.112Z",
+    "generatedAt": "2026-11-27T19:45:53.918Z",
     "source": "Bitget USDT-FUTURES 1m historical candles",
     "sampleLossSL": 71,
-    "measuredSLBeforeTP1": 5,
-    "slBeforeTp1Pct": 7.04,
-    "priorRiseBeforeSL": 5,
+    "measuredSLBeforeTP1": 4,
+    "slBeforeTp1Pct": 5.63,
+    "priorRiseBeforeSL": 4,
     "priorRiseBeforeSLPct": 100,
     "directSLNoPriorRise": 0,
     "directSLNoPriorRisePct": 0,
     "sameCandleAmbiguous": 0,
-    "errors": 22,
+    "errors": 24,
     "entryNotFound": 7
   },
   "results": [
@@ -91,18 +91,8 @@
     },
     {
       "id": "NEAR_SHORT_1790591753466",
-      "base": "NEAR",
-      "action": "SHORT",
-      "entry": 5.0199,
-      "sl": 5.044999499999999,
-      "tp1": 4.9446015,
-      "entryCandleAt": 1790591760000,
-      "slCandleAt": 1790592000000,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.1793,
-      "slBeforeTp1": true,
-      "directSl": false,
-      "sameCandleAmbiguous": false
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "ONDO_SHORT_1790591753466",
@@ -299,18 +289,8 @@
     },
     {
       "id": "ETH_LONG_1790147038036",
-      "base": "ETH",
-      "action": "LONG",
-      "entry": 2750.5,
-      "sl": 2742.277054287205,
-      "tp1": 2758.8965,
-      "entryCandleAt": 1790147040000,
-      "slCandleAt": null,
-      "tp1CandleAt": null,
-      "mfeBeforeSlPct": 0.0909,
-      "slBeforeTp1": false,
-      "directSl": false,
-      "sameCandleAmbiguous": false
+      "status": "ERROR",
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "TAO_LONG_1790011940054",
@@ -705,7 +685,7 @@
     {
       "id": "ENA_SHORT_1789268597877",
       "status": "ERROR",
-      "error": "Bitget HTTP 429"
+      "error": "Bitget HTTP 400"
     },
     {
       "id": "HYPE_SHORT_1789277468934",
@@ -775,7 +755,7 @@
     {
       "id": "PONS_SHORT_1789185844930",
       "status": "ERROR",
-      "error": "Bitget HTTP 400"
+      "error": "Bitget HTTP 429"
     },
     {
       "id": "RAY_LONG_1789180304858",
